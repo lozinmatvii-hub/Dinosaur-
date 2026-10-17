@@ -29,12 +29,12 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { height: 100%; margin: 0; }
-body { background: var(--chat); color: var(--ink); font: 15px/1.4 var(--body); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+body { position: fixed; inset: 0; background: var(--chat); color: var(--ink); font: 15px/1.4 var(--body); overflow: hidden; -webkit-tap-highlight-color: transparent; }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
 input { font: inherit; color: var(--ink); }
 
-.app { display: grid; grid-template-columns: 72px 240px 1fr 240px; height: 100dvh; }
+.app { display: grid; grid-template-columns: 72px 240px minmax(0, 1fr) 240px; grid-template-rows: minmax(0, 1fr); height: var(--vh, 100dvh); padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); box-sizing: border-box; }
 
 /* server rail */
 .rail { background: var(--rail); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; overflow-y: auto; }
@@ -46,15 +46,16 @@ input { font: inherit; color: var(--ink); }
 .rail hr { width: 32px; border: 0; border-top: 2px solid var(--side); margin: 2px 0; }
 
 /* channel side */
-.side { background: var(--side); display: flex; flex-direction: column; min-width: 0; }
+.side { background: var(--side); display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .side-head { height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); font-weight: 600; color: var(--head); gap: 8px; }
 .side-head .code { font: 500 13px var(--display); color: var(--dino); white-space: nowrap; }
-.chans { flex: 1; overflow-y: auto; padding: 12px 8px; }
+.chans { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 12px 8px; }
 .cat { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); padding: 12px 8px 4px; letter-spacing: .02em; }
 .chan { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 8px; border-radius: 4px; color: var(--muted); text-align: left; }
 .chan:hover { background: var(--hover); color: var(--ink); }
 .chan.on { background: var(--sel); color: var(--head); }
-.chan .hash { font-size: 20px; line-height: 1; opacity: .7; width: 18px; text-align: center; }
+.chan .hash { font-size: 20px; line-height: 1; opacity: .7; width: 22px; text-align: center; flex: none; }
+.chan .hash.ic { font-size: 15px; }
 .chan .unread { margin-left: auto; background: var(--danger); color: #fff; font-size: 11px; font-weight: 600; border-radius: 8px; padding: 0 6px; }
 .me-bar { background: color-mix(in srgb, var(--rail) 60%, var(--side)); padding: 8px; display: flex; align-items: center; gap: 8px; }
 .me-bar input { flex: 1; min-width: 0; background: var(--input); border: 0; border-radius: 4px; padding: 6px 8px; outline: none; }
@@ -67,9 +68,10 @@ input { font: inherit; color: var(--ink); }
 .ava .dot { position: absolute; right: -2px; bottom: -2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ok); border: 3px solid var(--side); }
 
 /* chat */
-.main { display: flex; flex-direction: column; min-width: 0; background: var(--chat); }
-.main-head { height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); color: var(--head); font-weight: 600; }
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--chat); position: relative; }
+.main-head { flex: none; height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); color: var(--head); font-weight: 600; }
 .main-head .hash { color: var(--muted); font-size: 22px; }
+#chanName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .main-head .topic { color: var(--muted); font-weight: 400; font-size: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-left: 1px solid var(--sel); padding-left: 10px; margin-left: 4px; }
 .main-head .sp { flex: 1; }
 .live-btn { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 4px; background: var(--input); color: var(--ink); font-size: 13px; font-weight: 500; white-space: nowrap; }
@@ -87,7 +89,7 @@ input { font: inherit; color: var(--ink); }
 .lv .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
 .lv .tag { background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; flex: none; }
 .menu-btn { display: none; }
-.msgs { flex: 1; overflow-y: auto; padding: 16px 0 8px; }
+.msgs { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px 0 8px; }
 .welcome { padding: 16px; }
 .welcome .big { width: 68px; height: 68px; border-radius: 50%; background: var(--sel); display: grid; place-items: center; font-size: 38px; margin-bottom: 8px; }
 .welcome h2 { margin: 0 0 4px; color: var(--head); font-size: 28px; }
@@ -116,7 +118,7 @@ input { font: inherit; color: var(--ink); }
 .composer input:disabled { opacity: .5; }
 
 /* members */
-.members { background: var(--side); overflow-y: auto; padding: 16px 8px; }
+.members { background: var(--side); min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px 8px; }
 .member { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 4px; }
 .member:hover { background: var(--hover); }
 .member .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -135,6 +137,15 @@ input { font: inherit; color: var(--ink); }
 .btn:hover { background: var(--accent-2); }
 .btn.sec { background: var(--sel); color: var(--ink); }
 .btn:disabled { opacity: .5; cursor: default; }
+.adm { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.adm .btn { flex: none; width: 100%; }
+.btn.danger { background: var(--danger); }
+.adm-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--sel); }
+.adm-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-row button { flex: none; padding: 4px 10px; border-radius: 4px; background: var(--sel); font-size: 13px; }
+.adm h3 { margin: 12px 0 2px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+.member.can { cursor: pointer; }
+.side-head .gear { margin-left: auto; font-size: 16px; }
 .status { min-height: 20px; margin-top: 12px; font-size: 13px; color: var(--muted); }
 .status.bad { color: var(--danger); }
 .emojis { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
@@ -157,10 +168,12 @@ input { font: inherit; color: var(--ink); }
 .vbar .st span { color: var(--muted); }
 .vbar .icon-btn.off { color: var(--danger); }
 .vbar .hang { color: var(--danger); }
-@media (max-width: 1000px) { .app { grid-template-columns: 72px 220px 1fr; } .members { display: none; } }
+@media (max-width: 1000px) { .app { grid-template-columns: 72px 220px minmax(0, 1fr); } .members { display: none; } }
+.to-bottom { position: absolute; right: 24px; bottom: 96px; z-index: 3; background: var(--accent); color: #fff; border-radius: 16px; padding: 6px 12px; font-size: 13px; font-weight: 600; box-shadow: 0 2px 8px #0004; }
+.typing, .composer { flex: none; }
 @media (max-width: 700px) {
-  .app { grid-template-columns: 1fr; }
-  .rail, .side { position: fixed; top: 0; bottom: 0; z-index: 5; transform: translateX(-110vw); transition: transform .2s; }
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .rail, .side { position: fixed; top: 0; bottom: 0; z-index: 5; padding-top: env(safe-area-inset-top, 0px); transform: translateX(-110vw); transition: transform .2s; }
   .rail { left: 0; width: 72px; }
   .side { left: 72px; width: min(260px, calc(100vw - 72px)); }
   .app.drawer .rail, .app.drawer .side { transform: none; }
@@ -179,7 +192,7 @@ input { font: inherit; color: var(--ink); }
   </nav>
 
   <aside class="side">
-    <div class="side-head"><span id="srvName">ДіноКорд</span><span class="code" id="srvCode"></span></div>
+    <div class="side-head"><span id="srvName">ДіноКорд</span><span class="code" id="srvCode"></span><button class="icon-btn gear" id="btnAdmin" title="Налаштування сервера" hidden>⚙️</button></div>
     <div class="chans" id="chans"></div>
     <div class="vbar" id="vbar" hidden>
       <div class="st"><b>Голос підключено</b><span id="vbarName">🔊 Балачка</span></div>
@@ -204,6 +217,7 @@ input { font: inherit; color: var(--ink); }
       <button class="live-btn" id="btnScreen" hidden title="Показати свій екран">🖥️ Екран</button>
       <button class="live-btn" id="btnCam" hidden title="Транслювати камеру">📷 Камера</button>
       <button class="live-btn on" id="btnStopLive" hidden>⏹ Зупинити</button>
+      <button class="live-btn" id="btnClear" hidden title="Видалити всі повідомлення в цьому каналі">🧹 Очистити</button>
     </div>
     <div class="stage" id="stage" hidden>
       <video id="stageVideo" autoplay playsinline></video>
@@ -211,6 +225,7 @@ input { font: inherit; color: var(--ink); }
       <div class="ctl"><button id="stageFull">⛶ На весь екран</button><button id="stageClose">✕</button></div>
     </div>
     <div class="msgs" id="msgs"></div>
+    <button class="to-bottom" id="toBottom" hidden>⬇ До нових повідомлень</button>
     <div class="typing" id="typing"></div>
     <div class="composer">
       <form id="form" autocomplete="off">
@@ -237,6 +252,15 @@ input { font: inherit; color: var(--ink); }
   </div>
 </div>
 
+<div class="ov" id="ovAdmin" hidden>
+  <div class="dlg">
+    <h2 id="admTitle">Адмін</h2>
+    <p id="admSub"></p>
+    <div class="adm" id="admBody"></div>
+    <div class="row"><button class="btn sec" id="admClose">Закрити</button></div>
+  </div>
+</div>
+
 <div class="ov" id="ovAva" hidden>
   <div class="dlg">
     <h2>Аватар</h2>
@@ -257,6 +281,7 @@ input { font: inherit; color: var(--ink); }
   const CHANNELS = [
     { id: "general", name: "загальний", topic: "Балачки про все" },
     { id: "games", name: "ігри", topic: "Рекорди в Динозаврику, кличте на перегони" },
+    { id: "own", name: "канал-власника", topic: "Тут пише тільки творець сервера 👑", own: true },
     { id: "memes", name: "мемчики", topic: "Тільки смішне" },
     { id: "help", name: "допомога", topic: "Питання та відповіді" },
   ];
@@ -297,7 +322,7 @@ input { font: inherit; color: var(--ink); }
     for (const c of CHANNELS) {
       const b = document.createElement("button");
       b.className = "chan" + (c.id === chan ? " on" : "");
-      b.innerHTML = '<span class="hash">#</span><span></span>' + (unread[c.id] ? '<span class="unread">' + Math.min(99, unread[c.id]) + "</span>" : "");
+      b.innerHTML = '<span class="hash' + (c.own ? ' ic">📢' : '">#') + '</span><span></span>' + (unread[c.id] ? '<span class="unread">' + Math.min(99, unread[c.id]) + "</span>" : "");
       b.children[1].textContent = c.name;
       b.onclick = () => { chan = c.id; unread[c.id] = 0; $("app").classList.remove("drawer"); renderAll(); $("text").focus(); };
       box.append(b);
@@ -337,7 +362,11 @@ input { font: inherit; color: var(--ink); }
     }
     const c = CHANNELS.find(c => c.id === chan);
     $("chanName").textContent = c.name; $("chanTopic").textContent = c.topic;
-    if (net) $("text").placeholder = "Написати в #" + c.name;
+    const ownLock = !!c.own && !iOwn(), mute = myPub && isMuted(myPub) ? adm.mutes.get(myPub).until : 0;
+    if (net) {
+      $("text").disabled = $("btnRoar").disabled = ownLock || !!mute;
+      $("text").placeholder = mute ? "Адмін заборонив тобі писати до " + fmtTime(mute) : ownLock ? "Тут пише тільки творець сервера 👑" : "Написати в #" + c.name;
+    }
   }
 
   function avaEl(u, cls = "") {
@@ -408,12 +437,18 @@ input { font: inherit; color: var(--ink); }
           b.onclick = () => toggleReact(m, e);
           tools.append(b);
         }
+        if (iOwn()) {
+          const d = document.createElement("button"); d.textContent = "🗑"; d.title = "Видалити повідомлення";
+          d.onclick = () => { if (confirm("Видалити це повідомлення для всіх?")) doAdmin({ a: "del", id: m.id, chan: m.chan }); };
+          tools.append(d);
+        }
         row.append(tools);
       }
       box.append(row);
       prev = m;
     }
     if (atBottom || box.dataset.chan !== chan) box.scrollTop = box.scrollHeight;
+    else if (box.dataset.chan === chan) $("toBottom").hidden = false;
     box.dataset.chan = chan;
   }
 
@@ -428,7 +463,12 @@ input { font: inherit; color: var(--ink); }
       const n = document.createElement("div"); n.style.minWidth = "0";
       const nm = document.createElement("div"); nm.className = "nm"; nm.style.color = u.color; nm.textContent = u.nick + (id === myId ? " (ти)" : "");
       n.append(nm);
-      if (u.host) { const t = document.createElement("div"); t.className = "tag"; t.textContent = "👑 власник"; n.append(t); }
+      const tags = [];
+      if (u.pub && u.pub === meta.owner) tags.push("👑 адмін");
+      if (u.host) tags.push("🖥️ тримає сервер");
+      if (u.pub && isMuted(u.pub)) tags.push("🔇 заглушений");
+      if (tags.length) { const t = document.createElement("div"); t.className = "tag"; t.textContent = tags.join(" · "); n.append(t); }
+      if (iOwn() && id !== myId) { r.classList.add("can"); r.title = "Керувати учасником"; r.onclick = () => memberMenu(id); }
       r.append(a, n); box.append(r);
     }
   }
@@ -451,7 +491,9 @@ input { font: inherit; color: var(--ink); }
       b.textContent = code.slice(0, 2); list.append(b);
       $("srvHome").classList.remove("on");
     } else $("srvHome").classList.add("on");
-    $("srvName").textContent = code ? "Сервер " + code : "ДіноКорд";
+    $("srvName").textContent = code ? (adm.name || "Сервер " + code) : "ДіноКорд";
+    $("btnAdmin").hidden = !net || !iOwn();
+    $("btnClear").hidden = !net || !iOwn();
     $("srvCode").textContent = code ? "#" + code : "";
     $("btnLeave").hidden = !net;
   }
@@ -459,14 +501,18 @@ input { font: inherit; color: var(--ink); }
   function renderAll() { renderChans(); renderMsgs(); renderMembers(); renderTyping(); renderRail(); }
 
   // ---------- state changes (same on every peer; host relays) ----------
-  function addMsg(m) {
+  function addMsg(m, verified) {
     if (!m || !history[m.chan] || typeof m.id !== "string") return;
+    if (m.chan === OWN && !verified) return;
+    if (adm.deleted.has(m.id) || Number(m.t) <= (adm.cleared[m.chan] || 0)) return;
     if (history[m.chan].some(x => x.id === m.id)) return;
     const msg = { id: m.id.slice(0, 40), chan: m.chan, from: String(m.from || ""), nick: clean(m.nick, 16) || "Динозаврик",
       ava: clean(m.ava, 4) || "🦖", color: /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#888",
-      text: clean(m.text, 500), t: Number(m.t) || Date.now(), sys: !!m.sys, reacts: {} };
+      text: clean(m.text, 500), t: Number(m.t) || Date.now(), sys: !!m.sys, reacts: sanitizeReacts(m.reacts) };
+    if (typeof m.sig === "string") msg.sig = m.sig.slice(0, 200);
     if (!msg.text) return;
     history[m.chan].push(msg);
+    if (history[m.chan].length > 1 && history[m.chan].at(-2).t > msg.t) history[m.chan].sort((a, b) => a.t - b.t);
     if (history[m.chan].length > MAX_HIST) history[m.chan].shift();
     saveHist();
     typing.delete(msg.from);
@@ -486,6 +532,199 @@ input { font: inherit; color: var(--ink); }
     if (r.chan === chan) renderMsgs();
   }
 
+  // ---------- owner channel: the server's creator signs every post with a key only their browser has ----------
+  const OWN = "own";
+  let myKeys = null, myPub = "", meta = {}, ownerKeyCache = null;
+  const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const unb64 = str => Uint8Array.from(atob(str), ch => ch.charCodeAt(0));
+  const ALG = { name: "ECDSA", namedCurve: "P-256" }, SIG = { name: "ECDSA", hash: "SHA-256" };
+  const signed = m => new TextEncoder().encode([m.id, m.chan, m.t, clean(m.text, 500), clean(m.nick, 16)].join("\u0001"));
+  const iOwn = () => !!myPub && meta.owner === myPub;
+
+  async function loadKeys() {
+    if (!window.crypto?.subtle) return;
+    try {
+      const saved = store.get("key", null);
+      if (saved?.priv && saved?.pub) {
+        myKeys = { privateKey: await crypto.subtle.importKey("jwk", saved.priv, ALG, false, ["sign"]) };
+        myPub = saved.pub.x + "." + saved.pub.y;
+      } else {
+        const k = await crypto.subtle.generateKey(ALG, true, ["sign", "verify"]);
+        const priv = await crypto.subtle.exportKey("jwk", k.privateKey), pub = await crypto.subtle.exportKey("jwk", k.publicKey);
+        store.set("key", { priv, pub });
+        myKeys = k; myPub = pub.x + "." + pub.y;
+      }
+    } catch { myKeys = null; myPub = ""; }
+  }
+
+  async function ownerKey() {
+    if (!meta.owner) return null;
+    if (ownerKeyCache?.id === meta.owner) return ownerKeyCache.key;
+    const [x, y] = meta.owner.split(".");
+    const key = await crypto.subtle.importKey("jwk", { kty: "EC", crv: "P-256", x, y, ext: true }, ALG, false, ["verify"]);
+    ownerKeyCache = { id: meta.owner, key };
+    return key;
+  }
+
+  async function addChecked(m) {
+    if (!m || m.chan !== OWN) { addMsg(m); return; }
+    try {
+      const key = await ownerKey();
+      if (key && typeof m.sig === "string" && await crypto.subtle.verify(SIG, key, unb64(m.sig), signed(m))) addMsg(m, true);
+    } catch {}
+  }
+
+  const validPub = v => typeof v === "string" && /^[\w-]{20,60}\.[\w-]{20,60}$/.test(v);
+
+  function setMeta(next) {
+    // the first owner a server ever had stays its owner
+    if (!meta.owner && validPub(next?.owner)) meta = { owner: next.owner, acts: meta.acts || [] };
+    if (code) store.set("meta-" + code, meta);
+    if (Array.isArray(next?.acts)) addActs(next.acts);
+    renderChans(); renderRail();
+  }
+
+  // ---------- admin: every action is signed by the owner's key and replayed by everyone ----------
+  let acts = [];
+  const seenSigs = new Set();
+  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {} };
+  const isMuted = pub => (adm.mutes.get(pub)?.until || 0) > Date.now();
+  const isBanned = pub => !!pub && adm.bans.has(pub);
+  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear"];
+
+  function resetAdmin() {
+    acts = []; seenSigs.clear();
+    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {};
+  }
+
+  async function addActs(list) {
+    const fresh = [];
+    let key = null;
+    try { key = await ownerKey(); } catch {}
+    if (!key) return fresh;
+    for (const a of list.slice(-300)) {
+      if (!a || typeof a.p !== "string" || typeof a.s !== "string" || a.p.length > 600 || seenSigs.has(a.s)) continue;
+      let d;
+      try {
+        if (!await crypto.subtle.verify(SIG, key, unb64(a.s), new TextEncoder().encode(a.p))) continue;
+        d = JSON.parse(a.p);
+      } catch { continue; }
+      if (!d || !ADM_ACTS.includes(d.a) || !Number.isFinite(d.ts)) continue;
+      seenSigs.add(a.s);
+      acts.push({ p: a.p, s: a.s, d });
+      fresh.push(d);
+    }
+    if (fresh.length) applyAdmin();
+    return fresh;
+  }
+
+  function applyAdmin() {
+    acts.sort((x, y) => x.d.ts - y.d.ts);
+    if (acts.length > 300) acts.splice(0, acts.length - 300);
+    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {};
+    for (const { d } of acts) {
+      if (d.a === "rename") adm.name = clean(d.name, 24);
+      else if (d.a === "ban" && validPub(d.pub)) { adm.bans.set(d.pub, clean(d.nick, 16)); adm.mutes.delete(d.pub); }
+      else if (d.a === "unban") adm.bans.delete(d.pub);
+      else if (d.a === "mute" && validPub(d.pub)) adm.mutes.set(d.pub, { until: Number(d.until) || 0, nick: clean(d.nick, 16) });
+      else if (d.a === "unmute") adm.mutes.delete(d.pub);
+      else if (d.a === "del" && typeof d.id === "string") adm.deleted.add(d.id);
+      else if (d.a === "clear" && history[d.chan]) adm.cleared[d.chan] = Math.max(adm.cleared[d.chan] || 0, d.ts);
+    }
+    for (const c of CHANNELS) {
+      const cut = adm.cleared[c.id] || 0;
+      history[c.id] = history[c.id].filter(m => !adm.deleted.has(m.id) && m.t > cut);
+    }
+    meta.acts = acts.map(({ p, s }) => ({ p, s }));
+    if (code) store.set("meta-" + code, meta);
+    saveHist();
+    renderAll();
+  }
+
+  async function doAdmin(d) {
+    if (!net || !iOwn() || !myKeys) return;
+    d.ts = Date.now(); d.n = Math.random().toString(36).slice(2, 8);
+    const p = JSON.stringify(d);
+    const s = b64(await crypto.subtle.sign(SIG, myKeys.privateKey, new TextEncoder().encode(p)));
+    const fresh = await addActs([{ p, s }]);
+    net?.send({ t: "admin", act: { p, s } });
+    fresh.forEach(enforce);
+  }
+
+  function enforce(d) {
+    // kicks only count while fresh; bans and mutes hold until lifted
+    if (d.a !== "ban" && d.a !== "kick" && d.a !== "mute") return;
+    if (d.a === "kick" && Date.now() - d.ts > 60000) return;
+    const me1 = (d.pub && d.pub === myPub) || (d.a === "kick" && d.peer === myId);
+    if (me1 && !iOwn() && d.a !== "mute") { store.set("lastCode", ""); leave(d.a === "ban" ? "Адмін заблокував тебе на цьому сервері." : "Адмін вигнав тебе з сервера."); return; }
+    if (isHost && d.a !== "mute") for (const c of hostConns) if ((d.pub && c.pub === d.pub) || (d.a === "kick" && c.peer === d.peer)) { c.send({ t: "kicked", ban: d.a === "ban" }); setTimeout(() => c.close(), 300); }
+    renderChans(); renderMembers();
+  }
+
+  // a guest proves which key is theirs by signing their connection id
+  async function helloProof(id) {
+    if (!myKeys || !myPub) return null;
+    return b64(await crypto.subtle.sign(SIG, myKeys.privateKey, new TextEncoder().encode("hello|" + id)));
+  }
+  async function checkProof(pub, proof, id) {
+    if (!validPub(pub) || typeof proof !== "string") return "";
+    try {
+      const [x, y] = pub.split(".");
+      const key = await crypto.subtle.importKey("jwk", { kty: "EC", crv: "P-256", x, y, ext: true }, ALG, false, ["verify"]);
+      return await crypto.subtle.verify(SIG, key, unb64(proof), new TextEncoder().encode("hello|" + id)) ? pub : "";
+    } catch { return ""; }
+  }
+
+  // ---------- admin UI ----------
+  function openAdmin(title, sub, fill) {
+    $("admTitle").textContent = title; $("admSub").textContent = sub;
+    const body = $("admBody"); body.innerHTML = ""; fill(body);
+    $("ovAdmin").hidden = false;
+  }
+  const admBtn = (body, text, cls, fn) => { const b = document.createElement("button"); b.className = "btn " + cls; b.textContent = text; b.onclick = () => { $("ovAdmin").hidden = true; fn(); }; body.append(b); };
+
+  function memberMenu(id) {
+    const u = members.get(id); if (!u) return;
+    const pub = u.pub;
+    openAdmin(u.nick, pub ? "Що зробити з цим учасником?" : "Цей учасник зайшов зі старої версії, тому його можна тільки вигнати.", body => {
+      if (pub) {
+        if (isMuted(pub)) admBtn(body, "🔊 Дозволити писати", "sec", () => doAdmin({ a: "unmute", pub }));
+        else {
+          admBtn(body, "🔇 Заглушити на 10 хвилин", "sec", () => doAdmin({ a: "mute", pub, nick: u.nick, until: Date.now() + 10 * 60e3 }));
+          admBtn(body, "🔇 Заглушити на 1 годину", "sec", () => doAdmin({ a: "mute", pub, nick: u.nick, until: Date.now() + 60 * 60e3 }));
+          admBtn(body, "🔇 Заглушити на добу", "sec", () => doAdmin({ a: "mute", pub, nick: u.nick, until: Date.now() + 24 * 3600e3 }));
+        }
+      }
+      admBtn(body, "👢 Вигнати з сервера", "sec", () => { doAdmin({ a: "kick", pub, peer: id }); sysMsg(u.nick + " вигнаний адміном."); });
+      if (pub) admBtn(body, "⛔ Заблокувати назавжди", "danger", () => { if (confirm("Заблокувати " + u.nick + "? Він не зможе повернутися на сервер.")) { doAdmin({ a: "ban", pub, nick: u.nick }); sysMsg(u.nick + " заблокований адміном."); } });
+    });
+  }
+
+  function serverSettings() {
+    openAdmin("Налаштування сервера", "Це бачиш тільки ти як адмін.", body => {
+      const lab = document.createElement("h3"); lab.textContent = "Назва сервера"; body.append(lab);
+      const row = document.createElement("div"); row.className = "adm-row";
+      const inp = document.createElement("input"); inp.maxLength = 24; inp.value = adm.name || ""; inp.placeholder = "Сервер " + code; inp.style.flex = "1";
+      const ok = document.createElement("button"); ok.textContent = "Зберегти";
+      ok.onclick = () => { $("ovAdmin").hidden = true; doAdmin({ a: "rename", name: clean(inp.value, 24) }); };
+      row.append(inp, ok); body.append(row);
+      const list = (title, map, empty, undo, label) => {
+        const h = document.createElement("h3"); h.textContent = title; body.append(h);
+        const items = [...map.entries()].filter(([, v]) => label(v) !== null);
+        if (!items.length) { const e = document.createElement("div"); e.className = "adm-row"; e.innerHTML = "<span></span>"; e.firstChild.textContent = empty; body.append(e); return; }
+        for (const [pub, v] of items) {
+          const r = document.createElement("div"); r.className = "adm-row";
+          const sp = document.createElement("span"); sp.textContent = label(v);
+          const b = document.createElement("button"); b.textContent = undo.text;
+          b.onclick = () => { $("ovAdmin").hidden = true; doAdmin({ a: undo.a, pub }); };
+          r.append(sp, b); body.append(r);
+        }
+      };
+      list("Заблоковані", adm.bans, "Нікого не заблоковано", { a: "unban", text: "Розблокувати" }, nick => nick || "Без імені");
+      list("Заглушені", adm.mutes, "Ніхто не заглушений", { a: "unmute", text: "Дозволити" }, v => v.until > Date.now() ? (v.nick || "Без імені") + " · до " + fmtTime(v.until) : null);
+    });
+  }
+
   // ---------- history kept in every browser, so a chat survives closing the tab ----------
   let saveTimer = 0;
   function saveHist() {
@@ -503,6 +742,7 @@ input { font: inherit; color: var(--ink); }
       const arr = Array.isArray(h[c.id]) ? h[c.id].slice(-MAX_HIST) : [];
       for (const m of arr) {
         if (!m || m.chan !== c.id) continue;
+        if (c.id === OWN) { if (!history[OWN].some(x => x.id === m.id)) addChecked(m); continue; }
         addMsg(m);
         const mine = history[c.id].find(x => x.id === m.id);
         const theirs = sanitizeReacts(m.reacts);
@@ -518,7 +758,7 @@ input { font: inherit; color: var(--ink); }
   function setMember(id, u) {
     const was = members.has(id);
     members.set(id, { nick: clean(u.nick, 16) || "Динозаврик", ava: clean(u.ava, 4) || "🦖",
-      color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888", host: !!u.host });
+      color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888", host: !!u.host, pub: validPub(u.pub) ? u.pub : "" });
     renderMembers();
     return !was;
   }
@@ -531,6 +771,7 @@ input { font: inherit; color: var(--ink); }
     renderMembers(); renderTyping();
   }
 
+  let hostConns = new Set();
   let seq = 0;
   const newId = () => myId + "-" + Date.now().toString(36) + "-" + (seq++);
   function sysMsg(text) {
@@ -560,14 +801,29 @@ input { font: inherit; color: var(--ink); }
     if (!msg || typeof msg !== "object") return;
     if (msg.t === "hello" && isHost && fromConn) {
       fromConn.uid = fromConn.peer;
-      mergeHist(msg.hist);
-      const fresh = setMember(fromConn.peer, msg.u || {});
-      fromConn.send({ t: "sync", history, members: [...members.entries()], voice: [...voice.entries()], live: [...live.entries()] });
-      relay({ t: "member", id: fromConn.peer, u: members.get(fromConn.peer) }, fromConn, conns);
-      if (fresh) sysMsg(members.get(fromConn.peer).nick + " приєднався до сервера! 🦖");
+      checkProof(msg.pub, msg.proof, fromConn.peer).then(pub => {
+        fromConn.pub = pub;
+        if (isBanned(pub)) { fromConn.send({ t: "kicked", ban: true }); setTimeout(() => fromConn.close(), 300); return; }
+        welcome(msg, fromConn, conns, pub);
+      });
       return;
     }
+    if (msg.t === "kicked" && !isHost) { store.set("lastCode", ""); leave(msg.ban ? "Адмін заблокував тебе на цьому сервері." : "Адмін вигнав тебе з сервера."); return; }
+    handleRest(msg, fromConn, conns);
+  }
+
+  function welcome(msg, fromConn, conns, pub) {
+      setMeta(msg.meta);
+      mergeHist(msg.hist);
+      const fresh = setMember(fromConn.peer, { ...(msg.u || {}), pub });
+      fromConn.send({ t: "sync", meta, history, members: [...members.entries()], voice: [...voice.entries()], live: [...live.entries()] });
+      relay({ t: "member", id: fromConn.peer, u: members.get(fromConn.peer) }, fromConn, conns);
+      if (fresh) sysMsg(members.get(fromConn.peer).nick + " приєднався до сервера! 🦖");
+  }
+
+  function handleRest(msg, fromConn, conns) {
     if (msg.t === "sync" && !isHost) {
+      setMeta(msg.meta);
       mergeHist(msg.history);
       CHANNELS.forEach(c => { unread[c.id] = 0; });
       members.clear();
@@ -581,9 +837,21 @@ input { font: inherit; color: var(--ink); }
     }
     // from a guest, trust only its own connection id
     const sender = isHost && fromConn ? fromConn.peer : null;
-    if (msg.t === "msg") { if (!msg.m || typeof msg.m !== "object") return; if (sender) msg.m.from = sender; addMsg(msg.m); }
+    if (msg.t === "msg") {
+      if (!msg.m || typeof msg.m !== "object") return;
+      if (sender) { if (fromConn.pub && isMuted(fromConn.pub)) return; msg.m.from = sender; }
+      addChecked(msg.m);
+    }
+    else if (msg.t === "admin") {
+      if (!msg.act) return;
+      addActs([msg.act]).then(f => f.forEach(enforce));
+    }
     else if (msg.t === "react") { if (!msg.r || typeof msg.r !== "object") return; if (sender) msg.r.who = sender; applyReact(msg.r); }
-    else if (msg.t === "member") { const id = sender || msg.id; setMember(id, msg.u || {}); msg.id = id; }
+    else if (msg.t === "member") {
+      const id = sender || msg.id;
+      if (sender) msg.u = { ...(msg.u || {}), pub: members.get(id)?.pub || "" };
+      setMember(id, msg.u || {}); msg.id = id;
+    }
     else if (msg.t === "typing") { const id = sender || msg.id; msg.id = id; typing.set(id, { chan: msg.chan, until: Date.now() + 4000 }); renderTyping(); }
     else if (msg.t === "live") {
       const id = sender || msg.id; msg.id = id;
@@ -621,6 +889,7 @@ input { font: inherit; color: var(--ink); }
 
   function makeNet(peer, hostConn) {
     const conns = new Set();
+    hostConns = hostConn ? new Set() : conns;
     const wire = c => {
       c.on("data", d => handle(d, hostConn ? null : c, conns));
       c.on("close", () => {
@@ -668,8 +937,7 @@ input { font: inherit; color: var(--ink); }
           conn.on("open", () => {
             clearTimeout(timer); peer.off("error", fail); peer.on("error", () => {});
             const n = makeNet(peer, conn);
-            conn.send({ t: "hello", u: me, hist: history });
-            res(n);
+            helloProof(id).then(proof => { conn.send({ t: "hello", u: me, hist: history, meta, pub: myPub, proof }); res(n); });
           });
         });
       });
@@ -686,7 +954,8 @@ input { font: inherit; color: var(--ink); }
     setStatus(auto ? "Повертаюсь на сервер " + c + "…" : "Підключаюсь…");
     // start from what this browser remembers about the server
     CHANNELS.forEach(x => { history[x.id] = []; unread[x.id] = 0; });
-    code = c; mergeHist(store.get("hist-" + c, null)); code = "";
+    meta = {}; ownerKeyCache = null; resetAdmin();
+    code = c; setMeta(store.get("meta-" + c, null)); mergeHist(store.get("hist-" + c, null)); code = "";
     try {
       try { net = await connect(c, create); }
       catch (e) {
@@ -704,10 +973,12 @@ input { font: inherit; color: var(--ink); }
       return;
     }
     code = c; isHost = create;
+    if (isHost && !meta.owner && myPub) setMeta({ owner: myPub });
+    else setMeta(null);
     saveHist();
     store.set("lastCode", code);
     members.clear();
-    setMember(myId, { ...me, host: isHost });
+    setMember(myId, { ...me, host: isHost, pub: myPub });
     if (isHost) sysMsg(hasHist(c) && history.general.length > 1 ? me.nick + " повернув сервер онлайн 🦖" : "Сервер створено! Код для друзів: " + code);
     $("ovJoin").hidden = true;
     $("text").disabled = false;
@@ -737,8 +1008,8 @@ input { font: inherit; color: var(--ink); }
     if (!net) { code = c; leaveUi("Сервер " + c + " зараз недоступний. Натисни «Приєднатися», щоб спробувати ще раз."); return; }
     code = c;
     members.clear();
-    setMember(myId, { ...me, host: isHost });
-    if (isHost) sysMsg(me.nick + " тепер власник сервера.");
+    setMember(myId, { ...me, host: isHost, pub: myPub });
+    if (isHost) sysMsg(me.nick + " тепер тримає сервер.");
     $("text").disabled = false;
     renderAll(); renderLiveBtns();
   }
@@ -921,7 +1192,7 @@ input { font: inherit; color: var(--ink); }
   };
 
   function sysLocal(text) {
-    addMsg({ id: newId(), chan, from: "sys", nick: "ДіноБот", ava: "📢", color: "#888888", text, t: Date.now(), sys: true });
+    addMsg({ id: newId(), chan: chan === OWN ? "general" : chan, from: "sys", nick: "ДіноБот", ava: "📢", color: "#888888", text, t: Date.now(), sys: true });
   }
 
   const setStatus = (t, bad) => { $("joinStatus").textContent = t; $("joinStatus").className = "status" + (bad ? " bad" : ""); };
@@ -931,9 +1202,11 @@ input { font: inherit; color: var(--ink); }
     e.preventDefault();
     const text = clean($("text").value, 500);
     if (!text || !net) return;
+    if (chan === OWN && !iOwn()) return;
     $("text").value = "";
     const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text, t: Date.now() };
-    addMsg(m); net.send({ t: "msg", m });
+    if (chan !== OWN) { addMsg(m); net.send({ t: "msg", m }); }
+    else crypto.subtle.sign(SIG, myKeys.privateKey, signed(m)).then(sig => { m.sig = b64(sig); addMsg(m, true); net?.send({ t: "msg", m }); });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   });
   let lastTyping = 0;
@@ -951,7 +1224,7 @@ input { font: inherit; color: var(--ink); }
     store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
     renderMe();
     if (!net) return;
-    setMember(myId, { ...me, host: isHost });
+    setMember(myId, { ...me, host: isHost, pub: myPub });
     net.send({ t: "member", id: myId, u: members.get(myId) });
   }
   $("nick").addEventListener("change", () => { me.nick = clean($("nick").value, 16) || "Динозаврик"; pushMe(); });
@@ -975,6 +1248,10 @@ input { font: inherit; color: var(--ink); }
   $("srvHome").onclick = () => { if (!net) $("ovJoin").hidden = false; };
   $("btnLeave").onclick = () => { if (confirm("Вийти з сервера?")) leave(); };
   $("btnMenu").onclick = () => $("app").classList.toggle("drawer");
+  $("btnAdmin").onclick = serverSettings;
+  $("btnClear").onclick = () => { const c = CHANNELS.find(c => c.id === chan); if (confirm("Видалити всі повідомлення в #" + c.name + " для всіх?")) doAdmin({ a: "clear", chan }); };
+  $("admClose").onclick = () => { $("ovAdmin").hidden = true; };
+  setInterval(() => { if (net && myPub && adm.mutes.has(myPub)) renderChans(); }, 15000);
   $("msgs").addEventListener("click", () => $("app").classList.remove("drawer"));
 
   const themes = ["auto", "dark", "light"];
@@ -990,10 +1267,26 @@ input { font: inherit; color: var(--ink); }
   });
   setInterval(renderTyping, 1000);
 
+  // iPad/iPhone: keep the app exactly the size of what's visible, so the keyboard never pushes the header off screen
+  const vv = window.visualViewport;
+  const fitViewport = () => {
+    document.documentElement.style.setProperty("--vh", Math.round(vv ? vv.height : window.innerHeight) + "px");
+    window.scrollTo(0, 0);
+  };
+  (vv || window).addEventListener("resize", fitViewport);
+  vv?.addEventListener("scroll", fitViewport);
+  fitViewport();
+
+  $("msgs").addEventListener("scroll", () => {
+    const box = $("msgs");
+    if (box.scrollHeight - box.scrollTop - box.clientHeight < 60) $("toBottom").hidden = true;
+  });
+  $("toBottom").onclick = () => { const box = $("msgs"); box.scrollTo({ top: box.scrollHeight, behavior: "smooth" }); $("toBottom").hidden = true; };
+
   const hashCode = (location.hash.match(/\d{4,6}/) || [])[0];
   $("joinCode").value = hashCode || store.get("lastCode", "");
   renderMe(); renderAll();
-  if ($("joinCode").value.length >= 4 && (hashCode || hasHist($("joinCode").value))) enter(false, true);
+  loadKeys().then(() => { if ($("joinCode").value.length >= 4 && (hashCode || hasHist($("joinCode").value))) enter(false, true); });
 })();
 </script>
 </body>
