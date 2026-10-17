@@ -1,0 +1,1082 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Динозаврик 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Rubik:wght@400;500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<style>
+/* Layout: one centred column — game screen first, then skin wardrobe and settings under it */
+:root {
+  --bg: #e9edf2;
+  --panel: #f7f9fb;
+  --ink: #252a31;
+  --muted: #6a7380;
+  --line: #c9d0d9;
+  --accent: #d48a00;
+  --sky: #f7f9fb;
+  --ground: #535a64;
+  --danger: #c4372b;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11141a; --panel: #191d25; --ink: #dfe4ec; --muted: #8b95a3; --line: #2c333e;
+    --accent: #ffbf3a; --sky: #171b22; --ground: #a3acb8; --danger: #ff6b5c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11141a; --panel: #191d25; --ink: #dfe4ec; --muted: #8b95a3; --line: #2c333e;
+  --accent: #ffbf3a; --sky: #171b22; --ground: #a3acb8; --danger: #ff6b5c; color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 5vw, 38px); margin: 0; letter-spacing: .02em; text-wrap: balance; }
+h1 .rev { color: var(--accent); }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+kbd { font-family: var(--display); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--panel); }
+
+.screen { position: relative; border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; background: #9fd4ef; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.screen { aspect-ratio: 2 / 1; max-width: 100%; }
+@media (max-width: 600px) { .screen { aspect-ratio: 4 / 3; } }
+canvas#game { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: pointer; }
+.hud { position: absolute; top: 10px; left: 14px; right: 14px; display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; pointer-events: none;
+  font-family: var(--display); font-size: clamp(14px, 2.4vw, 20px); font-variant-numeric: tabular-nums; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.45), 0 0 6px rgba(0,0,0,.35); }
+.hud .rec { opacity: .8; }
+.hud .blink { color: #ffd84d; }
+.hud .coin { color: #ffd84d; }
+.hud .sh { color: #8cc0ff; }
+.hud .db { color: #7dffa4; }
+.hud .rain { color: #ff8a80; margin-left: auto; }
+.hud .flip { color: #ffd84d; }
+.banner { position: absolute; left: 0; right: 0; top: 22%; text-align: center; pointer-events: none; font-family: var(--display); font-weight: 700; font-size: clamp(18px, 4vw, 34px); text-shadow: 0 2px 0 rgba(0,0,0,.5); }
+.msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 22px; border-radius: 8px; background: rgba(12, 16, 26, .62); color: #fff; text-align: center; pointer-events: none; max-width: calc(100% - 32px); }
+.msg b { font-family: var(--display); font-size: clamp(18px, 3.4vw, 28px); }
+.msg span { font-size: 14px; opacity: .85; }
+#pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.pop { position: absolute; left: 0; top: 0; font-family: var(--display); font-weight: 700; font-size: 16px; white-space: nowrap; text-shadow: 0 2px 0 rgba(0,0,0,.5); }
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 16px; text-align: center; color: #fff; background: #20252e; }
+
+.touch { display: none; gap: 10px; }
+@media (pointer: coarse) { .touch { display: grid; grid-template-columns: 1fr 1fr; } }
+.touch button { font-family: var(--display); font-size: 18px; padding: 16px 0; border-radius: 6px; border: 2px solid var(--ink); background: var(--panel); color: var(--ink); touch-action: none; }
+.touch button:active { background: var(--accent); color: #1b1300; }
+
+section h2 { font-family: var(--display); font-weight: 500; font-size: 20px; margin: 0 0 4px; }
+section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.skin { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 8px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; color: var(--ink); font: inherit; cursor: pointer; }
+.skin canvas { width: 72px; height: 72px; }
+.skin .name { font-weight: 600; font-size: 14px; }
+.skin .req { font-family: var(--display); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.skin[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.skin[aria-pressed="true"] .req { color: var(--accent); }
+.skin.locked { cursor: not-allowed; }
+.skin.locked.buy { cursor: pointer; border-style: dashed; border-color: var(--accent); }
+.skin.locked.buy canvas { filter: grayscale(1) opacity(.6); }
+.skin.locked canvas { filter: brightness(0) opacity(.25); }
+.skin:focus-visible, .touch button:focus-visible, .opt input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px 28px; }
+.duo section { min-width: 0; }
+.quests, .board { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.quest { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; padding: 10px 12px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; }
+.quest.done { border-color: var(--accent); }
+.quest .qt { font-weight: 500; min-width: 0; }
+.quest .bar { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.quest .bar i { display: block; height: 100%; background: var(--accent); }
+.quest .qp { font-family: var(--display); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.quest button { font-family: var(--display); font-size: 14px; padding: 4px 10px; border-radius: 5px; border: 2px solid var(--accent); background: var(--accent); color: #1b1300; cursor: pointer; }
+.quest button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.board li { display: grid; grid-template-columns: 2.2em 1fr auto; gap: 10px; align-items: baseline; padding: 7px 12px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; }
+.board li.me { border-color: var(--accent); }
+.board .rk { font-family: var(--display); color: var(--muted); font-variant-numeric: tabular-nums; }
+.board li:nth-child(1) .rk { color: var(--accent); }
+.board .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .nm small { color: var(--muted); margin-left: 6px; }
+.board .sc { font-family: var(--display); font-variant-numeric: tabular-nums; font-size: 17px; }
+.board .empty { grid-template-columns: 1fr; color: var(--muted); }
+.opts { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.opt { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.opt input { width: 18px; height: 18px; accent-color: var(--accent); }
+.stats { font-family: var(--display); font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
+.stats b { color: var(--ink); font-weight: 500; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Динозаврик <span class="rev">3D</span></h1>
+    <p class="hint">Воксельний динозаврик біжить уперед. <kbd>Пробіл</kbd>/<kbd>↑</kbd> стрибок, <kbd>↓</kbd> пригнутись, <kbd>P</kbd> пауза. На телефоні тапни екран. Збирай монети, щит береже від одного удару, ×2 дає подвійний стрибок. Кожні 1000 очок падає метеоритний дощ.</p>
+  </header>
+
+  <div class="screen" id="screen">
+    <div class="hud" aria-live="off">
+      <span class="rec" id="hRec"></span><span id="hScore"></span><span class="coin" id="hCoins"></span>
+      <span class="sh" id="hShield" hidden>ЩИТ</span><span class="db" id="hDbl" hidden></span><span class="flip" id="hFlip" hidden>🙃 ПЕРЕВОРОТ!</span>
+      <span class="rain" id="hRain" hidden></span>
+    </div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="msg" id="msg"><b id="msgA"></b><span id="msgB"></span></div>
+    <div id="pops"></div>
+  </div>
+
+  <div class="touch">
+    <button id="btnDuck" type="button" aria-label="Пригнутись">▼ Пригнутись</button>
+    <button id="btnJump" type="button" aria-label="Стрибок">▲ Стрибок</button>
+  </div>
+
+  <div class="duo">
+    <section>
+      <h2>Завдання дня</h2>
+      <p class="sub">Нові завдання щодня опівночі. Виконав, то забирай монети.</p>
+      <ul class="quests" id="quests"></ul>
+    </section>
+    <section>
+      <h2>Таблиця рекордів</h2>
+      <p class="sub" id="boardNote">Завантаження…</p>
+      <ol class="board" id="board"></ol>
+    </section>
+  </div>
+
+  <section>
+    <h2>Скіни</h2>
+    <p class="sub">Відкриваються за рекорд або купуються за монети ●. <span class="stats">Рекорд: <b id="best">0</b> · Ігор: <b id="games">0</b> · Монет: <b id="coins">0</b></span></p>
+    <div class="skins" id="skins"></div>
+  </section>
+
+  <section>
+    <h2>Налаштування</h2>
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="optFlip"> 🙃 Переворот світу кожні 300 очок</label>
+      <label class="opt"><input type="checkbox" id="optSound" checked> 🔊 Звук</label>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- pixel art (drawn facing right, mirrored for the dino) ----------
+  const TOP = [
+    "           ######## ",
+    "          ##e#######",
+    "          ##########",
+    "          ##########",
+    "          #####     ",
+    "          ########  ",
+    "#        ######     ",
+    "#       #######     ",
+    "##     #########    ",
+    "###   ######## ##   ",
+    "############### #   ",
+    " #############      ",
+    "  ###########       ",
+    "   #########        ",
+    "    #######         ",
+  ];
+  const LEGS_A = ["     ### ##         ", "     ##   #         ", "     #    ##        ", "     ##             "];
+  const LEGS_B = ["     ### ##         ", "     #     #        ", "     ##    #        ", "           ##       "];
+  const LEGS_J = ["     ### ##         ", "     #    #         ", "     #    #         ", "     ##   ##        "];
+  const DUCK_TOP = [
+    "                   ######## ",
+    "#                 ##e#######",
+    "##     ######### ###########",
+    "############################",
+    " ##########################  ",
+    "  ################ #######   ",
+    "   ##############  #         ",
+  ];
+  const DUCK_A = ["    ### ##                  ", "    #    ##                 ", "    ##                      "];
+  const DUCK_B = ["    ### ##                  ", "     #   #                  ", "         ##                 "];
+  const DINO = {
+    runA: TOP.concat(LEGS_A), runB: TOP.concat(LEGS_B), jump: TOP.concat(LEGS_J),
+    duckA: DUCK_TOP.concat(DUCK_A), duckB: DUCK_TOP.concat(DUCK_B),
+    dead: TOP.map(r => r.replace("e", "x")).concat(LEGS_J),
+  };
+  const CACTUS_S = [
+    "   ##   ", "  ####  ", "  ####  ", "# #### #", "# #### #", "# #### #", "########",
+    " ###### ", "  ####  ", "  ####  ", "  ####  ", "  ####  ", "  ####  ", "  ####  ",
+  ];
+  const CACTUS_L = [
+    "    ###    ", "   #####   ", "   #####   ", "## ##### ##", "## ##### ##", "## ##### ##", "## ##### ##",
+    "## ##### ##", "###########", " ######### ", "   #####   ", "   #####   ", "   #####   ", "   #####   ",
+    "   #####   ", "   #####   ", "   #####   ", "   #####   ",
+  ];
+  const BIRD_UP = [
+    "     ##           ", "     ###          ", "     ####     ##  ", "     #####   #e## ",
+    "   ################", "  ###########     ", "         ######   ",
+  ];
+  const BIRD_DN = [
+    "              ##  ", "             #e## ", "   ################", "  ###########     ",
+    "     #####        ", "     ####         ", "     ###          ",
+  ];
+  // Accessories are placed in dino-grid coordinates (standing pose); duck pose shifts them.
+  const ACC = {
+    helmet: { rows: ["           #########", "          ###########"], y: -2, x: 0 },
+    goggles: { rows: ["            ###"], y: 1, x: 0 },
+    crown: { rows: ["            # ## #", "            ######", "            ######"], y: -3, x: 0 },
+    horns: { rows: ["           #     # ", "           ##   ## "], y: -2, x: 0 },
+    bandage: { rows: ["          ##########"], y: 3, x: 0 },
+    headband: { rows: ["          ##########", "         ##         ", "        ##          "], y: 2, x: 0 },
+    antenna: { rows: ["             ###", "              # ", "              # "], y: -3, x: 0 },
+  };
+  const COIN = [" #### ", "##..##", "#.##.#", "#.##.#", "##..##", " #### "];
+
+  // ---------- skins ----------
+  const SKINS = [
+    { id: "classic", name: "Класичний", need: 0, body: "ink" },
+    { id: "neon", name: "Неон", need: 100, body: "#1ee8c0", glow: "#1ee8c0" },
+    { id: "airsoft", name: "Страйкболіст", need: 250, body: "#5d6e3b", camo: "#3f4b26", acc: [["helmet", "#4a5530"], ["goggles", "#ffb000"]] },
+    { id: "zombie", name: "Зомбі", need: 500, body: "#79a865", eye: "#ff2a2a", acc: [["bandage", "#e9e2cf"]] },
+    { id: "gold", name: "Золотий", need: 800, body: "#e3b021", glow: "#ffd34d", acc: [["crown", "#ff3d6e"]] },
+    { id: "lava", name: "Лава", need: 1200, body: "#ff5a2c", eye: "#fff2a8", acc: [["horns", "#2b1a14"]], trail: "fire" },
+    { id: "ghost", name: "Привид", need: 1600, body: "#e8f0ff", alpha: .7, glow: "#b9cfff", trail: "ghost" },
+    { id: "rainbow", name: "Райдуга", need: 2500, body: "rainbow", trail: "rainbow" },
+    { id: "ninja", name: "Ніндзя", need: 3500, body: "#1d1f24", eye: "#ffffff", acc: [["headband", "#e0262f"]] },
+    { id: "robot", name: "Робот", need: 5000, body: "#8e9aab", camo: "#6b7686", eye: "#29e3ff", glow: "#29e3ff", acc: [["antenna", "#ff4d4d"]] },
+  ];
+  // Locked skins can also be bought with coins collected in runs.
+  const price = s => Math.round(s.need / 10);
+
+  // ---------- storage (optional) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("dinorev:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("dinorev:" + k, JSON.stringify(v)); } catch {} },
+  };
+  let best = store.get("best", 0), games = store.get("games", 0);
+  let skinId = store.get("skin", "classic");
+  let coins = store.get("coins", 0), owned = store.get("owned", []);
+  const hasSkin = s => best >= s.need || owned.includes(s.id);
+  const optFlip = document.getElementById("optFlip"), optSound = document.getElementById("optSound");
+  optFlip.checked = store.get("flip", false);
+  optSound.checked = store.get("sound", true);
+  optFlip.onchange = () => store.set("flip", optFlip.checked);
+  optSound.onchange = () => store.set("sound", optSound.checked);
+
+  // ---------- theme colours from CSS tokens ----------
+  let C = {};
+  const readColors = () => {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["ink", "sky", "ground", "accent", "muted", "danger", "line"]) C[k] = cs.getPropertyValue("--" + k).trim();
+  };
+  readColors();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", readColors);
+  new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ---------- drawing helpers ----------
+  const PX = 3;
+  function drawGrid(ctx, grid, x, y, s, color, opts = {}) {
+    const w = Math.max(...grid.map(r => r.length));
+    ctx.fillStyle = color;
+    for (let r = 0; r < grid.length; r++) {
+      const row = grid[r];
+      for (let c = 0; c < row.length; c++) {
+        const ch = row[c];
+        if (ch === " ") continue;
+        const cc = opts.mirror ? w - 1 - c : c;
+        if (ch === "e" || ch === "x") {
+          ctx.fillStyle = opts.eye || C.sky;
+          ctx.fillRect(x + cc * s, y + r * s, s, s);
+          if (ch === "x") { ctx.fillStyle = color; ctx.fillRect(x + cc * s + s * .3, y + r * s + s * .3, s * .4, s * .4); }
+          ctx.fillStyle = color;
+          continue;
+        }
+        if (ch === ".") ctx.fillStyle = opts.shine || color;
+        else if (opts.camo &&((c * 7 + r * 13) % 5 === 0 || (c * 3 + r * 5) % 11 === 0)) ctx.fillStyle = opts.camo;
+        else if (opts.rainbow) ctx.fillStyle = `hsl(${(opts.hue + c * 9 + r * 6) % 360} 85% 58%)`;
+        else ctx.fillStyle = color;
+        ctx.fillRect(x + cc * s, y + r * s, s + .02, s + .02);
+      }
+    }
+  }
+  const gridW = g => Math.max(...g.map(r => r.length));
+
+  function drawDino(ctx, pose, x, y, s, skin, t) {
+    const grid = DINO[pose];
+    const ducking = pose.startsWith("duck");
+    const body = skin.body === "ink" ? C.ink : skin.body === "rainbow" ? "#f55" : skin.body;
+    ctx.save();
+    if (skin.alpha) ctx.globalAlpha = skin.alpha + Math.sin(t * 6) * .12;
+    if (skin.glow) { ctx.shadowColor = skin.glow; ctx.shadowBlur = 14; }
+    const o = { mirror: true, eye: skin.eye, camo: skin.camo, rainbow: skin.body === "rainbow", hue: t * 160 };
+    drawGrid(ctx, grid, x, y, s, body, o);
+    ctx.shadowBlur = 0;
+    // accessories follow the head: in duck pose the head sits lower and further forward
+    const w = gridW(grid);
+    for (const [name, col] of skin.acc || []) {
+      const a = ACC[name];
+      const dy = ducking ? a.y + 0 : a.y, dx = ducking ? 8 : 0;
+      // pad accessory rows to the full grid width so mirroring lines up with the body
+      const rows = a.rows.map(r => (" ".repeat(dx) + r).padEnd(w, " "));
+      drawGrid(ctx, rows, x, y + dy * s, s, col, { mirror: true });
+    }
+    ctx.restore();
+  }
+
+  // ---------- 3D world ----------
+  // Game logic stays in the old 2D units (px, y grows down); only the picture is 3D.
+  const W = 900, GROUND = 250;
+  const DX = W - 140; // the dino's spot on the track; the world flows toward it
+  const K = 1 / 30, S = PX * K; // logic px -> scene units; S is one voxel
+  const toX = lx => (DX - lx) * K, toY = ly => (GROUND - ly) * K;
+
+  let state = "ready"; // ready | run | dead | pause
+  let dino, obstacles, particles, speed, score, nextGap, t, flipScale, flipTarget, lastFlipAt, flash, deadT;
+  let items, nextItem, runCoins, shield, dbl, invuln, nightT, popups;
+  let rain, rainAt, rainSpawn, meteors, banner, shake = 0;
+  const skin = () => SKINS.find(s => s.id === skinId) || SKINS[0];
+
+  function reset() {
+    dino = { y: 0, vy: 0, duck: false, onGround: true, legT: 0, airJumps: 1 };
+    rain = 0; rainAt = 1000; rainSpawn = 0; meteors = []; banner = null;
+    items = []; nextItem = 900; runCoins = 0; shield = false; dbl = 0; invuln = 0; nightT = 0; popups = [];
+    obstacles = []; particles = [];
+    speed = 380; score = 0; nextGap = 420; t = 0; flipScale = 1; flipTarget = 1; lastFlipAt = 0; flash = 0; deadT = 0;
+  }
+  reset();
+
+  const screenEl = document.getElementById("screen");
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } catch (e) {
+    screenEl.insertAdjacentHTML("beforeend", '<p class="nogl">Цей браузер не показує 3D (WebGL вимкнено). Спробуй інший браузер.</p>');
+    throw e;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const cv = renderer.domElement;
+  cv.id = "game"; cv.setAttribute("aria-label", "Ігрове поле");
+  screenEl.prepend(cv);
+
+  const scene = new THREE.Scene();
+  const DAY = { sky: new THREE.Color("#9fd4ef"), amb: new THREE.Color("#ffffff"), sun: new THREE.Color("#fff1d0") };
+  const NIGHT = { sky: new THREE.Color("#0c1430"), amb: new THREE.Color("#6f83c9"), sun: new THREE.Color("#a9bcff") };
+  scene.background = DAY.sky.clone();
+  scene.fog = new THREE.Fog(DAY.sky.clone(), 20, 60);
+  const camera = new THREE.PerspectiveCamera(50, 2, .1, 200);
+  const PI = Math.PI; // r160 lights are physical: intensity 1 used to mean PI
+  const amb = new THREE.HemisphereLight(0xffffff, 0xc9a46a, .75 * PI);
+  const sun = new THREE.DirectionalLight(0xfff1d0, PI);
+  sun.position.set(-6, 14, 9); sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left: -12, right: 14, top: 14, bottom: -14, near: 1, far: 60 });
+  sun.target.position.set(6, 0, 0);
+  scene.add(amb, sun, sun.target);
+
+  // ---------- voxels ----------
+  // A face is emitted only where the neighbouring voxel is empty, so meshes stay light.
+  const FACES = [];
+  for (const axis of [0, 1, 2]) for (const sgn of [1, -1]) {
+    const n = [0, 0, 0]; n[axis] = sgn;
+    const u = (axis + 1) % 3, v = (axis + 2) % 3;
+    const q = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([a, b]) => { const p = [0, 0, 0]; p[axis] = sgn > 0 ? 1 : 0; p[u] = a; p[v] = b; return p; });
+    FACES.push({ n, tri: (sgn > 0 ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2]).map(i => q[i]) });
+  }
+  // cells: {c, r, col: THREE.Color, zs?: [layers]}; r grows downward from the top edge (local y = 0).
+  // mirror puts column c at -(c+1) so the grid faces -X (toward the dino).
+  function buildVox(cells, depth, mirror) {
+    const key = (c, r, z) => c + "," + r + "," + z, occ = new Set(), all = [...Array(depth).keys()];
+    for (const cl of cells) for (const z of cl.zs || all) occ.add(key(cl.c, cl.r, z));
+    const pos = [], nor = [], col = [], cell = [];
+    for (const cl of cells) for (const z of cl.zs || all) for (const f of FACES) {
+      const dc = mirror ? -f.n[0] : f.n[0];
+      if (occ.has(key(cl.c + dc, cl.r - f.n[1], z + f.n[2]))) continue;
+      const x0 = mirror ? -(cl.c + 1) : cl.c;
+      for (const p of f.tri) {
+        pos.push((x0 + p[0]) * S, (-cl.r - 1 + p[1]) * S, (z + p[2]) * S);
+        nor.push(f.n[0], f.n[1], f.n[2]);
+        col.push(cl.col.r, cl.col.g, cl.col.b);
+        cell.push(cl.c, cl.r);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+    g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+    g.setAttribute("cell", new THREE.Float32BufferAttribute(cell, 2));
+    return g;
+  }
+  const cellsOf = (grid, fn) => {
+    const out = [];
+    grid.forEach((row, r) => [...row].forEach((ch, c) => { if (ch !== " ") { const v = fn(ch, c, r); if (v) out.push({ c, r, ...v }); } }));
+    return out;
+  };
+  const shadowy = m => { m.castShadow = true; m.receiveShadow = true; return m; };
+
+  // cactus: striped trunk through the full depth, thinner arms
+  const cactusCells = (grid, a, b) => cellsOf(grid, (ch, c) => c >= a && c <= b
+    ? { col: new THREE.Color(c % 2 ? "#3c8a44" : "#4fa457") }
+    : { col: new THREE.Color("#46994e"), zs: [1, 2] });
+  const CACTUS_GEO = new Map([[CACTUS_S, buildVox(cactusCells(CACTUS_S, 2, 5), 4, true)], [CACTUS_L, buildVox(cactusCells(CACTUS_L, 3, 7), 4, true)]]);
+  const birdCells = grid => cellsOf(grid, ch => ({ col: new THREE.Color(ch === "e" ? "#ffffff" : "#7c6a92") }));
+  const BIRD_GEO = [buildVox(birdCells(BIRD_UP), 3, true), buildVox(birdCells(BIRD_DN), 3, true)];
+  const vmat = new THREE.MeshLambertMaterial({ vertexColors: true });
+
+  // ---------- dino ----------
+  const POSES = ["runA", "runB", "jump", "duckA", "duckB", "dead"];
+  function dinoCells(pose, sk) {
+    const grid = DINO[pose], ducking = pose.startsWith("duck"), legsFrom = ducking ? DUCK_TOP.length : TOP.length;
+    const body = new THREE.Color(sk.body === "ink" ? "#2b2f36" : sk.body === "rainbow" ? "#ff5555" : sk.body);
+    const eye = new THREE.Color(sk.eye || "#ffffff"), camo = sk.camo && new THREE.Color(sk.camo), dead = new THREE.Color("#d8262b");
+    const map = new Map();
+    for (const cl of cellsOf(grid, (ch, c, r) => {
+      let col = body;
+      if (ch === "e") col = eye; else if (ch === "x") col = dead;
+      else if (camo && ((c * 7 + r * 13) % 5 === 0 || (c * 3 + r * 5) % 11 === 0)) col = camo;
+      // legs a little narrower than the body, the little arms sit on both sides
+      const zs = r >= legsFrom ? [1, 2, 3, 4] : (!ducking && (r === 9 || r === 10) && c >= 15) ? [0, 5] : undefined;
+      return { col, zs };
+    })) map.set(cl.c + "," + cl.r, cl);
+    for (const [name, color] of sk.acc || []) {
+      const a = ACC[name], dx = ducking ? 8 : 0;
+      a.rows.forEach((row, i) => [...row].forEach((ch, c) => {
+        if (ch !== " ") map.set((c + dx) + "," + (a.y + i), { c: c + dx, r: a.y + i, col: new THREE.Color(color) });
+      }));
+    }
+    return [...map.values()];
+  }
+  const dinoGroup = new THREE.Group();
+  dinoGroup.position.set(-20 * S, 0, -3 * S);
+  scene.add(dinoGroup);
+  const dinoGlow = new THREE.PointLight(0xffffff, 0, 5, 1);
+  dinoGlow.position.set(1, 1, 1.2);
+  dinoGroup.add(dinoGlow);
+  let dinoMeshes = {}, dinoMat;
+  function buildDino() {
+    for (const m of Object.values(dinoMeshes)) { dinoGroup.remove(m); m.geometry.dispose(); }
+    dinoMat?.dispose();
+    const sk = skin();
+    dinoMat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: !!sk.alpha, opacity: sk.alpha || 1 });
+    if (sk.glow) dinoMat.emissive = new THREE.Color(sk.glow).multiplyScalar(.3);
+    dinoMeshes = {};
+    for (const p of POSES) { const m = shadowy(new THREE.Mesh(buildVox(dinoCells(p, sk), 6, false), dinoMat)); m.visible = false; dinoGroup.add(m); dinoMeshes[p] = m; }
+    dinoGlow.color.set(sk.glow || "#ffffff");
+    dinoGlow.intensity = sk.glow ? 1.5 * PI : 0;
+  }
+  const tmpC = new THREE.Color();
+  function paintRainbow(mesh) {
+    const col = mesh.geometry.attributes.color, cell = mesh.geometry.attributes.cell;
+    for (let i = 0; i < col.count; i++) {
+      tmpC.setHSL(((t * 160 + cell.getX(i) * 9 + cell.getY(i) * 6) % 360) / 360, .85, .58);
+      col.setXYZ(i, tmpC.r, tmpC.g, tmpC.b);
+    }
+    col.needsUpdate = true;
+  }
+  const bubble = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: "#3d8bff", transparent: true, opacity: .25, depthWrite: false }));
+  scene.add(bubble);
+
+  // ---------- scenery ----------
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 140), new THREE.MeshLambertMaterial({ color: "#e6c88e" }));
+  ground.rotation.x = -Math.PI / 2; ground.position.x = 40; ground.receiveShadow = true;
+  const track = new THREE.Mesh(new THREE.PlaneGeometry(260, 1.4), new THREE.MeshLambertMaterial({ color: "#d3ac6b" }));
+  track.rotation.x = -Math.PI / 2; track.position.set(40, .005, 0); track.receiveShadow = true;
+  scene.add(ground, track);
+  for (const z of [-.72, .72]) {
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(260, .03, .06), new THREE.MeshLambertMaterial({ color: "#6b5536" }));
+    edge.position.set(40, .015, z); scene.add(edge);
+  }
+  const PEB = 90, pebbles = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: "#8f7550" }), PEB);
+  const pebData = Array.from({ length: PEB }, () => ({ x: -10 + Math.random() * 50, z: (Math.random() - .5) * 5, s: .04 + Math.random() * .08 }));
+  scene.add(pebbles);
+  const decor = [];
+  const rockGeo = new THREE.DodecahedronGeometry(.5, 0), rockMat = new THREE.MeshLambertMaterial({ color: "#a08867", flatShading: true });
+  for (let i = 0; i < 26; i++) {
+    const back = Math.random() < .75, isCactus = back && Math.random() < .55;
+    const m = isCactus ? new THREE.Mesh(Math.random() < .5 ? CACTUS_GEO.get(CACTUS_L) : CACTUS_GEO.get(CACTUS_S), vmat) : new THREE.Mesh(rockGeo, rockMat);
+    const s = isCactus ? .6 + Math.random() * .6 : back ? .4 + Math.random() * .9 : .2 + Math.random() * .25;
+    m.scale.setScalar(s);
+    if (isCactus) m.position.y = (CACTUS_L.length * S) * s * (m.geometry === CACTUS_GEO.get(CACTUS_L) ? 1 : CACTUS_S.length / CACTUS_L.length);
+    else { m.position.y = .15 * s; m.rotation.set(Math.random() * 3, Math.random() * 3, 0); }
+    m.position.z = back ? -3.5 - Math.random() * 12 : 2 + Math.random() * 2;
+    m.position.x = -15 + Math.random() * 60;
+    shadowy(m); decor.push(m); scene.add(m);
+  }
+  const clouds = [];
+  const cloudMat = new THREE.MeshLambertMaterial({ color: "#ffffff", emissive: "#ffffff", emissiveIntensity: .35 });
+  for (let i = 0; i < 9; i++) {
+    const g = new THREE.Group();
+    for (let j = 0; j < 3; j++) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(1.6 + Math.random() * 1.6, .5 + Math.random() * .4, 1 + Math.random()), cloudMat);
+      b.position.set(j * 1.1 - 1.1, j === 1 ? .35 : 0, (Math.random() - .5) * .6); g.add(b);
+    }
+    g.position.set(-15 + Math.random() * 70, 6 + Math.random() * 4, -8 - Math.random() * 14);
+    clouds.push(g); scene.add(g);
+  }
+  const mountMat = new THREE.MeshLambertMaterial({ color: "#c79a62", flatShading: true });
+  for (let i = 0; i < 12; i++) {
+    const h = 5 + Math.random() * 9, m = new THREE.Mesh(new THREE.ConeGeometry(h * .9, h, 5), mountMat);
+    m.position.set(-20 + i * 8 + Math.random() * 4, h / 2 - .2, -38 - Math.random() * 10); m.rotation.y = Math.random();
+    scene.add(m);
+  }
+  const starPos = [];
+  for (let i = 0; i < 260; i++) starPos.push(-40 + Math.random() * 120, 8 + Math.random() * 35, -55 - Math.random() * 10);
+  const starGeo = new THREE.BufferGeometry(); starGeo.setAttribute("position", new THREE.Float32BufferAttribute(starPos, 3));
+  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: "#ffffff", size: .35, transparent: true, opacity: 0, fog: false }));
+  scene.add(stars);
+
+  // ---------- game objects ----------
+  const coinGeo = new THREE.CylinderGeometry(.27, .27, .07, 18), coinMat = new THREE.MeshLambertMaterial({ color: "#f0b400", emissive: "#7a4d00", emissiveIntensity: .6 });
+  const orbGeo = new THREE.SphereGeometry(.3, 18, 12);
+  const meteorGeo = new THREE.IcosahedronGeometry(.37, 0), meteorMat = new THREE.MeshLambertMaterial({ color: "#5a3a2a", emissive: "#ff5a14", emissiveIntensity: .45, flatShading: true });
+  const markerGeo = new THREE.RingGeometry(.25, .42, 20), markerMat = new THREE.MeshBasicMaterial({ color: "#ff3b30", side: THREE.DoubleSide });
+  const craterGeo = new THREE.CylinderGeometry(.5, .62, .06, 14), craterMat = new THREE.MeshLambertMaterial({ color: "#3a2a22" });
+  const flameGeo = new THREE.ConeGeometry(.12, .5, 6), flameMats = [new THREE.MeshBasicMaterial({ color: "#ff7a1a" }), new THREE.MeshBasicMaterial({ color: "#ffc93c" })];
+  const iconMat = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+
+  function makeMesh(o) {
+    const g = new THREE.Group();
+    if (o.kind === "cactus") {
+      for (let i = 0; i < o.n; i++) { const m = shadowy(new THREE.Mesh(CACTUS_GEO.get(o.grid), vmat)); m.position.x = -i * (o.unit + o.gap) * K; g.add(m); }
+      g.position.z = -2 * S;
+    } else if (o.kind === "bird") {
+      for (const geo of BIRD_GEO) g.add(shadowy(new THREE.Mesh(geo, vmat)));
+      g.position.z = -1.5 * S;
+    } else if (o.kind === "crater") {
+      const d = new THREE.Mesh(craterGeo, craterMat); d.position.set(-.6, .03, 0); d.receiveShadow = true; g.add(d);
+      for (let i = 0; i < 6; i++) { const f = new THREE.Mesh(flameGeo, flameMats[i % 2]); f.position.set(-.15 - i * .18, .25, (i % 3 - 1) * .18); g.add(f); }
+    } else if (o.kind === "coin") {
+      const m = shadowy(new THREE.Mesh(coinGeo, coinMat)); m.rotation.x = Math.PI / 2; g.add(m);
+    } else if (o.kind === "shield" || o.kind === "dbl") {
+      const col = o.kind === "shield" ? "#3d8bff" : "#2fbf5b";
+      g.add(shadowy(new THREE.Mesh(orbGeo, new THREE.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: .55 }))));
+      if (o.kind === "shield") { const s = new THREE.Mesh(new THREE.BoxGeometry(.22, .26, .05), iconMat); s.position.z = .3; g.add(s); }
+      else for (const y of [-.06, .1]) { const c = new THREE.Mesh(new THREE.ConeGeometry(.12, .12, 4), iconMat); c.position.set(0, y, .3); g.add(c); }
+    } else if (o.kind === "meteor") {
+      g.add(shadowy(new THREE.Mesh(meteorGeo, meteorMat)));
+      const mk = new THREE.Mesh(markerGeo, markerMat); mk.rotation.x = -Math.PI / 2; g.add(mk); g.userData.marker = mk;
+    }
+    return g;
+  }
+  const objMeshes = new Map();
+  function syncObjects() {
+    const alive = new Set();
+    const track = (o, kind) => {
+      alive.add(o);
+      let g = objMeshes.get(o);
+      if (!g) { g = makeMesh(kind ? { ...o, kind } : o); objMeshes.set(o, g); scene.add(g); }
+      return g;
+    };
+    for (const o of obstacles) {
+      const g = track(o);
+      if (o.kind === "crater") {
+        g.position.set(toX(o.x), 0, 0);
+        g.children.forEach((f, i) => { if (i) f.scale.y = .6 + Math.abs(Math.sin(t * 14 + i * 1.7 + o.x)) * .9; });
+      } else g.position.set(toX(o.x), toY(o.y), g.position.z);
+      if (o.kind === "bird") { const up = Math.floor(t * 7) % 2; g.children[0].visible = !!up; g.children[1].visible = !up; }
+    }
+    for (const it of items) {
+      const g = track(it);
+      g.position.set(toX(it.x), toY(it.y) + Math.sin(t * 5 + it.x * .05) * .1, 0);
+      g.rotation.y = t * 3 + it.x * .03;
+    }
+    for (const m of meteors) {
+      const g = track(m, "meteor");
+      g.position.set(toX(m.x), toY(m.y), 0);
+      g.children[0].rotation.set(t * 3, t * 2, 0);
+      const left = (GROUND - m.r - m.y) / m.vy, mk = g.userData.marker;
+      mk.position.set(toX(m.x + left * speed) - g.position.x, .02 - g.position.y, 0);
+      mk.visible = Math.floor(t * 10) % 2 === 0;
+    }
+    for (const [o, g] of objMeshes) if (!alive.has(o)) { scene.remove(g); objMeshes.delete(o); }
+  }
+
+  // particles: one instanced mesh, coloured per instance
+  const PMAX = 500;
+  const parts = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: "#ffffff" }), PMAX);
+  const m4 = new THREE.Matrix4(), q0 = new THREE.Quaternion(), v3 = new THREE.Vector3(), sc3 = new THREE.Vector3();
+  for (let i = 0; i < PMAX; i++) parts.setColorAt(i, tmpC.set("#ffffff"));
+  parts.frustumCulled = false;
+  scene.add(parts);
+  function syncParticles() {
+    const n = Math.min(PMAX, particles.length);
+    for (let i = 0; i < n; i++) {
+      const p = particles[i];
+      if (p.z === undefined) p.z = (Math.random() - .5) * .7;
+      const life = Math.max(0, p.life);
+      const sz = (p.kind === "ghost" ? 6 : 4 + life * 4) * K * (.4 + life * .6);
+      m4.compose(v3.set(toX(p.x), toY(p.y), p.z), q0, sc3.set(sz, sz, sz));
+      parts.setMatrixAt(i, m4);
+      if (p.kind === "fire") tmpC.setHSL((20 + (1 - life) * 30) / 360, 1, (50 + life * 15) / 100);
+      else if (p.kind === "rainbow") tmpC.setHSL(p.hue / 360, .9, .6);
+      else if (p.kind === "spark") tmpC.set("#3d8bff");
+      else tmpC.set("#dbe6ff");
+      parts.setColorAt(i, tmpC);
+    }
+    parts.count = n;
+    parts.instanceMatrix.needsUpdate = true;
+    if (parts.instanceColor) parts.instanceColor.needsUpdate = true;
+  }
+
+  function resize() {
+    const w = screenEl.clientWidth, h = screenEl.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(screenEl);
+  resize();
+
+
+  // ---------- sound ----------
+  let ac;
+  function beep(freq, dur, type = "square", vol = .06, slide = 0) {
+    if (!optSound.checked) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      const o = ac.createOscillator(), g = ac.createGain(), n = ac.currentTime;
+      o.type = type; o.frequency.setValueAtTime(freq, n);
+      if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, n + dur);
+      g.gain.setValueAtTime(vol, n); g.gain.exponentialRampToValueAtTime(.0001, n + dur);
+      o.connect(g).connect(ac.destination); o.start(n); o.stop(n + dur);
+    } catch {}
+  }
+
+  // ---------- input ----------
+  let jumpHeld = false, duckHeld = false;
+  function pressJump() {
+    if (state === "ready" || state === "dead") { if (state === "dead" && deadT < .4) return; start(); return; }
+    if (state === "pause") { state = "run"; return; }
+    jumpHeld = true;
+    if (dino.onGround && !dino.duck) { dino.vy = -820; dino.onGround = false; beep(620, .09, "square", .05, 1.6); }
+    else if (!dino.onGround && dbl > 0 && dino.airJumps > 0) { dino.airJumps--; dino.vy = -720; beep(900, .09, "square", .05, 1.5); puff(); }
+  }
+  function start() { reset(); state = "run"; games++; store.set("games", games); updateStats(); quest("game", 1); beep(440, .08); }
+  addEventListener("keydown", e => {
+    if (["Space", "ArrowUp", "KeyW"].includes(e.code)) { e.preventDefault(); if (!e.repeat) pressJump(); }
+    else if (["ArrowDown", "KeyS"].includes(e.code)) { e.preventDefault(); duckHeld = true; }
+    else if (e.code === "KeyP" || e.code === "Escape") { if (state === "run") state = "pause"; else if (state === "pause") state = "run"; }
+  });
+  addEventListener("keyup", e => {
+    if (["Space", "ArrowUp", "KeyW"].includes(e.code)) jumpHeld = false;
+    if (["ArrowDown", "KeyS"].includes(e.code)) duckHeld = false;
+  });
+  cv.addEventListener("pointerdown", e => { e.preventDefault(); pressJump(); });
+  addEventListener("pointerup", () => { jumpHeld = false; });
+  const bJ = document.getElementById("btnJump"), bD = document.getElementById("btnDuck");
+  bJ.addEventListener("pointerdown", e => { e.preventDefault(); pressJump(); });
+  bJ.addEventListener("pointerup", () => jumpHeld = false);
+  bD.addEventListener("pointerdown", e => { e.preventDefault(); duckHeld = true; if (state !== "run") pressJump(); });
+  for (const ev of ["pointerup", "pointercancel", "pointerleave"]) bD.addEventListener(ev, () => duckHeld = false);
+  document.addEventListener("visibilitychange", () => { if (document.hidden && state === "run") state = "pause"; });
+
+  // ---------- spawning ----------
+  function spawn() {
+    const r = Math.random();
+    if (score > 150 && r < .28) {
+      const lvl = [GROUND - 20, GROUND - 52, GROUND - 92][Math.floor(Math.random() * 3)];
+      const h = BIRD_UP.length * PX;
+      obstacles.push({ kind: "bird", x: -gridW(BIRD_UP) * PX, y: lvl - h, w: gridW(BIRD_UP) * PX, h, extra: 60 });
+    } else {
+      const big = Math.random() < .45;
+      const g = big ? CACTUS_L : CACTUS_S;
+      const max = speed > 600 ? 3 : speed > 470 ? 2 : 1;
+      const n = 1 + Math.floor(Math.random() * max);
+      const w = gridW(g) * PX, h = g.length * PX, gap = 3;
+      obstacles.push({ kind: "cactus", grid: g, n, x: -(w * n + gap * (n - 1)), y: GROUND - h, w: w * n + gap * (n - 1), h, unit: w, gap });
+    }
+  }
+
+  // Coins come in arcs; now and then a power-up instead: shield (one free hit) or double jump (10 s).
+  function spawnItem() {
+    if (Math.random() < .22) {
+      const kind = Math.random() < .5 ? "shield" : "dbl";
+      items.push({ kind, x: -30, y: GROUND - 70 - Math.random() * 60, r: 13 });
+      return;
+    }
+    const n = 3 + Math.floor(Math.random() * 3), base = GROUND - 40 - Math.random() * 50, arc = Math.random() < .5 ? 50 : 0;
+    for (let i = 0; i < n; i++) items.push({ kind: "coin", x: -30 - i * 34, y: base - Math.sin(i / (n - 1) * Math.PI) * arc, r: 9 });
+  }
+  // Meteors land upstream, then leave a burning crater that rolls toward the dino: jump it.
+  function spawnMeteor() {
+    const fall = 1 + Math.random() * .3, land = 60 + Math.random() * (DX - 260), y0 = -20;
+    meteors.push({ x: land - speed * fall, y: y0, vy: (GROUND - 10 - y0) / fall, r: 11 });
+  }
+  function puff() {
+    for (let i = 0; i < 10; i++) particles.push({ x: DX + 30, y: GROUND + dino.y - 4, vx: (Math.random() - .5) * 200, vy: Math.random() * 80, life: .6, kind: "ghost", hue: 0 });
+  }
+  function popup(text, x, y, color) { popups.push({ text, x, y, life: 1, color }); }
+
+  // ---------- update ----------
+  function update(dt) {
+    t += dt;
+    if (state !== "run") { if (state === "dead") deadT += dt; return; }
+    speed = Math.min(980, speed + dt * 9);
+    const prev = Math.floor(score / 100);
+    score += speed * dt * .025;
+    if (Math.floor(score / 100) > prev) { beep(880, .07, "square", .05); setTimeout(() => beep(1320, .1, "square", .05), 80); flash = 1; }
+
+    // world flip
+    if (optFlip.checked && score - lastFlipAt >= 300) { lastFlipAt = Math.floor(score / 300) * 300; flipTarget *= -1; beep(300, .35, "sawtooth", .05, 2.5); }
+    if (!optFlip.checked) flipTarget = 1;
+    flipScale += (flipTarget - flipScale) * Math.min(1, dt * 3);
+
+    // dino physics
+    dino.duck = duckHeld && dino.onGround;
+    const g = duckHeld && !dino.onGround ? 7200 : (jumpHeld && dino.vy < 0 ? 2300 : 3600);
+    dino.vy += g * dt; dino.y += dino.vy * dt;
+    if (dino.y >= 0) { if (!dino.onGround) dino.legT = 0; dino.y = 0; dino.vy = 0; dino.onGround = true; dino.airJumps = 1; }
+    dbl = Math.max(0, dbl - dt); invuln = Math.max(0, invuln - dt);
+    // day and night swap every 700 points
+    nightT += ((Math.floor(score / 700) % 2) - nightT) * Math.min(1, dt * 1.5);
+
+    // coins and power-ups
+    nextItem -= speed * dt;
+    if (nextItem <= 0) { spawnItem(); nextItem = 700 + Math.random() * 900; }
+    const dTop = GROUND + dino.y - (dino.duck ? DINO.duckA.length : DINO.runA.length) * PX;
+    const dLeft = dino.duck ? DX - 8 * PX : DX, dRight = dLeft + (dino.duck ? 28 : 20) * PX;
+    for (const it of items) {
+      it.x += speed * dt;
+      if (it.x + it.r > dLeft && it.x - it.r < dRight && it.y + it.r > dTop && it.y - it.r < GROUND + dino.y) {
+        it.taken = true;
+        if (it.kind !== "coin") quest("power", 1);
+        if (it.kind === "coin") { runCoins++; quest("coin", 1); score += 5; beep(1400, .06, "square", .04, 1.3); popup("+5", it.x, it.y - 14, C.accent); }
+        else if (it.kind === "shield") { shield = true; beep(500, .25, "triangle", .07, 2); popup("ЩИТ", it.x, it.y - 20, "#3d8bff"); }
+        else { dbl = 10; dino.airJumps = 1; beep(700, .25, "triangle", .07, 2); popup("ПОДВІЙНИЙ СТРИБОК", it.x, it.y - 20, "#2fbf5b"); }
+      }
+    }
+    items = items.filter(it => !it.taken && it.x < W + 40);
+    for (const p of popups) { p.y -= 40 * dt; p.life -= dt * 1.2; }
+    popups = popups.filter(p => p.life > 0);
+    dino.legT += dt * speed / 40;
+
+    // world
+    for (const o of obstacles) {
+      o.x += (speed + (o.extra || 0)) * dt;
+      if (!o.passed && o.x > DX + 60) {
+        o.passed = true;
+        if (o.kind === "cactus") quest("cactus", o.n);
+        else if (o.kind === "bird") quest("bird", 1);
+      }
+    }
+
+    // boss event: meteor shower every 1000 points
+    if (rain <= 0 && score >= rainAt) {
+      rain = 8; rainAt += 1000; rainSpawn = .8;
+      banner = { text: "☄ МЕТЕОРИТНИЙ ДОЩ!", life: 2.2, color: C.danger };
+      beep(160, .6, "sawtooth", .07, .5);
+    }
+    if (rain > 0) {
+      rain -= dt; rainSpawn -= dt;
+      if (rainSpawn <= 0 && rain > 1.2) { spawnMeteor(); rainSpawn = .5 + Math.random() * .45; }
+      if (rain <= 0) {
+        score += 100; runCoins += 20; quest("rain", 1);
+        banner = { text: "ВИЖИВ! +100 очок, +20 ●", life: 2.2, color: C.accent };
+        beep(660, .1); setTimeout(() => beep(880, .1), 110); setTimeout(() => beep(1320, .18), 220);
+      }
+    }
+    for (const m of meteors) {
+      m.x += speed * dt; m.y += m.vy * dt;
+      if (Math.random() < dt * 50) particles.push({ x: m.x, y: m.y, vx: -m.vy * .15 + Math.random() * 40, vy: -m.vy * .35, life: .7, kind: "fire", hue: 0 });
+      if (m.y >= GROUND - m.r) {
+        m.dead = true;
+        obstacles.push({ kind: "crater", x: m.x - 18, y: GROUND - 15, w: 36, h: 15, passed: true });
+        for (let i = 0; i < 16; i++) particles.push({ x: m.x, y: GROUND - 6, vx: (Math.random() - .5) * 320, vy: -Math.random() * 260, life: .7, kind: "fire", hue: 0 });
+        beep(90, .25, "sawtooth", .08, .4);
+      }
+    }
+    meteors = meteors.filter(m => !m.dead);
+    if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
+    obstacles = obstacles.filter(o => !o.broken && o.x < W + 40);
+    nextGap -= speed * dt;
+    if (nextGap <= 0) { if (rain <= 0) spawn(); nextGap = speed * (.55 + Math.random() * .9) + 160; }
+
+    // trails
+    const sk = skin();
+    if (sk.trail && Math.random() < dt * 60) {
+      const dy = GROUND + dino.y - (dino.duck ? 18 : 30);
+      particles.push({ x: DX + 57, y: dy + (Math.random() - .5) * 20, vx: speed * .4 + Math.random() * 60, vy: (Math.random() - .5) * 40 - (sk.trail === "fire" ? 60 : 0), life: 1, kind: sk.trail, hue: (t * 200) % 360 });
+    }
+    for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 1.8; }
+    particles = particles.filter(p => p.life > 0);
+    flash = Math.max(0, flash - dt * 2);
+
+    // collision with a forgiving hitbox
+    const hb = dino.duck
+      ? { x: DX - 8 * PX + 8, y: GROUND + dino.y - DINO.duckA.length * PX + 6, w: gridW(DINO.duckA) * PX - 14, h: DINO.duckA.length * PX - 8 }
+      : { x: DX + 12, y: GROUND + dino.y - DINO.runA.length * PX + 4, w: 20 * PX - 26, h: DINO.runA.length * PX - 8 };
+    const hazards = obstacles.concat(meteors.map(m => ({ x: m.x - m.r, y: m.y - m.r, w: m.r * 2 + 8, h: m.r * 2 + 6, ref: m })));
+    for (const o of hazards) {
+      const ox = o.x + 5, oy = o.y + 5, ow = o.w - 10, oh = o.h - 8;
+      if (hb.x < ox + ow && hb.x + hb.w > ox && hb.y < oy + oh && hb.y + hb.h > oy) {
+        if (invuln > 0) continue;
+        if (shield) {
+          shield = false; invuln = .8; o.broken = true; if (o.ref) o.ref.dead = true;
+          quest("break", 1);
+          for (let i = 0; i < 18; i++) particles.push({ x: o.x + o.w / 2, y: o.y + o.h / 2, vx: (Math.random() - .3) * 400, vy: (Math.random() - .7) * 300, life: .8, kind: "spark", hue: 0 });
+          beep(180, .2, "square", .07, 3); popup("БАХ!", o.x, o.y - 10, "#3d8bff");
+          continue;
+        }
+        die(); break;
+      }
+    }
+  }
+  function die() {
+    state = "dead"; deadT = 0; banner = null; shake = .5;
+    beep(220, .35, "sawtooth", .07, .3);
+    const s = Math.floor(score);
+    if (s > best) { best = s; store.set("best", best); }
+    coins += runCoins; store.set("coins", coins);
+    quest("score", s);
+    runs.push({ s, skin: skinId, at: Date.now() }); runs.sort((a, b) => b.s - a.s); runs = runs.slice(0, 5); store.set("runs", runs);
+    saveQuests(); renderQuests(); submitScore(); renderBoard();
+    updateStats(); renderSkins();
+  }
+
+
+  // ---------- render ----------
+  const hud = id => document.getElementById(id);
+  const hRec = hud("hRec"), hScore = hud("hScore"), hCoins = hud("hCoins"), hShield = hud("hShield"), hDbl = hud("hDbl"), hRain = hud("hRain"), hFlip = hud("hFlip");
+  const bannerEl = hud("banner"), msgEl = hud("msg"), msgA = hud("msgA"), msgB = hud("msgB"), popsEl = hud("pops");
+  const popEls = [];
+  const pad = n => String(Math.floor(n)).padStart(5, "0");
+  const setText = (el, s) => { if (el.textContent !== s) el.textContent = s; };
+
+  function render(dt) {
+    // scenery scrolls only while running
+    if (state === "run") {
+      const d = speed * K * dt;
+      for (const p of pebData) { p.x -= d; if (p.x < -12) p.x += 50; }
+      for (const m of decor) { m.position.x -= d; if (m.position.x < -16) m.position.x += 62; }
+      for (const c of clouds) { c.position.x -= d * .15; if (c.position.x < -18) c.position.x += 75; }
+    }
+    pebData.forEach((p, i) => { pebbles.setMatrixAt(i, m4.compose(v3.set(p.x, p.s / 2, p.z), q0, sc3.set(p.s * 1.6, p.s, p.s))); });
+    pebbles.instanceMatrix.needsUpdate = true;
+
+    // day and night
+    scene.background.copy(DAY.sky).lerp(NIGHT.sky, nightT);
+    scene.fog.color.copy(scene.background);
+    amb.color.copy(DAY.amb).lerp(NIGHT.amb, nightT); amb.intensity = (.75 - .4 * nightT) * PI;
+    sun.color.copy(DAY.sun).lerp(NIGHT.sun, nightT); sun.intensity = (1 - .6 * nightT) * PI;
+    stars.material.opacity = nightT;
+    cloudMat.emissiveIntensity = .35 * (1 - nightT);
+
+    // dino
+    const sk = skin();
+    let pose;
+    if (state === "dead") pose = "dead";
+    else if (!dino.onGround || state === "ready") pose = "jump";
+    else if (dino.duck) pose = Math.floor(dino.legT) % 2 ? "duckA" : "duckB";
+    else pose = Math.floor(dino.legT) % 2 ? "runA" : "runB";
+    const rows = DINO[pose].length;
+    dinoGroup.position.y = (rows * PX - dino.y) * K;
+    const blink = invuln > 0 && Math.floor(t * 20) % 2;
+    for (const p of POSES) dinoMeshes[p].visible = p === pose && !blink;
+    if (sk.body === "rainbow") paintRainbow(dinoMeshes[pose]);
+    if (sk.alpha) dinoMat.opacity = sk.alpha + Math.sin(t * 6) * .12;
+    bubble.visible = shield;
+    if (shield) {
+      const w = (pose.startsWith("duck") ? 28 : 20) * S, h = rows * S;
+      bubble.position.set(-20 * S + w / 2, dinoGroup.position.y - h / 2, 0);
+      bubble.scale.set(w / 2 + .35, h / 2 + .3, .75);
+      bubble.material.opacity = .2 + Math.sin(t * 8) * .08;
+    }
+
+    // trail particles start at the tail
+    syncObjects();
+    syncParticles();
+
+    // camera: three-quarter chase view; rolls over for the world-flip mode
+    const narrow = camera.aspect < 1.5;
+    camera.position.set(narrow ? -7.5 : -6, (narrow ? 4.3 : 3.5) + (-dino.y * K) * .25, narrow ? 9.5 : 7.2);
+    shake = Math.max(0, shake - dt * 2.5);
+    if (shake) camera.position.add(v3.set((Math.random() - .5) * shake, (Math.random() - .5) * shake, 0));
+    camera.lookAt(5, 1 + (-dino.y * K) * .2, 0);
+    camera.rotateZ((1 - flipScale) * Math.PI / 2);
+    renderer.render(scene, camera);
+
+    // HUD
+    setText(hRec, "РЕК " + pad(best));
+    setText(hScore, pad(score));
+    hScore.classList.toggle("blink", flash > 0 && Math.floor(flash * 8) % 2 === 1);
+    setText(hCoins, "● " + runCoins);
+    hShield.hidden = !shield;
+    hDbl.hidden = !(dbl > 0); if (dbl > 0) setText(hDbl, "×2 СТРИБОК " + Math.ceil(dbl));
+    hRain.hidden = !(rain > 0 && state === "run"); if (rain > 0) setText(hRain, "☄ " + Math.ceil(rain));
+    hFlip.hidden = !(optFlip.checked && state === "run" && 300 - (score - lastFlipAt) < 40);
+    bannerEl.hidden = !banner;
+    if (banner) { setText(bannerEl, banner.text); bannerEl.style.color = banner.color; bannerEl.style.opacity = Math.min(1, banner.life * 2); }
+
+    // floating labels follow their spot in the scene
+    const cw = screenEl.clientWidth, ch = screenEl.clientHeight;
+    while (popEls.length < popups.length) { const d = document.createElement("span"); d.className = "pop"; popsEl.append(d); popEls.push(d); }
+    popEls.forEach((el, i) => {
+      const p = popups[i];
+      el.hidden = !p;
+      if (!p) return;
+      v3.set(toX(p.x), toY(p.y), 0).project(camera);
+      el.style.transform = `translate(${((v3.x + 1) / 2 * cw).toFixed(1)}px, ${((1 - v3.y) / 2 * ch).toFixed(1)}px) translate(-50%, -50%)`;
+      el.style.opacity = Math.max(0, p.life); el.style.color = p.color; setText(el, p.text);
+    });
+
+    let a = "", b = "";
+    if (state === "ready") { a = "НАТИСНИ ПРОБІЛ АБО ТАПНИ"; b = "Біжимо вперед у 3D →"; }
+    if (state === "pause") { a = "ПАУЗА"; b = "P або тап, щоб продовжити"; }
+    if (state === "dead") { a = "ГРУ ЗАКІНЧЕНО"; b = Math.floor(score) >= best && best > 0 ? "Новий рекорд: " + best + "!" : "Пробіл або тап, щоб ще раз"; }
+    msgEl.hidden = !a; setText(msgA, a); setText(msgB, b);
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    update(dt); render(dt);
+    requestAnimationFrame(loop);
+  }
+  buildDino();
+  requestAnimationFrame(loop);
+
+
+  // ---------- skins UI ----------
+  const skinsEl = document.getElementById("skins");
+  function renderSkins() {
+    skinsEl.innerHTML = "";
+    for (const s of SKINS) {
+      const unlocked = hasSkin(s), canBuy = !unlocked && coins >= price(s);
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "skin" + (unlocked ? "" : " locked"); b.id = "skin-" + s.id;
+      b.setAttribute("aria-pressed", String(s.id === skinId));
+      b.setAttribute("aria-label", s.name + (unlocked ? "" : ", відкривається з рекордом " + s.need));
+      const c = document.createElement("canvas");
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      c.width = 72 * dpr; c.height = 72 * dpr;
+      const x = c.getContext("2d"); x.scale(dpr, dpr);
+      drawDino(x, "runA", 6, 14, 3, s, 1);
+      b.append(c);
+      const n = document.createElement("span"); n.className = "name"; n.textContent = s.name;
+      const r = document.createElement("span"); r.className = "req";
+      r.textContent = s.id === skinId ? "Вибрано" : unlocked ? "Вибрати" : canBuy ? "Купити ● " + price(s) : "🔒 " + s.need + " / ● " + price(s);
+      if (canBuy) b.classList.add("buy");
+      b.append(n, r);
+      b.onclick = () => {
+        if (canBuy) { coins -= price(s); owned.push(s.id); store.set("coins", coins); store.set("owned", owned); beep(1200, .15, "square", .05, 1.5); updateStats(); }
+        else if (!unlocked) { beep(160, .12, "square", .05); return; } skinId = s.id; store.set("skin", skinId); buildDino(); renderSkins(); };
+      skinsEl.append(b);
+    }
+  }
+  function updateStats() { document.getElementById("best").textContent = best; document.getElementById("games").textContent = games; document.getElementById("coins").textContent = coins; }
+  // ---------- daily quests ----------
+  const QUESTS = [
+    { ev: "coin", text: "Збери монет: {n}", n: [25, 40, 60] },
+    { ev: "cactus", text: "Перестрибни кактусів: {n}", n: [30, 50, 80] },
+    { ev: "bird", text: "Проскоч повз птерозаврів: {n}", n: [6, 10, 16] },
+    { ev: "score", text: "Набери {n} очок за один забіг", n: [400, 700, 1100], max: true },
+    { ev: "game", text: "Зіграй забігів: {n}", n: [3, 5, 8] },
+    { ev: "break", text: "Розбий щитом перешкод: {n}", n: [1, 2, 3] },
+    { ev: "rain", text: "Переживи метеоритних дощів: {n}", n: [1, 2] },
+    { ev: "power", text: "Підбери бонусів: {n}", n: [2, 4, 6] },
+  ];
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+  function makeQuests(day) {
+    let h = 0; for (const ch of day) h = (h * 31 + ch.charCodeAt(0)) | 0;
+    const rnd = () => { h = (h * 1103515245 + 12345) | 0; return ((h >>> 8) & 0xffff) / 65536; };
+    const pool = QUESTS.slice(), list = [];
+    while (list.length < 3) {
+      const q = pool.splice(Math.floor(rnd() * pool.length), 1)[0], tier = Math.floor(rnd() * q.n.length);
+      list.push({ ev: q.ev, n: q.n[tier], reward: 20 + tier * 20, prog: 0, claimed: false });
+    }
+    return { day, list };
+  }
+  let quests = store.get("quests", null);
+  if (!quests || quests.day !== today()) quests = makeQuests(today());
+  const saveQuests = () => store.set("quests", quests);
+  function quest(ev, amount) {
+    if (quests.day !== today()) { quests = makeQuests(today()); renderQuests(); }
+    for (const q of quests.list) {
+      if (q.ev !== ev || q.prog >= q.n) continue;
+      const def = QUESTS.find(d => d.ev === ev);
+      q.prog = Math.min(q.n, def.max ? Math.max(q.prog, amount) : q.prog + amount);
+      if (q.prog >= q.n) {
+        banner = { text: "✓ ЗАВДАННЯ ВИКОНАНО", life: 2, color: C.accent };
+        beep(990, .12, "square", .05, 1.4); saveQuests(); renderQuests();
+      }
+    }
+  }
+  const questsEl = document.getElementById("quests");
+  function renderQuests() {
+    questsEl.innerHTML = "";
+    for (const [i, q] of quests.list.entries()) {
+      const def = QUESTS.find(d => d.ev === q.ev), done = q.prog >= q.n;
+      const li = document.createElement("li"); li.className = "quest" + (done ? " done" : "");
+      const tx = document.createElement("span"); tx.className = "qt"; tx.textContent = def.text.replace("{n}", q.n);
+      const right = document.createElement(done && !q.claimed ? "button" : "span");
+      if (done && !q.claimed) {
+        right.type = "button"; right.id = "claim-" + i; right.textContent = "Забрати ● " + q.reward;
+        right.onclick = () => { q.claimed = true; coins += q.reward; store.set("coins", coins); saveQuests(); beep(1200, .15, "square", .05, 1.5); renderQuests(); updateStats(); renderSkins(); };
+      } else { right.className = "qp"; right.textContent = q.claimed ? "✓ Отримано" : q.prog + " / " + q.n + " · ● " + q.reward; }
+      const bar = document.createElement("div"); bar.className = "bar";
+      const fill = document.createElement("i"); fill.style.width = Math.round(q.prog / q.n * 100) + "%"; bar.append(fill);
+      li.append(tx, right, bar); questsEl.append(li);
+    }
+  }
+
+  // ---------- leaderboard: shared through the artifact's db, local runs as a fallback ----------
+  let runs = store.get("runs", []);
+  const boardEl = document.getElementById("board"), noteEl = document.getElementById("boardNote");
+  let db = null, me = null, uid = null, rows = null, names = {}, remoteBest = 0, canWrite = true;
+  function renderBoard() {
+    boardEl.innerHTML = "";
+    const add = (rank, name, sub, score, mine) => {
+      const li = document.createElement("li"); if (mine) li.className = "me";
+      const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = rank;
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
+      if (sub) { const sm = document.createElement("small"); sm.textContent = sub; nm.append(sm); }
+      const sc = document.createElement("span"); sc.className = "sc"; sc.textContent = score;
+      li.append(rk, nm, sc); boardEl.append(li);
+    };
+    const empty = text => { const li = document.createElement("li"); li.className = "empty"; li.textContent = text; boardEl.append(li); };
+    const skinName = id => (SKINS.find(s => s.id === id) || {}).name || "";
+    if (rows) {
+      noteEl.textContent = canWrite ? "Спільна для всіх, хто відкриває цю гру. Твій рекорд додається сам." : "Спільна таблиця. Щоб потрапити в неї, власник має дати тобі доступ Contributor.";
+      if (!rows.length) empty("Ще порожньо. Зіграй першим!");
+      rows.forEach((r, i) => add(i + 1, names[r.id] || "Гравець", skinName(r.skin), r.best, r.id === uid));
+    } else {
+      noteEl.textContent = "Твої 5 найкращих забігів у цьому браузері.";
+      if (!runs.length) empty("Ще немає забігів. Натисни пробіл, щоб почати.");
+      runs.forEach((r, i) => add(i + 1, new Date(r.at).toLocaleDateString("uk-UA"), skinName(r.skin), r.s, false));
+    }
+  }
+  async function submitScore() {
+    if (!db || !uid || !canWrite || best <= remoteBest) return;
+    remoteBest = best;
+    try { await db.doc("scores/" + uid).set({ best, skin: skinId, at: Date.now() }); }
+    catch (e) { if (e && (e.code === "invalid_argument" || e.code === "not_granted")) { canWrite = false; renderBoard(); } }
+  }
+  async function initBoard() {
+    renderBoard();
+    if (!window.claude?.use) return;
+    const [d, u] = await Promise.all([window.claude.use("db"), window.claude.use("user")]).catch(() => [null, null]);
+    if (!d) return;
+    db = d; me = u;
+    uid = u ? await u.id() : null;
+    if (!uid) canWrite = false;
+    if (u && (await u.can("data.write")) === false && !(await u.isOwner())) canWrite = false;
+    if (uid) {
+      try { const snap = await db.doc("scores/" + uid).get(); if (snap.exists) remoteBest = Number(snap.data().best) || 0; } catch {}
+      submitScore();
+    }
+    db.collection("scores").orderBy("best", "desc").limit(10).onSnapshot(async snap => {
+      rows = snap.docs.map(doc => { const v = doc.data() || {}; return { id: doc.id, best: Math.max(0, Math.floor(Number(v.best) || 0)), skin: String(v.skin || "") }; });
+      renderBoard();
+      if (me && rows.length) {
+        try { const ps = await me.profiles(rows.map(r => r.id)); for (const r of rows) names[r.id] = ps[r.id]?.name || ""; renderBoard(); } catch {}
+      }
+    }, () => { rows = null; renderBoard(); });
+  }
+
+  updateStats();
+  renderSkins();
+  renderQuests();
+  initBoard();
+  document.fonts?.ready.then(renderSkins);
+})();
+</script>
+</body></html>
