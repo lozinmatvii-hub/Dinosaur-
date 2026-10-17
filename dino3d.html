@@ -110,6 +110,47 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 .opt input { width: 18px; height: 18px; accent-color: var(--accent); }
 .stats { font-family: var(--display); font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
 .stats b { color: var(--ink); font-weight: 500; }
+
+.promo { display: flex; gap: 8px; }
+.promo input { flex: 1; min-width: 0; font: 600 16px var(--body); letter-spacing: .06em; text-transform: uppercase; padding: 9px 12px; border-radius: 6px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); }
+.promo input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.promo button { font-family: var(--display); font-size: 15px; padding: 0 14px; border-radius: 6px; border: 2px solid var(--accent); background: var(--accent); color: #1b1300; cursor: pointer; }
+.promo button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.promo-msg { min-height: 1.5em; margin: 8px 0 0; font-size: 14px; }
+.promo-msg.good { color: #2f9e44; }
+.promo-msg.bad { color: var(--danger); }
+.eggs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.eggs li { padding: 7px 10px; border-radius: 6px; border: 2px dashed var(--line); color: var(--muted); font-size: 14px; }
+.eggs li.found { border-style: solid; border-color: var(--accent); color: var(--ink); }
+h2 .stats { font-size: 15px; margin-left: 6px; }
+h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 20; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 8px; background: #1d2330; color: #ffd84d; font-family: var(--display); font-size: 16px; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+
+[hidden] { display: none !important; }
+.online .net-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.online input { flex: 1 1 140px; min-width: 0; font: 500 16px var(--body); padding: 9px 12px; border-radius: 6px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); }
+.online input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.online button { font-family: var(--display); font-size: 15px; padding: 9px 14px; border-radius: 6px; border: 2px solid var(--accent); background: var(--accent); color: #1b1300; cursor: pointer; }
+.online button.ghost, .online #btnJoin { background: var(--panel); color: var(--ink); }
+.online button:disabled { opacity: .5; cursor: wait; }
+.online button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.reacts { display: flex; gap: 6px; }
+.reacts button { font-size: 20px; padding: 4px 10px; background: var(--panel) !important; border-color: var(--line) !important; }
+.net-status { min-height: 1.5em; margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+.net-status.good { color: #2f9e44; }
+.net-status.bad { color: var(--danger); }
+.players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.players li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 12px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; }
+.players li.me { border-color: var(--accent); }
+.players .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.players .sc { font-family: var(--display); font-variant-numeric: tabular-nums; }
+.net-board { position: absolute; right: 12px; top: 40px; margin: 0; padding: 6px 10px; list-style: none; border-radius: 6px; background: rgba(12,16,26,.45); color: #fff; font-family: var(--display); font-size: 13px; font-variant-numeric: tabular-nums; pointer-events: none; max-width: 45%; }
+.net-board li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.net-board li.me { color: #ffd84d; }
+.tag { position: absolute; left: 0; top: 0; padding: 1px 6px; border-radius: 4px; background: rgba(12,16,26,.55); color: #fff; font: 600 12px var(--body); white-space: nowrap; }
+.react { position: absolute; left: 0; top: 0; font-size: 30px; animation: rise 1.6s ease-out forwards; }
+@keyframes rise { from { margin-top: 0; opacity: 1; } to { margin-top: -60px; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .react { animation: none; } }
 </style>
 
 <div class="wrap">
@@ -127,12 +168,35 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     <div class="banner" id="banner" hidden></div>
     <div class="msg" id="msg"><b id="msgA"></b><span id="msgB"></span></div>
     <div id="pops"></div>
+    <ol class="net-board" id="netBoard" hidden></ol>
   </div>
 
   <div class="touch">
     <button id="btnDuck" type="button" aria-label="Пригнутись">▼ Пригнутись</button>
     <button id="btnJump" type="button" aria-label="Стрибок">▲ Стрибок</button>
   </div>
+
+  <section class="online">
+    <h2>Онлайн</h2>
+    <p class="sub">Створи кімнату й скинь другу код або введи код друга. Інші гравці біжать поруч у своїх скінах. За вхід у кімнату дають скін «Онлайн», а за перемогу в забігу скін «Чемпіон».</p>
+    <div class="net-row">
+      <input id="nick" type="text" maxlength="14" placeholder="Твоє ім'я" aria-label="Твоє ім'я" autocomplete="off">
+      <input id="roomCode" type="text" maxlength="6" placeholder="Код кімнати" aria-label="Код кімнати" inputmode="numeric" autocomplete="off">
+    </div>
+    <div class="net-row">
+      <button type="button" id="btnCreate">Створити кімнату</button>
+      <button type="button" id="btnJoin">Увійти</button>
+      <button type="button" id="btnLeave" class="ghost" hidden>Вийти з кімнати</button>
+    </div>
+    <p class="net-status" id="netStatus" aria-live="polite"></p>
+    <div id="raceRow" hidden>
+      <div class="net-row">
+        <button type="button" id="btnRace">🏁 Старт забігу для всіх</button>
+        <span class="reacts"><button type="button" data-react="0" aria-label="Сміх">😂</button><button type="button" data-react="1" aria-label="Вогонь">🔥</button><button type="button" data-react="2" aria-label="Череп">💀</button><button type="button" data-react="3" aria-label="Клас">👍</button></span>
+      </div>
+      <ol class="players" id="players"></ol>
+    </div>
+  </section>
 
   <div class="duo">
     <section>
@@ -160,6 +224,24 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       <label class="opt"><input type="checkbox" id="optSound" checked> 🔊 Звук</label>
     </div>
   </section>
+
+  <div class="duo">
+    <section>
+      <h2>Промокод</h2>
+      <p class="sub">Є код від друга? Введи його тут. Кожен код працює один раз.</p>
+      <form class="promo" id="promoForm" autocomplete="off">
+        <input id="promo" type="text" maxlength="24" placeholder="Наприклад, DINO100" aria-label="Промокод" autocapitalize="characters" spellcheck="false">
+        <button type="submit" id="promoBtn">Активувати</button>
+      </form>
+      <p class="promo-msg" id="promoMsg" aria-live="polite"></p>
+    </section>
+    <section>
+      <h2>Пасхалки <span class="stats" id="eggCount">0 / 6</span></h2>
+      <p class="sub">У грі сховано секрети. Знайди всі, і отримаєш секретний скін.</p>
+      <ul class="eggs" id="eggs"></ul>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" hidden></div>
 </div>
 
 <script>
@@ -242,6 +324,12 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     { id: "rainbow", name: "Райдуга", need: 2500, body: "rainbow", trail: "rainbow" },
     { id: "ninja", name: "Ніндзя", need: 3500, body: "#1d1f24", eye: "#ffffff", acc: [["headband", "#e0262f"]] },
     { id: "robot", name: "Робот", need: 5000, body: "#8e9aab", camo: "#6b7686", eye: "#29e3ff", glow: "#29e3ff", acc: [["antenna", "#ff4d4d"]] },
+    // secret skins: only from promo codes and easter eggs
+    { id: "dragon", name: "Дракон", need: 99999, secret: true, body: "#2f9e44", eye: "#ffd400", acc: [["horns", "#ffd400"]], trail: "fire" },
+    { id: "retro", name: "Ретро", need: 99999, secret: true, body: "#306230", camo: "#0f380f", eye: "#9bbc0f" },
+    { id: "online", name: "Онлайн", need: 99999, secret: true, hint: "🌐 Зайди в кімнату", body: "#e9f6ff", camo: "#7fd3ff", eye: "#0a84ff", glow: "#5ac8fa", acc: [["antenna", "#0a84ff"]] },
+    { id: "champion", name: "Чемпіон", need: 99999, secret: true, hint: "🏆 Виграй онлайн-забіг", body: "#ffcc33", eye: "#ffffff", glow: "#ffd84d", acc: [["crown", "#e0262f"]], trail: "rainbow" },
+    { id: "egg", name: "Пасхальний", need: 99999, secret: true, body: "#f6d7e8", camo: "#8fd3ff", eye: "#5a3a6e", trail: "rainbow" },
   ];
   // Locked skins can also be bought with coins collected in runs.
   const price = s => Math.round(s.need / 10);
@@ -333,6 +421,9 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   let items, nextItem, runCoins, shield, dbl, invuln, nightT, popups;
   let rain, rainAt, rainSpawn, meteors, banner, shake = 0;
   const skin = () => SKINS.find(s => s.id === skinId) || SKINS[0];
+  // obstacles come from rng: Math.random solo, a shared seed in an online race
+  const mulberry = a => () => { a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+  let rng = Math.random;
 
   function reset() {
     dino = { y: 0, vy: 0, duck: false, onGround: true, legT: 0, airJumps: 1 };
@@ -532,11 +623,12 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   const craterGeo = new THREE.CylinderGeometry(.5, .62, .06, 14), craterMat = new THREE.MeshLambertMaterial({ color: "#3a2a22" });
   const flameGeo = new THREE.ConeGeometry(.12, .5, 6), flameMats = [new THREE.MeshBasicMaterial({ color: "#ff7a1a" }), new THREE.MeshBasicMaterial({ color: "#ffc93c" })];
   const iconMat = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+  const goldMat = new THREE.MeshLambertMaterial({ color: "#ffcf3a", emissive: "#a86b00", emissiveIntensity: .5 });
 
   function makeMesh(o) {
     const g = new THREE.Group();
     if (o.kind === "cactus") {
-      for (let i = 0; i < o.n; i++) { const m = shadowy(new THREE.Mesh(CACTUS_GEO.get(o.grid), vmat)); m.position.x = -i * (o.unit + o.gap) * K; g.add(m); }
+      for (let i = 0; i < o.n; i++) { const m = shadowy(new THREE.Mesh(CACTUS_GEO.get(o.grid), o.gold ? goldMat : vmat)); m.position.x = -i * (o.unit + o.gap) * K; g.add(m); }
       g.position.z = -2 * S;
     } else if (o.kind === "bird") {
       for (const geo of BIRD_GEO) g.add(shadowy(new THREE.Mesh(geo, vmat)));
@@ -644,13 +736,14 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   // ---------- input ----------
   let jumpHeld = false, duckHeld = false;
   function pressJump() {
+    if (state === "countdown") return;
     if (state === "ready" || state === "dead") { if (state === "dead" && deadT < .4) return; start(); return; }
     if (state === "pause") { state = "run"; return; }
     jumpHeld = true;
     if (dino.onGround && !dino.duck) { dino.vy = -820; dino.onGround = false; beep(620, .09, "square", .05, 1.6); }
     else if (!dino.onGround && dbl > 0 && dino.airJumps > 0) { dino.airJumps--; dino.vy = -720; beep(900, .09, "square", .05, 1.5); puff(); }
   }
-  function start() { reset(); state = "run"; games++; store.set("games", games); updateStats(); quest("game", 1); beep(440, .08); }
+  function start(seed) { reset(); eggReset(); applyPerks(); rng = seed ? mulberry(seed) : Math.random; state = "run"; games++; store.set("games", games); updateStats(); quest("game", 1); beep(440, .08); }
   addEventListener("keydown", e => {
     if (["Space", "ArrowUp", "KeyW"].includes(e.code)) { e.preventDefault(); if (!e.repeat) pressJump(); }
     else if (["ArrowDown", "KeyS"].includes(e.code)) { e.preventDefault(); duckHeld = true; }
@@ -671,34 +764,34 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 
   // ---------- spawning ----------
   function spawn() {
-    const r = Math.random();
+    const r = rng();
     if (score > 150 && r < .28) {
-      const lvl = [GROUND - 20, GROUND - 52, GROUND - 92][Math.floor(Math.random() * 3)];
+      const lvl = [GROUND - 20, GROUND - 52, GROUND - 92][Math.floor(rng() * 3)];
       const h = BIRD_UP.length * PX;
       obstacles.push({ kind: "bird", x: -gridW(BIRD_UP) * PX, y: lvl - h, w: gridW(BIRD_UP) * PX, h, extra: 60 });
     } else {
-      const big = Math.random() < .45;
+      const big = rng() < .45;
       const g = big ? CACTUS_L : CACTUS_S;
       const max = speed > 600 ? 3 : speed > 470 ? 2 : 1;
-      const n = 1 + Math.floor(Math.random() * max);
+      const n = 1 + Math.floor(rng() * max);
       const w = gridW(g) * PX, h = g.length * PX, gap = 3;
-      obstacles.push({ kind: "cactus", grid: g, n, x: -(w * n + gap * (n - 1)), y: GROUND - h, w: w * n + gap * (n - 1), h, unit: w, gap });
+      obstacles.push({ kind: "cactus", gold: score > 50 && rng() < .04, grid: g, n, x: -(w * n + gap * (n - 1)), y: GROUND - h, w: w * n + gap * (n - 1), h, unit: w, gap });
     }
   }
 
   // Coins come in arcs; now and then a power-up instead: shield (one free hit) or double jump (10 s).
   function spawnItem() {
-    if (Math.random() < .22) {
-      const kind = Math.random() < .5 ? "shield" : "dbl";
-      items.push({ kind, x: -30, y: GROUND - 70 - Math.random() * 60, r: 13 });
+    if (rng() < .22) {
+      const kind = rng() < .5 ? "shield" : "dbl";
+      items.push({ kind, x: -30, y: GROUND - 70 - rng() * 60, r: 13 });
       return;
     }
-    const n = 3 + Math.floor(Math.random() * 3), base = GROUND - 40 - Math.random() * 50, arc = Math.random() < .5 ? 50 : 0;
+    const n = 3 + Math.floor(rng() * 3), base = GROUND - 40 - rng() * 50, arc = rng() < .5 ? 50 : 0;
     for (let i = 0; i < n; i++) items.push({ kind: "coin", x: -30 - i * 34, y: base - Math.sin(i / (n - 1) * Math.PI) * arc, r: 9 });
   }
   // Meteors land upstream, then leave a burning crater that rolls toward the dino: jump it.
   function spawnMeteor() {
-    const fall = 1 + Math.random() * .3, land = 60 + Math.random() * (DX - 260), y0 = -20;
+    const fall = 1 + rng() * .3, land = 60 + rng() * (DX - 260), y0 = -20;
     meteors.push({ x: land - speed * fall, y: y0, vy: (GROUND - 10 - y0) / fall, r: 11 });
   }
   function puff() {
@@ -709,10 +802,12 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   // ---------- update ----------
   function update(dt) {
     t += dt;
+    if (state === "countdown") { cdT -= dt; if (cdT <= 0) start(raceSeed); return; }
     if (state !== "run") { if (state === "dead") deadT += dt; return; }
     speed = Math.min(980, speed + dt * 9);
     const prev = Math.floor(score / 100);
     score += speed * dt * .025;
+    eggTick(dt);
     if (Math.floor(score / 100) > prev) { beep(880, .07, "square", .05); setTimeout(() => beep(1320, .1, "square", .05), 80); flash = 1; }
 
     // world flip
@@ -727,11 +822,11 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     if (dino.y >= 0) { if (!dino.onGround) dino.legT = 0; dino.y = 0; dino.vy = 0; dino.onGround = true; dino.airJumps = 1; }
     dbl = Math.max(0, dbl - dt); invuln = Math.max(0, invuln - dt);
     // day and night swap every 700 points
-    nightT += ((Math.floor(score / 700) % 2) - nightT) * Math.min(1, dt * 1.5);
+    nightT += ((isMidnight() ? 1 : Math.floor(score / 700) % 2) - nightT) * Math.min(1, dt * 1.5);
 
     // coins and power-ups
     nextItem -= speed * dt;
-    if (nextItem <= 0) { spawnItem(); nextItem = 700 + Math.random() * 900; }
+    if (nextItem <= 0) { spawnItem(); nextItem = 700 + rng() * 900; }
     const dTop = GROUND + dino.y - (dino.duck ? DINO.duckA.length : DINO.runA.length) * PX;
     const dLeft = dino.duck ? DX - 8 * PX : DX, dRight = dLeft + (dino.duck ? 28 : 20) * PX;
     for (const it of items) {
@@ -755,6 +850,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       if (!o.passed && o.x > DX + 60) {
         o.passed = true;
         if (o.kind === "cactus") quest("cactus", o.n);
+        if (o.gold) { runCoins += 50; popup("+50 ●", o.x, o.y - 20, "#ffd84d"); findEgg("gold", "Золотий кактус! +50 ●"); }
         else if (o.kind === "bird") quest("bird", 1);
       }
     }
@@ -767,7 +863,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     }
     if (rain > 0) {
       rain -= dt; rainSpawn -= dt;
-      if (rainSpawn <= 0 && rain > 1.2) { spawnMeteor(); rainSpawn = .5 + Math.random() * .45; }
+      if (rainSpawn <= 0 && rain > 1.2) { spawnMeteor(); rainSpawn = .5 + rng() * .45; }
       if (rain <= 0) {
         score += 100; runCoins += 20; quest("rain", 1);
         banner = { text: "ВИЖИВ! +100 очок, +20 ●", life: 2.2, color: C.accent };
@@ -788,7 +884,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
     obstacles = obstacles.filter(o => !o.broken && o.x < W + 40);
     nextGap -= speed * dt;
-    if (nextGap <= 0) { if (rain <= 0) spawn(); nextGap = speed * (.55 + Math.random() * .9) + 160; }
+    if (nextGap <= 0) { if (rain <= 0) spawn(); nextGap = speed * (.55 + rng() * .9) + 160; }
 
     // trails
     const sk = skin();
@@ -864,13 +960,13 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     const sk = skin();
     let pose;
     if (state === "dead") pose = "dead";
-    else if (!dino.onGround || state === "ready") pose = "jump";
+    else if (!dino.onGround || state === "ready" || state === "countdown") pose = "jump";
     else if (dino.duck) pose = Math.floor(dino.legT) % 2 ? "duckA" : "duckB";
     else pose = Math.floor(dino.legT) % 2 ? "runA" : "runB";
     const rows = DINO[pose].length;
     dinoGroup.position.y = (rows * PX - dino.y) * K;
     const blink = invuln > 0 && Math.floor(t * 20) % 2;
-    for (const p of POSES) dinoMeshes[p].visible = p === pose && !blink;
+    for (const p of POSES) dinoMeshes[p].visible = p === pose && !blink && !hide404;
     if (sk.body === "rainbow") paintRainbow(dinoMeshes[pose]);
     if (sk.alpha) dinoMat.opacity = sk.alpha + Math.sin(t * 6) * .12;
     bubble.visible = shield;
@@ -893,6 +989,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     camera.lookAt(5, 1 + (-dino.y * K) * .2, 0);
     camera.rotateZ((1 - flipScale) * Math.PI / 2);
     renderer.render(scene, camera);
+    netTick(dt);
 
     // HUD
     setText(hRec, "РЕК " + pad(best));
@@ -922,6 +1019,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     if (state === "ready") { a = "НАТИСНИ ПРОБІЛ АБО ТАПНИ"; b = "Біжимо вперед у 3D →"; }
     if (state === "pause") { a = "ПАУЗА"; b = "P або тап, щоб продовжити"; }
     if (state === "dead") { a = "ГРУ ЗАКІНЧЕНО"; b = Math.floor(score) >= best && best > 0 ? "Новий рекорд: " + best + "!" : "Пробіл або тап, щоб ще раз"; }
+    if (state === "countdown") { a = String(Math.ceil(cdT)); b = "Забіг для всіх у кімнаті"; }
     msgEl.hidden = !a; setText(msgA, a); setText(msgB, b);
   }
 
@@ -934,26 +1032,416 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   buildDino();
   requestAnimationFrame(loop);
 
+  // ---------- easter eggs and promo codes ----------
+  const toastEl = document.getElementById("toast");
+  let toastTimer;
+  function toast(text) {
+    toastEl.textContent = text; toastEl.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
+  }
+  function confetti() {
+    for (let i = 0; i < 40; i++) particles.push({ x: DX + 30, y: GROUND + dino.y - 40, vx: (Math.random() - .5) * 420, vy: -Math.random() * 320, life: 1.2, kind: "rainbow", hue: Math.random() * 360 });
+  }
+  function unlockSkin(id) {
+    if (owned.includes(id)) return false;
+    owned.push(id); store.set("owned", owned); renderSkins();
+    return true;
+  }
+
+  const EGGS = [
+    { id: "konami", name: "Код Конамі" },
+    { id: "title", name: "Сім натискань на 3D" },
+    { id: "e404", name: "Рівно 404 очки" },
+    { id: "gold", name: "Золотий кактус" },
+    { id: "meteor", name: "Слово «meteor» під час гри" },
+    { id: "midnight", name: "Забіг опівночі" },
+  ];
+  let eggs = store.get("eggs", []);
+  const eggsEl = document.getElementById("eggs"), eggCountEl = document.getElementById("eggCount");
+  function renderEggs() {
+    eggCountEl.textContent = eggs.length + " / " + EGGS.length;
+    eggsEl.innerHTML = "";
+    for (const e of EGGS) {
+      const li = document.createElement("li"), found = eggs.includes(e.id);
+      li.className = found ? "found" : "";
+      li.textContent = found ? "🥚 " + e.name : "🔒 ???";
+      eggsEl.append(li);
+    }
+  }
+  function findEgg(id, text) {
+    const fresh = !eggs.includes(id);
+    if (fresh) { eggs.push(id); store.set("eggs", eggs); renderEggs(); }
+    if (state === "run") { banner = { text, life: 2.6, color: "#ffd84d" }; confetti(); }
+    else toast(text);
+    beep(784, .1); setTimeout(() => beep(988, .1), 100); setTimeout(() => beep(1319, .2), 200);
+    if (fresh && eggs.length === EGGS.length && unlockSkin("egg")) setTimeout(() => toast("Усі пасхалки знайдено! Відкрито скін «Пасхальний»"), 1500);
+  }
+
+  // Konami code (↑↑↓↓←→←→BA) and words typed during a run
+  const KONAMI = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "KeyB", "KeyA"];
+  let keyLog = [], typed = "";
+  addEventListener("keydown", e => {
+    if (e.target instanceof HTMLInputElement) return;
+    keyLog = keyLog.concat(e.code).slice(-KONAMI.length);
+    if (keyLog.join() === KONAMI.join()) { keyLog = []; unlockSkin("retro"); findEgg("konami", "↑↑↓↓←→←→BA! Скін «Ретро» відкрито"); }
+    if (e.key && e.key.length === 1) typed = (typed + e.key.toLowerCase()).slice(-12);
+    if (state === "run" && (typed.endsWith("meteor") || typed.endsWith("метеор"))) {
+      typed = ""; rainAt = score; findEgg("meteor", "Ти сам викликав метеорити!");
+    }
+  });
+
+  // seven taps on the "3D" in the title
+  let titleTaps = 0, titleTimer;
+  document.querySelector("h1 .rev").addEventListener("click", () => {
+    titleTaps++; clearTimeout(titleTimer); titleTimer = setTimeout(() => { titleTaps = 0; }, 1500);
+    if (titleTaps >= 7) { titleTaps = 0; coins += 77; store.set("coins", coins); updateStats(); renderSkins(); findEgg("title", "Ти знайшов секрет заголовка: +77 ●"); }
+  });
+
+  // called every running frame from update()
+  let shown404 = false, midnightRun = false, hide404 = 0;
+  function eggTick(dt) {
+    hide404 = Math.max(0, hide404 - dt);
+    if (!shown404 && Math.floor(score) === 404) { shown404 = true; hide404 = 2.5; findEgg("e404", "404: ДИНОЗАВРА НЕ ЗНАЙДЕНО"); }
+    if (!midnightRun && new Date().getHours() === 0) { midnightRun = true; findEgg("midnight", "Нічна зміна: опівнічний забіг"); }
+  }
+  function eggReset() { shown404 = false; midnightRun = false; hide404 = 0; }
+  const isMidnight = () => midnightRun;
+
+  // Promo codes are stored as hashes, so reading the page source does not give them away.
+  const hashCode = s => { let h = 5381; for (const ch of s) h = Math.imul(h, 33) ^ ch.codePointAt(0); return (h >>> 0).toString(36); };
+  const PROMOS = {
+    "1cm7pug": { coins: 100 },
+    "1comwl2": { coins: 250 },
+    "yjmgds": { coins: 500 },
+    "kqvw5w": { skin: "airsoft" },
+    "12mgqwo": { skin: "dragon" },
+    "36h0ae": { perk: "shield" },
+    "67pms1": { perk: "dbl" },
+  };
+  let usedCodes = store.get("codes", []), perks = store.get("perks", {});
+  const promoIn = document.getElementById("promo"), promoMsg = document.getElementById("promoMsg");
+  document.getElementById("promoForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const h = hashCode(promoIn.value.trim().toUpperCase().replace(/\s+/g, ""));
+    const p = PROMOS[h];
+    promoMsg.className = "promo-msg";
+    if (!promoIn.value.trim()) return;
+    if (!p) { promoMsg.textContent = "Такого промокоду немає. Перевір, чи немає помилки."; promoMsg.classList.add("bad"); return; }
+    if (usedCodes.includes(h)) { promoMsg.textContent = "Цей промокод ти вже активував."; promoMsg.classList.add("bad"); return; }
+    usedCodes.push(h); store.set("codes", usedCodes);
+    let text;
+    if (p.coins) { coins += p.coins; store.set("coins", coins); text = "+" + p.coins + " монет"; }
+    if (p.skin) { const s = SKINS.find(x => x.id === p.skin); unlockSkin(p.skin); text = "Відкрито скін «" + s.name + "»"; }
+    if (p.perk) { perks[p.perk] = true; store.set("perks", perks); text = p.perk === "shield" ? "Наступний забіг почнеться зі щитом" : "Наступний забіг: подвійний стрибок на 30 секунд"; }
+    promoMsg.textContent = "Промокод активовано: " + text; promoMsg.classList.add("good");
+    promoIn.value = ""; updateStats(); renderSkins(); beep(1200, .15, "square", .05, 1.5);
+  });
+  function applyPerks() {
+    if (perks.shield) shield = true;
+    if (perks.dbl) dbl = 30;
+    if (perks.shield || perks.dbl) { perks = {}; store.set("perks", perks); }
+  }
+  renderEggs();
+
+  // ---------- online: rooms with a code, ghost dinos of the other players, shared race start ----------
+  // Two transports with one shape: the Claude page's built-in room, or PeerJS (star: the host relays).
+  const NET_PREFIX = "dinorev3d-";
+  const $ = id => document.getElementById(id);
+  const nickIn = $("nick"), codeIn = $("roomCode"), netStatus = $("netStatus"), playersEl = $("players");
+  const btnCreate = $("btnCreate"), btnJoin = $("btnJoin"), btnLeave = $("btnLeave"), raceRow = $("raceRow"), boardOv = $("netBoard");
+  nickIn.value = store.get("nick", "Гравець " + (10 + Math.floor(Math.random() * 90)));
+  nickIn.addEventListener("change", () => { nickIn.value = nickIn.value.trim().slice(0, 14) || "Гравець"; store.set("nick", nickIn.value); });
+  const cleanName = v => String(v || "").replace(/[\u0000-\u001f]/g, "").slice(0, 14) || "Гравець";
+
+  let net = null, myId = "me";
+  const remotes = new Map(); // id -> {st, last, group, skin, label}
+  const setNetStatus = (text, kind = "") => { netStatus.textContent = text; netStatus.className = "net-status " + kind; };
+
+  async function getRoomCap() {
+    if (!window.claude?.use) return null;
+    try { return await window.claude.use("room"); } catch { return null; }
+  }
+  function loadPeerJs() {
+    if (window.Peer) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";
+      s.onload = res; s.onerror = () => rej(new Error("load"));
+      document.head.append(s);
+    });
+  }
+
+  function makeRoomNet(r) {
+    const n = { kind: "room", handlers: {} };
+    const offs = [
+      r.onPeers(ch => {
+        for (const p of ch.peers) if (!p.sameTab && p.presence && p.presence.n !== undefined) gotState(p.peer, p.presence);
+        for (const p of ch.left) dropRemote(p.peer);
+      }, () => setNetStatus("Зв'язок з кімнатою втрачено.", "bad")),
+      r.on("start", m => { if (!m.sameTab) onStart(m.data); }),
+      r.on("react", m => { if (!m.sameTab) onReact(m.peer, m.data); }),
+    ];
+    n.setState = st => r.presence(st).catch(() => {});
+    n.send = (type, data) => r.emit(type, data).catch(() => {});
+    n.leave = () => { offs.forEach(f => f()); r.leave().catch(() => {}); };
+    return n;
+  }
+
+  function makePeerNet(peer, hostConn) {
+    // host: hostConn null, keeps every guest connection and relays; guest: one connection to the host
+    const conns = new Set(), n = { kind: "peer" };
+    const deliver = (msg, fromConn) => {
+      if (!msg || typeof msg !== "object" || typeof msg.id !== "string") return;
+      if (msg.t === "state") gotState(msg.id, msg.st || {});
+      else if (msg.t === "start") onStart(msg.data);
+      else if (msg.t === "react") onReact(msg.id, msg.data);
+      else if (msg.t === "leave") dropRemote(msg.id);
+      if (!hostConn) for (const c of conns) if (c !== fromConn && c.open) c.send(msg);
+    };
+    const wire = c => {
+      c.on("data", d => deliver(d, c));
+      c.on("close", () => {
+        conns.delete(c);
+        if (hostConn) { setNetStatus("Хост закрив кімнату.", "bad"); leaveRoom(true); }
+        else { dropRemote(c.peer); for (const o of conns) if (o.open) o.send({ t: "leave", id: c.peer }); }
+      });
+    };
+    if (hostConn) { conns.add(hostConn); wire(hostConn); }
+    else peer.on("connection", c => { conns.add(c); wire(c); });
+    const out = msg => { for (const c of conns) if (c.open) c.send(msg); };
+    n.setState = st => out({ t: "state", id: myId, st });
+    n.send = (type, data) => out({ t: type, id: myId, data });
+    n.leave = () => { out({ t: "leave", id: myId }); setTimeout(() => peer.destroy(), 150); };
+    return n;
+  }
+
+  async function enterRoom(create) {
+    if (net) return;
+    let code = codeIn.value.replace(/\D/g, "").slice(0, 6);
+    if (create) { code = String(1000 + Math.floor(Math.random() * 9000)); codeIn.value = code; }
+    if (code.length < 4) { setNetStatus("Введи код кімнати: 4 цифри від друга.", "bad"); codeIn.focus(); return; }
+    store.set("nick", cleanName(nickIn.value));
+    btnCreate.disabled = btnJoin.disabled = true;
+    setNetStatus("Підключаюсь…");
+    try {
+      const roomCap = await getRoomCap();
+      if (roomCap) {
+        const r = await roomCap.join("dino-" + code);
+        net = makeRoomNet(r);
+      } else {
+        await loadPeerJs();
+        net = await new Promise((res, rej) => {
+          const peer = create ? new Peer(NET_PREFIX + code) : new Peer();
+          const fail = e => { peer.destroy(); rej(e); };
+          peer.on("error", fail);
+          peer.on("open", id => {
+            myId = id;
+            if (create) { peer.off("error", fail); peer.on("error", () => {}); res(makePeerNet(peer, null)); return; }
+            const c = peer.connect(NET_PREFIX + code, { reliable: true });
+            const timer = setTimeout(() => fail({ type: "peer-unavailable" }), 9000);
+            c.on("open", () => { clearTimeout(timer); peer.off("error", fail); peer.on("error", () => {}); res(makePeerNet(peer, c)); });
+          });
+        });
+      }
+    } catch (e) {
+      btnCreate.disabled = btnJoin.disabled = false;
+      const t = e && e.type;
+      setNetStatus(t === "unavailable-id" ? "Кімната з таким кодом уже є. Введи код і натисни «Увійти»."
+        : t === "peer-unavailable" ? "Кімнату " + code + " не знайдено. Перевір код або попроси друга створити її."
+        : e && e.message === "load" ? "Не вдалося завантажити онлайн. Перевір інтернет."
+        : "Не вдалося підключитися. Спробуй ще раз.", "bad");
+      return;
+    }
+    btnCreate.hidden = btnJoin.hidden = true; btnLeave.hidden = false; raceRow.hidden = false;
+    codeIn.readOnly = true;
+    setNetStatus((create ? "Кімнату створено. " : "Ти в кімнаті. ") + "Код: " + code + ". Скинь його друзям.", "good");
+    if (unlockSkin("online")) toast("Відкрито онлайн-скін «Онлайн»!");
+    sendState(true); renderPlayers();
+  }
+  function leaveRoom(silent) {
+    if (!net) return;
+    net.leave(); net = null; myId = "me";
+    for (const id of [...remotes.keys()]) dropRemote(id);
+    btnCreate.hidden = btnJoin.hidden = false; btnCreate.disabled = btnJoin.disabled = false;
+    btnLeave.hidden = true; raceRow.hidden = true; codeIn.readOnly = false;
+    if (!silent) setNetStatus("Ти вийшов з кімнати.");
+    renderPlayers();
+  }
+  btnCreate.onclick = () => enterRoom(true);
+  btnJoin.onclick = () => enterRoom(false);
+  btnLeave.onclick = () => leaveRoom(false);
+  addEventListener("pagehide", () => leaveRoom(true));
+  setInterval(() => sendState(false), 120);
+
+  // my state, a few times a second
+  // sent on a timer, not per frame, so a player in a background tab still shows up; repeated every
+  // 1.5 s even when nothing changed so newcomers see everyone
+  let lastSent = "", lastSentAt = 0;
+  function myState() {
+    return { n: cleanName(nickIn.value), s: skinId, y: Math.round(dino.y), d: dino.duck ? 1 : 0,
+      sc: Math.floor(score), a: state === "dead" ? 0 : 1, r: state === "run" || state === "pause" ? 1 : 0 };
+  }
+  function sendState(force) {
+    if (!net) return;
+    const st = myState(), key = JSON.stringify(st);
+    if (!force && key === lastSent && performance.now() - lastSentAt < 1500) return;
+    lastSent = key; lastSentAt = performance.now(); net.setState(st);
+  }
+
+  // what others send is untrusted: keep only the fields we draw, clamp numbers
+  function gotState(id, raw) {
+    const st = { n: cleanName(raw.n), s: SKINS.some(s => s.id === raw.s) ? raw.s : "classic",
+      y: Math.max(-400, Math.min(0, Number(raw.y) || 0)), d: raw.d ? 1 : 0, sc: Math.max(0, Math.floor(Number(raw.sc) || 0)), a: raw.a ? 1 : 0, r: raw.r ? 1 : 0 };
+    let rm = remotes.get(id);
+    if (!rm) { rm = { id }; remotes.set(id, rm); }
+    rm.st = st; rm.last = performance.now();
+    if (rm.skin !== st.s) buildGhost(rm);
+    renderPlayersSoon();
+  }
+  function dropRemote(id) {
+    const rm = remotes.get(id);
+    if (!rm) return;
+    if (rm.group) scene.remove(rm.group);
+    rm.label?.remove();
+    remotes.delete(id); renderPlayersSoon();
+  }
+
+  // ghost dinos: same voxels, see-through, each in its own lane behind the track
+  const ghostGeo = new Map();
+  function buildGhost(rm) {
+    if (rm.group) scene.remove(rm.group);
+    const sk = SKINS.find(s => s.id === rm.st.s) || SKINS[0];
+    rm.skin = sk.id;
+    rm.group = new THREE.Group();
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: !!sk.alpha, opacity: sk.alpha || 1 });
+    if (sk.glow) mat.emissive = new THREE.Color(sk.glow).multiplyScalar(.3);
+    rm.mat = mat; rm.sk = sk;
+    rm.meshes = {};
+    for (const p of POSES) {
+      const key = sk.id + ":" + p;
+      if (!ghostGeo.has(key)) ghostGeo.set(key, buildVox(dinoCells(p, sk), 6, false));
+      const m = shadowy(new THREE.Mesh(sk.body === "rainbow" ? ghostGeo.get(key).clone() : ghostGeo.get(key), mat)); m.visible = false; rm.group.add(m); rm.meshes[p] = m;
+    }
+    scene.add(rm.group);
+    if (!rm.label) { rm.label = document.createElement("span"); rm.label.className = "tag"; popsEl.append(rm.label); }
+  }
+  function syncGhosts() {
+    const now = performance.now();
+    let lane = 0;
+    for (const rm of remotes.values()) {
+      if (net && net.kind === "peer" && now - rm.last > 8000) { dropRemote(rm.id); continue; }
+      if (!rm.group) continue;
+      lane++;
+      const st = rm.st, pose = !st.a ? "dead" : st.y < 0 || !st.r ? "jump" : st.d ? (Math.floor(t * 10) % 2 ? "duckA" : "duckB") : (Math.floor(t * 10) % 2 ? "runA" : "runB");
+      for (const p of POSES) rm.meshes[p].visible = p === pose;
+      if (rm.sk.body === "rainbow") paintRainbow(rm.meshes[pose]);
+      if (rm.sk.alpha) rm.mat.opacity = rm.sk.alpha + Math.sin(t * 6 + lane) * .12;
+      const z = -1.1 - lane * .95, y = (DINO[pose].length * PX - st.y) * K;
+      rm.group.position.set(-20 * S, y, z - 3 * S);
+      v3.set(-.6, y + .35, z).project(camera);
+      rm.label.style.transform = `translate(${((v3.x + 1) / 2 * screenEl.clientWidth).toFixed(1)}px, ${((1 - v3.y) / 2 * screenEl.clientHeight).toFixed(1)}px) translate(-50%, -100%)`;
+      rm.label.hidden = v3.z > 1;
+      setText(rm.label, st.n + (st.a ? "" : " 💀"));
+      rm.screen = rm.label.style.transform;
+    }
+  }
+
+  // race: everyone gets the same seed, so the same cactus layout
+  let raceSeed = 0, cdT = 0, raceLive = false;
+  function checkRaceEnd() {
+    if (!raceLive || state !== "dead" || !remotes.size) return;
+    for (const rm of remotes.values()) if (rm.st && rm.st.a && rm.st.r) return;
+    raceLive = false;
+    const top = standings()[0];
+    if (top.me) {
+      const fresh = unlockSkin("champion");
+      toast(fresh ? "🏆 Ти виграв забіг! Відкрито скін «Чемпіон»" : "🏆 Ти виграв забіг!");
+      beep(660, .1); setTimeout(() => beep(880, .1), 110); setTimeout(() => beep(1320, .25), 220);
+    } else toast("🏁 Забіг виграв " + top.st.n + " (" + top.st.sc + ")");
+  }
+  function onStart(data) {
+    const seed = Math.floor(Number(data && data.seed)) >>> 0;
+    if (!seed) return;
+    raceSeed = seed; cdT = 3; state = "countdown"; reset(); beep(520, .12); raceLive = true;
+  }
+  $("btnRace").onclick = () => {
+    const seed = (Math.random() * 4294967295) >>> 0 || 1;
+    net?.send("start", { seed }); onStart({ seed });
+    screenEl.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
+
+  // reactions float above whoever sent them
+  const REACTS = ["😂", "🔥", "💀", "👍"];
+  function onReact(id, data) {
+    const e = REACTS[Number(data && data.e)];
+    if (!e) return;
+    const rm = remotes.get(id);
+    const el = document.createElement("span"); el.className = "react"; el.textContent = e;
+    if (rm && rm.screen) el.style.transform = rm.screen; else el.style.transform = "translate(50%, 40%)";
+    popsEl.append(el); setTimeout(() => el.remove(), 1600);
+  }
+  function sendReact(i) {
+    net?.send("react", { e: i });
+    const el = document.createElement("span"); el.className = "react"; el.textContent = REACTS[i];
+    v3.set(-10 * S, (DINO.runA.length * PX - dino.y) * K + .4, 0).project(camera);
+    el.style.transform = `translate(${((v3.x + 1) / 2 * screenEl.clientWidth).toFixed(1)}px, ${((1 - v3.y) / 2 * screenEl.clientHeight).toFixed(1)}px) translate(-50%, -100%)`;
+    popsEl.append(el); setTimeout(() => el.remove(), 1600);
+  }
+  document.querySelectorAll("[data-react]").forEach(b => b.onclick = () => sendReact(Number(b.dataset.react)));
+  addEventListener("keydown", e => {
+    if (!net || e.target instanceof HTMLInputElement) return;
+    const i = ["Digit1", "Digit2", "Digit3", "Digit4"].indexOf(e.code);
+    if (i >= 0) sendReact(i);
+  });
+
+  // players list (page) and a small scoreboard on the game screen
+  let playersDirty = false;
+  let playersTimer = 0;
+  const renderPlayersSoon = () => { playersDirty = true; if (!playersTimer) playersTimer = setTimeout(() => { playersTimer = 0; renderPlayers(); }, 150); };
+  function standings() {
+    const me = { id: myId, st: myState(), me: true };
+    return [me, ...remotes.values()].filter(p => p.st).sort((a, b) => b.st.sc - a.st.sc);
+  }
+  function renderPlayers() {
+    playersDirty = false;
+    playersEl.innerHTML = ""; boardOv.innerHTML = "";
+    boardOv.hidden = !net;
+    if (!net) return;
+    standings().forEach((p, i) => {
+      const li = document.createElement("li"); if (p.me) li.className = "me";
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = (i === 0 ? "👑 " : "") + p.st.n + (p.me ? " (ти)" : "");
+      const sc = document.createElement("span"); sc.className = "sc"; sc.textContent = p.st.sc + (p.st.a ? (p.st.r ? " 🏃" : "") : " 💀");
+      li.append(nm, sc); playersEl.append(li);
+      if (i < 5) { const o = document.createElement("li"); o.textContent = (i + 1) + ". " + p.st.n + " " + p.st.sc + (p.st.a ? "" : " 💀"); if (p.me) o.className = "me"; boardOv.append(o); }
+    });
+  }
+  function netTick(dt) {
+    if (!net) return;
+    syncGhosts();
+    checkRaceEnd();
+    if (playersDirty || Math.floor(t * 4) !== Math.floor((t - dt) * 4)) renderPlayers();
+  }
+
 
   // ---------- skins UI ----------
   const skinsEl = document.getElementById("skins");
   function renderSkins() {
     skinsEl.innerHTML = "";
     for (const s of SKINS) {
-      const unlocked = hasSkin(s), canBuy = !unlocked && coins >= price(s);
+      const unlocked = hasSkin(s), canBuy = !s.secret && !unlocked && coins >= price(s);
       const b = document.createElement("button");
       b.type = "button"; b.className = "skin" + (unlocked ? "" : " locked"); b.id = "skin-" + s.id;
       b.setAttribute("aria-pressed", String(s.id === skinId));
-      b.setAttribute("aria-label", s.name + (unlocked ? "" : ", відкривається з рекордом " + s.need));
+      b.setAttribute("aria-label", s.secret && !unlocked ? "Секретний скін" : s.name + (unlocked ? "" : ", відкривається з рекордом " + s.need));
       const c = document.createElement("canvas");
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       c.width = 72 * dpr; c.height = 72 * dpr;
       const x = c.getContext("2d"); x.scale(dpr, dpr);
       drawDino(x, "runA", 6, 14, 3, s, 1);
       b.append(c);
-      const n = document.createElement("span"); n.className = "name"; n.textContent = s.name;
+      const n = document.createElement("span"); n.className = "name"; n.textContent = s.secret && !unlocked ? "???" : s.name;
       const r = document.createElement("span"); r.className = "req";
-      r.textContent = s.id === skinId ? "Вибрано" : unlocked ? "Вибрати" : canBuy ? "Купити ● " + price(s) : "🔒 " + s.need + " / ● " + price(s);
+      r.textContent = s.id === skinId ? "Вибрано" : unlocked ? "Вибрати" : canBuy ? "Купити ● " + price(s) : s.secret ? (s.hint || "❓ Секрет") : "🔒 " + s.need + " / ● " + price(s);
       if (canBuy) b.classList.add("buy");
       b.append(n, r);
       b.onclick = () => {
