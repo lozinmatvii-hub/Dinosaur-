@@ -28,6 +28,7 @@
   --ink: #313338; --muted: #5c5e66; --head: #060607; --line: #e1e2e4; --dino: #c98400; color-scheme: light;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body { background: var(--chat); color: var(--ink); font: 15px/1.4 var(--body); overflow: hidden; -webkit-tap-highlight-color: transparent; }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
@@ -71,6 +72,20 @@ input { font: inherit; color: var(--ink); }
 .main-head .hash { color: var(--muted); font-size: 22px; }
 .main-head .topic { color: var(--muted); font-weight: 400; font-size: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-left: 1px solid var(--sel); padding-left: 10px; margin-left: 4px; }
 .main-head .sp { flex: 1; }
+.live-btn { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 4px; background: var(--input); color: var(--ink); font-size: 13px; font-weight: 500; white-space: nowrap; }
+.live-btn:hover { background: var(--sel); }
+.live-btn.on { background: var(--danger); color: #fff; }
+.live-btn[hidden] { display: none; }
+.stage { background: #000; position: relative; flex: none; border-bottom: 1px solid var(--line); }
+.stage video { display: block; width: 100%; max-height: 52vh; background: #000; }
+.stage .cap { position: absolute; left: 10px; top: 10px; display: flex; align-items: center; gap: 6px; background: #000a; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 13px; max-width: calc(100% - 120px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.stage .cap::before { content: "НАЖИВО"; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; letter-spacing: .04em; }
+.stage .ctl { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; }
+.stage .ctl button { background: #000a; color: #fff; border-radius: 4px; padding: 3px 8px; font-size: 13px; }
+.lv { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border-radius: 4px; text-align: left; color: var(--ink); min-width: 0; }
+.lv:hover { background: var(--hover); }
+.lv .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.lv .tag { background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; flex: none; }
 .menu-btn { display: none; }
 .msgs { flex: 1; overflow-y: auto; padding: 16px 0 8px; }
 .welcome { padding: 16px; }
@@ -186,6 +201,14 @@ input { font: inherit; color: var(--ink); }
       <span class="hash">#</span><span id="chanName">загальний</span>
       <span class="topic" id="chanTopic"></span>
       <span class="sp"></span>
+      <button class="live-btn" id="btnScreen" hidden title="Показати свій екран">🖥️ Екран</button>
+      <button class="live-btn" id="btnCam" hidden title="Транслювати камеру">📷 Камера</button>
+      <button class="live-btn on" id="btnStopLive" hidden>⏹ Зупинити</button>
+    </div>
+    <div class="stage" id="stage" hidden>
+      <video id="stageVideo" autoplay playsinline></video>
+      <div class="cap" id="stageCap"></div>
+      <div class="ctl"><button id="stageFull">⛶ На весь екран</button><button id="stageClose">✕</button></div>
     </div>
     <div class="msgs" id="msgs"></div>
     <div class="typing" id="typing"></div>
@@ -262,6 +285,9 @@ input { font: inherit; color: var(--ink); }
   const calls = new Map();     // peer id -> PeerJS media call (mesh: each pair talks directly)
   let peerObj = null, localStream = null, muted = false;
   const talking = new Set();
+  const live = new Map();      // id -> {kind} for everyone streaming their screen or camera
+  const viewers = new Map();   // viewer id -> call carrying my stream
+  let myLive = null, watching = null, watchCall = null;
   CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
 
   // ---------- render ----------
@@ -283,6 +309,21 @@ input { font: inherit; color: var(--ink); }
     vb.title = localStream ? "Ти в дзвінку" : "Приєднатися до дзвінка";
     vb.onclick = () => { if (!localStream) joinVoice(); };
     box.append(vb);
+    const lives = [...live.entries()].filter(([id]) => members.has(id));
+    if (lives.length) {
+      const lc = document.createElement("div"); lc.className = "cat"; lc.textContent = "Трансляції"; box.append(lc);
+      for (const [id, l] of lives) {
+        const u = members.get(id);
+        const b = document.createElement("button"); b.className = "lv";
+        const nm = document.createElement("span"); nm.className = "nm";
+        nm.textContent = (id === myId ? "Ти" : u.nick) + (l.kind === "cam" ? " · камера" : " · екран");
+        const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = id === watching ? "ДИВИШСЯ" : "НАЖИВО";
+        b.append(avaEl(u, "sm"), nm, tag);
+        b.title = id === myId ? "Твоя трансляція" : "Дивитися";
+        b.onclick = () => { $("app").classList.remove("drawer"); if (id === myId) showStage(myLive, "Твоя трансляція", true); else watch(id); };
+        box.append(b);
+      }
+    }
     if (voice.size) {
       const vl = document.createElement("div"); vl.className = "vlist";
       for (const [id, v] of voice) {
@@ -454,7 +495,7 @@ input { font: inherit; color: var(--ink); }
   function dropMember(id) {
     const u = members.get(id);
     if (!u) return;
-    members.delete(id); typing.delete(id); dropVoice(id);
+    members.delete(id); typing.delete(id); dropVoice(id); dropLive(id);
     if (isHost) sysMsg(u.nick + " пішов із сервера.");
     renderMembers(); renderTyping();
   }
@@ -489,7 +530,7 @@ input { font: inherit; color: var(--ink); }
     if (msg.t === "hello" && isHost && fromConn) {
       fromConn.uid = fromConn.peer;
       const fresh = setMember(fromConn.peer, msg.u || {});
-      fromConn.send({ t: "sync", history, members: [...members.entries()], voice: [...voice.entries()] });
+      fromConn.send({ t: "sync", history, members: [...members.entries()], voice: [...voice.entries()], live: [...live.entries()] });
       relay({ t: "member", id: fromConn.peer, u: members.get(fromConn.peer) }, fromConn, conns);
       if (fresh) sysMsg(members.get(fromConn.peer).nick + " приєднався до сервера! 🦖");
       return;
@@ -503,6 +544,8 @@ input { font: inherit; color: var(--ink); }
       }
       members.clear();
       for (const [id, u] of msg.members || []) setMember(id, u);
+      live.clear();
+      for (const [id, l] of Array.isArray(msg.live) ? msg.live : []) if (typeof id === "string") live.set(id, { kind: l?.kind === "cam" ? "cam" : "screen" });
       voice.clear();
       for (const [id, v] of Array.isArray(msg.voice) ? msg.voice : []) if (typeof id === "string") voice.set(id, { muted: !!v?.muted });
       renderAll();
@@ -514,6 +557,17 @@ input { font: inherit; color: var(--ink); }
     else if (msg.t === "react") { if (!msg.r || typeof msg.r !== "object") return; if (sender) msg.r.who = sender; applyReact(msg.r); }
     else if (msg.t === "member") { const id = sender || msg.id; setMember(id, msg.u || {}); msg.id = id; }
     else if (msg.t === "typing") { const id = sender || msg.id; msg.id = id; typing.set(id, { chan: msg.chan, until: Date.now() + 4000 }); renderTyping(); }
+    else if (msg.t === "live") {
+      const id = sender || msg.id; msg.id = id;
+      if (typeof id !== "string" || id === myId) return;
+      if (msg.on) live.set(id, { kind: msg.kind === "cam" ? "cam" : "screen" }); else dropLive(id);
+      renderChans();
+    }
+    else if (msg.t === "watch") {
+      // someone wants my stream: everyone hears it via the host, only the streamer acts
+      const id = sender || msg.id; msg.id = id;
+      if (msg.to === myId && typeof id === "string") sendStreamTo(id);
+    }
     else if (msg.t === "voice") {
       const id = sender || msg.id; msg.id = id;
       if (typeof id !== "string" || id === myId) return;
@@ -548,6 +602,14 @@ input { font: inherit; color: var(--ink); }
     else peer.on("connection", c => { conns.add(c); wire(c); });
     peerObj = peer;
     peer.on("call", call => {
+      if (call.metadata?.kind === "live") {
+        if (call.peer !== watching) { call.close(); return; }
+        watchCall?.close(); watchCall = call;
+        call.answer();
+        call.on("stream", s => showStage(s, (members.get(call.peer)?.nick || "Хтось") + (live.get(call.peer)?.kind === "cam" ? " · камера" : " · екран"), false));
+        call.on("close", () => { if (watchCall === call) closeStage(); });
+        return;
+      }
       // only answer while I'm in the voice channel; if we both dialled at once, the lower id's call wins
       if (!localStream || (calls.has(call.peer) && myId < call.peer)) { call.close(); return; }
       calls.get(call.peer)?.close();
@@ -604,13 +666,13 @@ input { font: inherit; color: var(--ink); }
     $("text").disabled = false;
     $("btnJoin").disabled = $("btnCreate").disabled = false;
     setStatus("");
-    renderAll();
+    renderAll(); renderLiveBtns();
     $("text").focus();
   }
 
   function leave(reason) {
     if (!net) return;
-    leaveVoice();
+    leaveVoice(); stopLive(); closeStage(); live.clear();
     net.send({ t: "leave", id: myId }); net.close(); net = null; peerObj = null;
     voice.clear();
     code = ""; isHost = false; myId = "me";
@@ -619,7 +681,7 @@ input { font: inherit; color: var(--ink); }
     $("text").disabled = true; $("text").placeholder = "Спершу створи сервер або приєднайся";
     $("ovJoin").hidden = false;
     setStatus(reason || "", !!reason);
-    renderAll();
+    renderAll(); renderLiveBtns();
   }
 
   // ---------- voice: PeerJS media calls, everyone in the channel calls everyone else ----------
@@ -633,6 +695,12 @@ input { font: inherit; color: var(--ink); }
     });
     const end = () => { if (calls.get(call.peer) === call) { calls.delete(call.peer); document.getElementById("va-" + call.peer)?.remove(); stopLevel(call.peer); } };
     call.on("close", end); call.on("error", end);
+  }
+
+  function dropLive(id) {
+    live.delete(id);
+    if (watching === id) closeStage();
+    viewers.get(id)?.close(); viewers.delete(id);
   }
 
   function dropVoice(id) {
@@ -700,6 +768,79 @@ input { font: inherit; color: var(--ink); }
     renderMute(); renderChans();
   };
   $("btnHang").onclick = leaveVoice;
+
+  // ---------- streaming: screen or camera, sent only to people who press "watch" ----------
+  async function goLive(kind) {
+    if (!net || !peerObj || myLive) return;
+    try {
+      myLive = kind === "cam"
+        ? await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+        : await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: true });
+    } catch { myLive = null; return; }
+    myLive.getVideoTracks()[0]?.addEventListener("ended", stopLive);
+    live.set(myId, { kind });
+    net.send({ t: "live", id: myId, on: true, kind });
+    showStage(myLive, "Твоя трансляція", true);
+    renderLiveBtns(); renderChans();
+  }
+
+  function stopLive() {
+    if (!myLive) return;
+    myLive.getTracks().forEach(t => t.stop()); myLive = null;
+    for (const c of viewers.values()) c.close();
+    viewers.clear(); live.delete(myId);
+    net?.send({ t: "live", id: myId, on: false });
+    if ($("stage").dataset.own === "1") closeStage();
+    renderLiveBtns(); renderChans();
+  }
+
+  function sendStreamTo(id) {
+    if (!myLive || !peerObj || !members.has(id)) return;
+    viewers.get(id)?.close();
+    const call = peerObj.call(id, myLive, { metadata: { kind: "live" } });
+    viewers.set(id, call);
+    call.on("close", () => { if (viewers.get(id) === call) viewers.delete(id); });
+  }
+
+  function watch(id) {
+    if (!net || !live.has(id)) return;
+    if (watching === id && !$("stage").hidden) return;
+    closeStage();
+    watching = id;
+    $("stage").hidden = false; $("stage").dataset.own = "";
+    $("stageCap").textContent = "Підключаюсь до трансляції " + (members.get(id)?.nick || "") + "…";
+    $("stageVideo").srcObject = null;
+    net.send({ t: "watch", id: myId, to: id });
+    renderChans();
+  }
+
+  function showStage(stream, caption, own) {
+    if (!stream) return;
+    $("stage").hidden = false; $("stage").dataset.own = own ? "1" : "";
+    const v = $("stageVideo"); v.srcObject = stream; v.muted = own; v.play().catch(() => {});
+    $("stageCap").textContent = caption;
+  }
+
+  function closeStage() {
+    watchCall?.close(); watchCall = null; watching = null;
+    $("stageVideo").srcObject = null; $("stage").hidden = true;
+    renderChans();
+  }
+
+  function renderLiveBtns() {
+    const on = !!net;
+    $("btnScreen").hidden = !on || !!myLive || !navigator.mediaDevices?.getDisplayMedia;
+    $("btnCam").hidden = !on || !!myLive || !navigator.mediaDevices?.getUserMedia;
+    $("btnStopLive").hidden = !myLive;
+  }
+  $("btnScreen").onclick = () => goLive("screen");
+  $("btnCam").onclick = () => goLive("cam");
+  $("btnStopLive").onclick = stopLive;
+  $("stageClose").onclick = () => { if ($("stage").dataset.own === "1") $("stage").hidden = true; else closeStage(); };
+  $("stageFull").onclick = () => {
+    const v = $("stageVideo");
+    (v.requestFullscreen?.() || v.webkitEnterFullscreen?.() || Promise.resolve())?.catch?.(() => {});
+  };
 
   function sysLocal(text) {
     addMsg({ id: newId(), chan, from: "sys", nick: "ДіноБот", ava: "📢", color: "#888888", text, t: Date.now(), sys: true });
