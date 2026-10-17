@@ -70,6 +70,12 @@ input { font: inherit; color: var(--ink); }
 .ava .dot.dnd { background: var(--danger); }
 .member .sub { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge { font-size: 12px; margin-right: 4px; }
+.img-msg { display: block; margin-top: 4px; padding: 0; border-radius: 8px; overflow: hidden; max-width: min(360px, 100%); background: var(--input); }
+.img-msg img { display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain; }
+.lightbox { position: fixed; inset: 0; z-index: 20; background: #000e; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+.lightbox button { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: 12px; background: #0009; color: #fff; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; }
+.msgs.drop { outline: 3px dashed var(--accent); outline-offset: -8px; }
 .voice-msg { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .voice-msg audio { height: 36px; max-width: 100%; }
 .voice-msg .len { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -242,6 +248,8 @@ input { font: inherit; color: var(--ink); }
     <div class="composer">
       <form id="form" autocomplete="off">
         <input id="text" maxlength="500" placeholder="Спершу створи сервер або приєднайся" disabled>
+        <button class="icon-btn" type="button" id="btnPic" title="Надіслати фото">🖼</button>
+        <input type="file" id="picInput" accept="image/*" hidden>
         <button class="icon-btn" type="button" id="btnRecCancel" title="Скасувати запис" hidden>✕</button>
         <button class="icon-btn" type="button" id="btnRec" title="Записати голосове повідомлення">🎙</button>
         <button class="icon-btn" type="button" id="btnRoar" title="Гаркнути">🦖</button>
@@ -265,6 +273,8 @@ input { font: inherit; color: var(--ink); }
     <div class="status" id="joinStatus"></div>
   </div>
 </div>
+
+<div class="lightbox" id="lightbox" hidden><img id="lightImg" alt=""><button id="lightClose" aria-label="Закрити">✕</button></div>
 
 <div class="ov" id="ovAdmin" hidden>
   <div class="dlg">
@@ -390,7 +400,8 @@ input { font: inherit; color: var(--ink); }
     $("chanName").textContent = c.name; $("chanTopic").textContent = c.topic;
     const ownLock = !!c.own && !iOwn(), mute = myPub && isMuted(myPub) ? adm.mutes.get(myPub).until : 0;
     if (net) {
-      $("text").disabled = $("btnRoar").disabled = $("btnRec").disabled = ownLock || !!mute;
+      $("text").disabled = $("btnRoar").disabled = $("btnRec").disabled = $("btnPic").disabled = ownLock || !!mute;
+      $("btnPic").hidden = !!c.own;
       $("btnRec").hidden = !!c.own || !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia;
       $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? "Тут пише тільки творець сервера 👑" : "Написати в #" + c.name;
     }
@@ -446,7 +457,15 @@ input { font: inherit; color: var(--ink); }
         if (bg) { const sp = document.createElement("span"); sp.className = "badge"; sp.textContent = bg; h.append(sp); }
         h.append(tm); body.append(h);
       }
-      if (m.audio) {
+      if (m.image) {
+        const bt = document.createElement("button"); bt.className = "img-msg"; bt.title = "Відкрити фото";
+        const im = document.createElement("img"); im.src = m.image; im.alt = "Фото від " + m.nick; im.loading = "lazy";
+        if (m.iw && m.ih) { im.width = m.iw; im.height = m.ih; }
+        bt.append(im); bt.onclick = () => { $("lightImg").src = m.image; $("lightbox").hidden = false; };
+        body.append(bt);
+      } else if (m.imageGone) {
+        const g = document.createElement("div"); g.className = "text gone"; g.textContent = "🖼 Фото (вже недоступне)"; body.append(g);
+      } else if (m.audio) {
         const vm = document.createElement("div"); vm.className = "voice-msg";
         const au = document.createElement("audio"); au.controls = true; au.preload = "metadata"; au.src = m.audio;
         vm.append(au); body.append(vm);
@@ -553,11 +572,14 @@ input { font: inherit; color: var(--ink); }
     if (validPub(m.pub)) msg.pub = m.pub;
     if (typeof m.audio === "string" && /^data:audio\/[\w.+-]+(;[\w=.+-]+)*;base64,[A-Za-z0-9+/=]+$/.test(m.audio) && m.audio.length <= MAX_AUDIO) { msg.audio = m.audio; msg.dur = Math.min(120, Number(m.dur) || 0); }
     else if (m.audioGone) msg.audioGone = true;
+    if (typeof m.image === "string" && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(m.image) && m.image.length <= MAX_MEDIA) {
+      msg.image = m.image; msg.iw = Math.min(4000, Number(m.iw) || 0); msg.ih = Math.min(4000, Number(m.ih) || 0);
+    } else if (m.imageGone) msg.imageGone = true;
     if (!msg.text) return;
     history[m.chan].push(msg);
     if (history[m.chan].length > 1 && history[m.chan].at(-2).t > msg.t) history[m.chan].sort((a, b) => a.t - b.t);
     if (history[m.chan].length > MAX_HIST) history[m.chan].shift();
-    if (msg.audio) pruneAudio();
+    if (msg.audio || msg.image) pruneAudio();
     saveHist();
     typing.delete(msg.from);
     if (m.chan !== chan) unread[m.chan]++;
@@ -807,22 +829,28 @@ input { font: inherit; color: var(--ink); }
   }
 
   function writeHist(c) {
-    // voice notes are big: if the browser's storage is full, keep the text and drop the audio
-    try { localStorage.setItem("dinocord-hist-" + c, JSON.stringify(history)); }
-    catch {
-      const lite = {};
-      for (const k in history) lite[k] = history[k].map(m => m.audio ? { ...m, audio: undefined, audioGone: true } : m);
-      try { localStorage.setItem("dinocord-hist-" + c, JSON.stringify(lite)); } catch {}
+    // photos and voice notes are big: if the browser's storage is full, drop the oldest media first and keep all text
+    const media = [];
+    for (const k in history) for (const m of history[k]) if (m.audio || m.image) media.push(m);
+    media.sort((a, b) => a.t - b.t);
+    for (let drop = 0; drop <= media.length; drop = drop ? drop * 2 : 1) {
+      const gone = new Set(media.slice(0, drop));
+      const out = {};
+      for (const k in history) out[k] = history[k].map(m => !gone.has(m) ? m
+        : m.audio ? { ...m, audio: undefined, audioGone: true } : { ...m, image: undefined, imageGone: true });
+      try { localStorage.setItem("dinocord-hist-" + c, JSON.stringify(out)); return; } catch {}
+      if (drop >= media.length) return;
     }
   }
 
-  // only the newest voice notes keep their sound, so history stays small enough to sync and save
-  const MAX_AUDIO = 700000, KEEP_AUDIO = 8;
+  // only the newest voice notes and photos keep their data, so history stays small enough to sync and save
+  const MAX_AUDIO = 700000, KEEP_AUDIO = 8, MAX_MEDIA = 700000, KEEP_IMAGES = 12;
   function pruneAudio() {
-    const all = [];
-    for (const k in history) for (const m of history[k]) if (m.audio) all.push(m);
-    all.sort((a, b) => b.t - a.t);
-    for (const m of all.slice(KEEP_AUDIO)) { delete m.audio; m.audioGone = true; }
+    const au = [], im = [];
+    for (const k in history) for (const m of history[k]) { if (m.audio) au.push(m); if (m.image) im.push(m); }
+    au.sort((a, b) => b.t - a.t); im.sort((a, b) => b.t - a.t);
+    for (const m of au.slice(KEEP_AUDIO)) { delete m.audio; m.audioGone = true; }
+    for (const m of im.slice(KEEP_IMAGES)) { delete m.image; m.imageGone = true; }
   }
 
   function mergeHist(h) {
@@ -1378,7 +1406,7 @@ input { font: inherit; color: var(--ink); }
     b.textContent = rec ? "⏹ " + fmtDur((Date.now() - recStart) / 1000) : "🎙";
     b.title = rec ? "Надіслати" : "Записати голосове повідомлення";
     $("btnRecCancel").hidden = !rec;
-    $("text").hidden = !!rec; $("btnRoar").hidden = !!rec;
+    $("text").hidden = !!rec; $("btnRoar").hidden = !!rec; $("btnPic").hidden = !!rec || chan === OWN;
   }
   function sendVoice(audio, dur) {
     if (!net) return;
@@ -1388,6 +1416,46 @@ input { font: inherit; color: var(--ink); }
     addMsg(m); net.send({ t: "msg", m });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   }
+  // ---------- photos: shrink on this device, then send as a message ----------
+  async function sendImage(file) {
+    if (!net || !file || !file.type.startsWith("image/") || chan === OWN || $("btnPic").disabled) return;
+    let data, w = 0, h = 0;
+    try {
+      if (file.type === "image/gif" && file.size <= 450000) {
+        // small GIFs go as they are, so they keep moving
+        data = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result)); fr.onerror = rej; fr.readAsDataURL(file); });
+        const im = await loadImg(data); w = im.naturalWidth; h = im.naturalHeight;
+      } else {
+        const url = URL.createObjectURL(file);
+        const im = await loadImg(url); URL.revokeObjectURL(url);
+        let side = 1280, q = 0.78;
+        do {
+          const k = Math.min(1, side / Math.max(im.naturalWidth, im.naturalHeight));
+          w = Math.max(1, Math.round(im.naturalWidth * k)); h = Math.max(1, Math.round(im.naturalHeight * k));
+          const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+          const x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, w, h); x.drawImage(im, 0, 0, w, h);
+          data = cv.toDataURL("image/jpeg", q);
+          side = Math.round(side * 0.8); q = Math.max(0.5, q - 0.08);
+        } while (data.length > MAX_MEDIA && side > 200);
+      }
+    } catch { sysLocal("Не вдалося відкрити це фото. Спробуй інше."); return; }
+    if (data.length > MAX_MEDIA) { sysLocal("Фото завелике. Спробуй інше."); return; }
+    const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text: "🖼 Фото", image: data, iw: w, ih: h, t: Date.now(), pub: myPub };
+    addMsg(m); net.send({ t: "msg", m });
+    $("msgs").scrollTop = $("msgs").scrollHeight;
+  }
+  const loadImg = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+  $("btnPic").onclick = () => $("picInput").click();
+  $("picInput").onchange = () => { const f = $("picInput").files[0]; $("picInput").value = ""; sendImage(f); };
+  // paste a screenshot or drop a file onto the chat
+  document.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith("image/")); if (f) { e.preventDefault(); sendImage(f); } });
+  $("msgs").addEventListener("dragover", e => { if (net) { e.preventDefault(); $("msgs").classList.add("drop"); } });
+  $("msgs").addEventListener("dragleave", () => $("msgs").classList.remove("drop"));
+  $("msgs").addEventListener("drop", e => { e.preventDefault(); $("msgs").classList.remove("drop"); sendImage([...e.dataTransfer.files].find(f => f.type.startsWith("image/"))); });
+  $("lightClose").onclick = () => { $("lightbox").hidden = true; };
+  $("lightbox").addEventListener("click", e => { if (e.target === $("lightbox")) $("lightbox").hidden = true; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $("lightbox").hidden = true; });
+
   $("btnRec").onclick = () => { if (rec) rec.stop(); else startRec(); };
   $("btnRecCancel").onclick = () => { recCancelled = true; rec?.stop(); };
 
