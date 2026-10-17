@@ -92,6 +92,27 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 .rooms .code { font-family: var(--display); letter-spacing: .08em; text-transform: uppercase; }
 .rooms .cnt { font-size: 13px; color: var(--muted); }
 .note { color: var(--muted); font-size: 13px; margin: 0; }
+.modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.modes button { font-family: var(--display); font-size: 14px; padding: 6px 10px; border-radius: 5px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.modes button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: #1b1300; }
+.modes button:disabled { opacity: .5; cursor: not-allowed; }
+.emos { display: flex; flex-wrap: wrap; gap: 8px; }
+.emos button { font-size: 22px; line-height: 1; width: 46px; height: 42px; border-radius: 6px; border: 2px solid var(--line); background: var(--panel); cursor: pointer; }
+.emos button:active { transform: scale(.92); border-color: var(--accent); }
+.chat { list-style: none; margin: 0 0 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; height: 220px; overflow-y: auto; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; }
+.chat li { overflow-wrap: anywhere; min-width: 0; }
+.chat li b { font-weight: 600; margin-right: 6px; }
+.chat li.sys { color: var(--muted); font-size: 13px; }
+.chat li.empty { color: var(--muted); }
+.chatform { display: flex; gap: 8px; }
+.chatform input { flex: 1 1 0; min-width: 0; font: 400 15px var(--body); color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 5px; padding: 6px 9px; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.stats div { padding: 8px 12px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; }
+.stats b { display: block; font-family: var(--display); font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 13px; color: var(--muted); }
+.opt { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.opt input { width: 18px; height: 18px; accent-color: var(--accent); }
+.modes button:focus-visible, .emos button:focus-visible, .chatform input:focus-visible, .opt input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .voice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .voice .note { flex: 1 1 220px; min-width: 0; }
 #btnVoice[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
@@ -117,6 +138,10 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
         <button class="btn" type="button" id="btnNew" title="Нова кімната з випадковим кодом">Нова</button>
       </div>
     </div>
+    <div class="field">
+      <span>Режим гонки</span>
+      <div class="modes" id="modes" role="group" aria-label="Режим гонки"></div>
+    </div>
     <div class="spacer"></div>
     <div class="field">
       <span class="status" id="status"><i></i> <span id="statusText">Підключення…</span></span>
@@ -127,6 +152,8 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   <div class="screen" id="screen">
     <canvas id="game" width="900" height="300" aria-label="Ігрове поле"></canvas>
   </div>
+
+  <div class="emos" id="emos" role="group" aria-label="Реакції"></div>
 
   <div class="voice">
     <button class="btn" type="button" id="btnVoice" aria-pressed="false" hidden>🎤 Голосовий чат</button>
@@ -146,9 +173,27 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       <ol class="board" id="players"></ol>
     </section>
     <section>
+      <h2>Чат кімнати</h2>
+      <p class="sub">Пиши друзям, поки чекаєте старту. Реакції вище летять над твоїм динозавриком, клавіші <kbd>1</kbd>…<kbd>7</kbd>.</p>
+      <ol class="chat" id="chatLog" aria-live="polite"></ol>
+      <form class="chatform" id="chatForm" autocomplete="off">
+        <input type="text" id="chatInput" maxlength="140" placeholder="Напиши повідомлення…" aria-label="Повідомлення">
+        <button class="btn" type="submit" id="chatSend">Надіслати</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="duo">
+    <section>
       <h2>Відкриті кімнати</h2>
       <p class="sub">Кімнати, де зараз хтось є. Натисни, щоб приєднатися, або скажи другу свій код.</p>
       <ul class="rooms" id="rooms"></ul>
+    </section>
+    <section>
+      <h2>Твоя статистика</h2>
+      <p class="sub">Рахується в цьому браузері.</p>
+      <div class="stats" id="stats"></div>
+      <label class="opt"><input type="checkbox" id="optSound"> 🔊 Звук</label>
     </section>
   </div>
 </div>
@@ -268,9 +313,17 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   }
   const STEP = 1 / 120;
   let sim = null, acc = 0;
-  function newSim(seed) {
-    return { rng: rngFrom(seed), t: 0, dist: 0, speed: 380, next: 900, obs: [],
-      y: 0, vy: 0, onGround: true, duck: false, legT: 0, alive: true, deathDist: 0 };
+  // Race modes: the starter picks one and it travels with the start offer.
+  const MODES = {
+    normal: { name: "Звичайний", hint: "Класична гонка", speed: 380, accel: 9 },
+    fast: { name: "Швидкий", hint: "Стартуєте на великій швидкості", speed: 560, accel: 13 },
+    flip: { name: "Переворот", hint: "Світ перевертається кожні 300 очок", speed: 380, accel: 9, flip: true },
+  };
+  function newSim(seed, mode) {
+    const m = MODES[mode] || MODES.normal;
+    return { rng: rngFrom(seed), mode: MODES[mode] ? mode : "normal", speed0: m.speed, accel: m.accel, t: 0, dist: 0, speed: m.speed, next: 900, obs: [], items: [],
+      y: 0, vy: 0, onGround: true, duck: false, legT: 0, alive: true, deathDist: 0,
+      shield: false, dbl: 0, airJumps: 0, invuln: 0, picked: 0 };
   }
   const scoreOf = d => Math.floor(d / 40);
   function spawn(s) {
@@ -286,34 +339,55 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       const w = gridW(g) * PX, h = g.length * PX, gap = 3;
       s.obs.push({ kind: "cactus", grid: g, n, wx: s.next, y: GROUND - h, w: w * n + gap * (n - 1), h, unit: w, gap });
     }
-    s.next += s.speed * (.55 + s.rng() * .9) + 160 + (s.obs[s.obs.length - 1].w);
+    const gap = s.speed * (.55 + s.rng() * .9) + 160 + (s.obs[s.obs.length - 1].w);
+    // power-ups sit in the gap after an obstacle, at the same spot for every racer
+    if (s.rng() < .16) s.items.push({ kind: s.rng() < .5 ? "shield" : "dbl", wx: s.next + gap * .55, y: GROUND - 64 - s.rng() * 50, r: 13 });
+    s.next += gap;
   }
   function stepSim(s, dt) {
     s.t += dt;
-    s.speed = Math.min(980, 380 + s.t * 9);
+    s.speed = Math.min(1080, s.speed0 + s.t * s.accel);
     s.dist += s.speed * dt;
     while (s.next < s.dist + W + 60) spawn(s);
     for (const o of s.obs) if (o.kind === "bird") o.wx -= 60 * dt;
     s.obs = s.obs.filter(o => o.wx + o.w > s.dist - DX - 200);
+    s.items = s.items.filter(it => !it.taken && it.wx > s.dist - DX - 60);
     if (!s.alive) return;
+    s.dbl = Math.max(0, s.dbl - dt); s.invuln = Math.max(0, s.invuln - dt);
     s.duck = duckHeld && s.onGround;
     const g = duckHeld && !s.onGround ? 7200 : (jumpHeld && s.vy < 0 ? 2300 : 3600);
     s.vy += g * dt; s.y += s.vy * dt;
-    if (s.y >= 0) { if (!s.onGround) s.legT = 0; s.y = 0; s.vy = 0; s.onGround = true; }
+    if (s.y >= 0) { if (!s.onGround) s.legT = 0; s.y = 0; s.vy = 0; s.onGround = true; s.airJumps = s.dbl > 0 ? 1 : 0; }
     s.legT += dt * s.speed / 40;
     // forgiving hitbox, in world x
     const hb = s.duck
       ? { x: s.dist + 8, y: GROUND + s.y - DINO.duckA.length * PX + 6, w: gridW(DINO.duckA) * PX - 14, h: DINO.duckA.length * PX - 8 }
       : { x: s.dist + 14, y: GROUND + s.y - DINO.runA.length * PX + 4, w: 20 * PX - 26, h: DINO.runA.length * PX - 8 };
+    for (const it of s.items) {
+      if (it.wx + it.r > hb.x && it.wx - it.r < hb.x + hb.w && it.y + it.r > hb.y && it.y - it.r < hb.y + hb.h) {
+        it.taken = true; s.picked++;
+        if (it.kind === "shield") { s.shield = true; beep(500, .25, "triangle", .07, 2); popup("ЩИТ", "#3d8bff"); }
+        else { s.dbl = 10; s.airJumps = 1; beep(700, .25, "triangle", .07, 2); popup("×2 СТРИБОК", "#2fbf5b"); }
+      }
+    }
     for (const o of s.obs) {
+      if (o.broken) continue;
       const ox = o.wx + 5, oy = o.y + 5, ow = o.w - 10, oh = o.h - 8;
-      if (hb.x < ox + ow && hb.x + hb.w > ox && hb.y < oy + oh && hb.y + hb.h > oy) { die(); break; }
+      if (hb.x < ox + ow && hb.x + hb.w > ox && hb.y < oy + oh && hb.y + hb.h > oy) {
+        if (s.invuln > 0) continue;
+        if (s.shield) { s.shield = false; s.invuln = .8; o.broken = true; beep(180, .2, "square", .07, 3); popup("БАХ!", "#3d8bff"); continue; }
+        die(); break;
+      }
     }
   }
+  let popups = [];
+  function popup(text, color) { popups.push({ text, color, life: 1, y: 0 }); }
 
   // ---------- sound ----------
   let ac;
+  let soundOn = store.get("sound", true) !== false;
   function beep(freq, dur, type = "square", vol = .06, slide = 0) {
+    if (!soundOn) return;
     try {
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
       const o = ac.createOscillator(), g = ac.createGain(), n = ac.currentTime;
@@ -332,7 +406,8 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 
   function me() {
     return { nick, color, rid: race ? race.id : null, st: state === "done" ? "dead" : state,
-      y: sim ? Math.round(sim.y) : 0, duck: !!(sim && sim.duck), d: sim ? Math.round(sim.alive ? sim.dist : sim.deathDist) : 0 };
+      y: sim ? Math.round(sim.y) : 0, duck: !!(sim && sim.duck), d: sim ? Math.round(sim.alive ? sim.dist : sim.deathDist) : 0,
+      sh: !!(sim && sim.alive && sim.shield) };
   }
   let lastSent = 0;
   function sendPresence(force) {
@@ -350,7 +425,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     const st = ["lobby", "count", "run", "dead"].includes(v.st) ? v.st : "lobby";
     const num = (x, lo, hi) => { const n = Number(x); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : 0; };
     return { peer: p.peer, me: p.sameTab, nick: nickV, color: colV, st, rid: typeof v.rid === "string" ? v.rid.slice(0, 24) : null,
-      y: num(v.y, -500, 0), duck: !!v.duck, d: num(v.d, 0, 1e9), start: v.start, mic: v.mic, vid: typeof v.vid === "string" ? v.vid : "" };
+      y: num(v.y, -500, 0), duck: !!v.duck, d: num(v.d, 0, 1e9), start: v.start, mic: v.mic, vid: typeof v.vid === "string" ? v.vid : "", sh: !!v.sh, say: v.say, emo: v.emo };
   }
   const peersNow = () => (R ? R.peers() : []).map(readPeer);
   function racers() {
@@ -365,14 +440,14 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     if (peersNow().some(p => !p.me && p.st === "run")) return;
     const id = Math.random().toString(36).slice(2, 10), seed = Math.floor(Math.random() * 2 ** 31);
     if (R) {
-      R.presence({ start: { id, seed } }).catch(() => {});
+      R.presence({ start: { id, seed, mode } }).catch(() => {});
       setTimeout(() => R && R.presence({ start: null }).catch(() => {}), 6000);
     }
-    beginCountdown(id, seed);
+    beginCountdown(id, seed, mode);
   }
-  function beginCountdown(id, seed) {
+  function beginCountdown(id, seed, m) {
     handled.add(id);
-    race = { id, seed, at: performance.now() + 3000 };
+    race = { id, seed, mode: MODES[m] ? m : "normal", at: performance.now() + 3000 };
     sim = null; results = []; state = "count";
     beep(440, .1);
     sendPresence(true); renderUI();
@@ -388,7 +463,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       if (performance.now() - joinedAt < 1500) continue; // an offer that was already there when we walked in
       if (state === "run") continue;
       if (state === "count" && race && race.id < id) continue; // two offers at once: lower id wins everywhere
-      beginCountdown(id, Number(s.seed) >>> 0);
+      beginCountdown(id, Number(s.seed) >>> 0, typeof s.mode === "string" ? s.mode : "normal");
     }
   }
 
@@ -397,7 +472,8 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     beep(220, .35, "sawtooth", .07, .3);
     const s = scoreOf(sim.dist);
     if (s > store.get("best", 0)) store.set("best", s);
-    sendPresence(true); renderUI();
+    store.set("powerups", store.get("powerups", 0) + sim.picked);
+    sendPresence(true); renderUI(); renderStats();
   }
   function finish() {
     state = "done";
@@ -406,9 +482,10 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     const winners = results.filter(r => scoreOf(r.d) === scoreOf(top));
     if (results.length > 1 && winners.length === 1) {
       const w = winners[0]; wins[w.me ? "me" : w.peer] = (wins[w.me ? "me" : w.peer] || 0) + 1;
-      if (w.me) { beep(660, .1); setTimeout(() => beep(880, .1), 110); setTimeout(() => beep(1320, .18), 220); }
+      if (w.me) { store.set("wins", store.get("wins", 0) + 1); beep(660, .1); setTimeout(() => beep(880, .1), 110); setTimeout(() => beep(1320, .18), 220); }
+      sysMsg((w.me ? "Ти переміг" : w.nick + " переміг") + " з рахунком " + scoreOf(w.d) + " 🏆");
     }
-    sendPresence(true); renderUI();
+    sendPresence(true); renderUI(); renderStats();
   }
 
   // ---------- input ----------
@@ -418,12 +495,14 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     if (state !== "run") return;
     jumpHeld = true;
     if (sim.onGround && !sim.duck) { sim.vy = -820; sim.onGround = false; beep(620, .09, "square", .05, 1.6); }
+    else if (!sim.onGround && sim.dbl > 0 && sim.airJumps > 0) { sim.airJumps--; sim.vy = -720; beep(900, .09, "square", .05, 1.5); }
   }
   let doneAt = 0;
   addEventListener("keydown", e => {
     if (e.target.closest && e.target.closest("input")) return;
     if (["Space", "ArrowUp", "KeyW"].includes(e.code)) { e.preventDefault(); if (!e.repeat) pressJump(); }
     else if (["ArrowDown", "KeyS"].includes(e.code)) { e.preventDefault(); duckHeld = true; }
+    else if (/^Digit[1-7]$/.test(e.code)) sendEmote(EMOTES[Number(e.code.slice(5)) - 1]);
   });
   addEventListener("keyup", e => {
     if (["Space", "ArrowUp", "KeyW"].includes(e.code)) jumpHeld = false;
@@ -441,7 +520,8 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   function update(dt) {
     t += dt;
     if (state === "count" && performance.now() >= race.at) {
-      state = "run"; sim = newSim(race.seed); acc = 0;
+      state = "run"; sim = newSim(race.seed, race.mode); acc = 0; popups = [];
+      store.set("games", store.get("games", 0) + 1); renderStats();
       beep(880, .15, "square", .06, 1.5); sendPresence(true); renderUI();
     }
     if (sim && (state === "run" || state === "dead")) {
@@ -459,23 +539,45 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   const smooth = new Map();
   const wrap = (x, span) => ((x % span) + span) % span;
 
-  function drawRacer(x, y, pose, col, alpha, label, lift = 0) {
+  // floating emotes keyed by racer ("me" for us)
+  const emotes = new Map();
+  function drawRacer(x, y, pose, col, alpha, label, lift = 0, shield = false, key = "") {
     const g = DINO[pose];
     const dy = GROUND + y - g.length * PX + 1;
+    const cx = x + gridW(g) * PX / 2;
     ctx.globalAlpha = alpha;
     drawGrid(ctx, g, x, dy, PX, col);
+    if (shield) {
+      const w = gridW(g) * PX, h = g.length * PX;
+      ctx.strokeStyle = "#3d8bff"; ctx.lineWidth = 3; ctx.globalAlpha = alpha * (.55 + Math.sin(t * 8) * .2);
+      ctx.beginPath(); ctx.ellipse(cx, dy + h / 2, w / 2 + 12, h / 2 + 10, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = alpha;
+    }
     if (label) {
       ctx.font = "500 14px 'Rubik', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-      ctx.fillStyle = col; ctx.fillText(label, x + gridW(g) * PX / 2, dy - 6 - lift);
+      ctx.fillStyle = col; ctx.fillText(label, cx, dy - 6 - lift);
     }
     ctx.globalAlpha = 1;
+    const em = emotes.get(key);
+    if (em && em.life > 0) {
+      ctx.globalAlpha = Math.min(1, em.life * 2);
+      ctx.font = "34px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      ctx.fillText(em.e, cx + (key === "me" ? 0 : 26), dy - 24 - lift - (1.6 - em.life) * 26);
+      ctx.globalAlpha = 1;
+    }
   }
+  let flipScale = 1;
 
   function render() {
     const dpr = cv.width / W;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = C.sky; ctx.fillRect(0, 0, W, H);
     const cam = sim ? sim.dist : t * 60;
+    // flip mode turns the world upside down every 300 points
+    const flipTarget = sim && MODES[sim.mode].flip && Math.floor(scoreOf(cam) / 300) % 2 ? -1 : 1;
+    flipScale += (flipTarget - flipScale) * .12;
+    ctx.save();
+    ctx.translate(0, H / 2); ctx.scale(1, Math.abs(flipScale) < .01 ? .01 : flipScale); ctx.translate(0, -H / 2);
 
     ctx.fillStyle = C.line;
     for (const c of clouds) { const w = 46 * c.s, h = 12 * c.s, x = wrap(c.x - cam * .12 * c.s, W + 120) - 60; ctx.fillRect(x, c.y, w, h); ctx.fillRect(x + w * .3, c.y - h * .7, w * .5, h * .7); }
@@ -487,6 +589,18 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       const x = DX + o.wx - sim.dist;
       if (o.kind === "cactus") for (let i = 0; i < o.n; i++) drawGrid(ctx, o.grid, x + i * (o.unit + o.gap), o.y, PX, C.ground);
       else drawGrid(ctx, Math.floor(t * 7) % 2 ? BIRD_UP : BIRD_DN, x, o.y, PX, C.ground);
+    }
+    if (sim) for (const it of sim.items) {
+      const x = DX + it.wx - sim.dist, bob = Math.sin(t * 5 + it.wx * .05) * 3;
+      if (x < -30 || x > W + 30) continue;
+      const col = it.kind === "shield" ? "#3d8bff" : "#2fbf5b";
+      ctx.save(); ctx.translate(x, it.y + bob);
+      ctx.shadowColor = col; ctx.shadowBlur = 12;
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, 0, it.r, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0; ctx.fillStyle = "#fff";
+      if (it.kind === "shield") { ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(6, -6); ctx.lineTo(6, 0); ctx.lineTo(0, 7); ctx.lineTo(-6, 0); ctx.closePath(); ctx.fill(); }
+      else for (const dy of [-5, 1]) { ctx.beginPath(); ctx.moveTo(-6, dy + 4); ctx.lineTo(0, dy - 2); ctx.lineTo(6, dy + 4); ctx.lineTo(3, dy + 4); ctx.lineTo(0, dy + 1); ctx.lineTo(-3, dy + 4); ctx.closePath(); ctx.fill(); }
+      ctx.restore();
     }
 
     // other racers: alive ones share our spot on the track, crashed ones fall behind
@@ -505,7 +619,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       if (x < -80) continue;
       // racers sharing our spot stack their names so they stay readable
       const lift = Math.abs(x - DX) < 60 ? 18 * ++stack : 0;
-      drawRacer(x, y, pose, bodyColor(p.color), .45, p.nick, lift);
+      drawRacer(x, y, pose, bodyColor(p.color), .45, p.nick, lift, p.st === "run" && p.sh, p.peer);
     }
     for (const k of smooth.keys()) if (!seen.has(k)) smooth.delete(k);
 
@@ -518,7 +632,20 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       else if (sim.duck) pose = Math.floor(sim.legT) % 2 ? "duckA" : "duckB";
       else pose = Math.floor(sim.legT) % 2 ? "runA" : "runB";
     }
-    if (x > -80) drawRacer(x, y, pose, bodyColor(color), 1, "ти");
+    const blink = sim && sim.invuln > 0 && Math.floor(t * 20) % 2;
+    if (x > -80 && !blink) drawRacer(x, y, pose, bodyColor(color), 1, "ти", 0, !!(sim && sim.alive && sim.shield), "me");
+    for (const [k, em] of emotes) { em.life -= 1 / 60; if (em.life <= 0) emotes.delete(k); }
+    ctx.restore();
+
+    // pick-up labels rise from our dino, always upright
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.font = "700 16px 'Pixelify Sans', monospace";
+    for (const p of popups) {
+      p.life -= 1 / 60; p.y += .7;
+      ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color;
+      ctx.fillText(p.text, DX + 30, H / 2 + (GROUND - 80 - p.y - H / 2) * flipScale);
+    }
+    ctx.globalAlpha = 1;
+    popups = popups.filter(p => p.life > 0);
 
     // HUD
     ctx.textBaseline = "top"; ctx.textAlign = "left";
@@ -526,10 +653,18 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     const pad = n => String(Math.floor(n)).padStart(5, "0");
     ctx.fillStyle = C.muted; ctx.fillText("РЕК " + pad(store.get("best", 0)), 18, 16);
     ctx.fillStyle = C.ink; ctx.fillText(pad(sim ? scoreOf(sim.alive ? sim.dist : sim.deathDist) : 0), 150, 16);
+    if (sim && sim.alive) {
+      let hx = 260;
+      if (sim.shield) { ctx.fillStyle = "#3d8bff"; ctx.fillText("ЩИТ", hx, 16); hx += 60; }
+      if (sim.dbl > 0) { ctx.fillStyle = "#2fbf5b"; ctx.fillText("×2 " + Math.ceil(sim.dbl), hx, 16); }
+    }
     if (race && (state === "run" || state === "dead")) {
       const rs = racers(), alive = rs.filter(p => p.st === "run").length;
       ctx.textAlign = "right"; ctx.fillStyle = alive ? C.ok : C.muted;
       ctx.fillText("У ГРІ " + alive + " / " + rs.length, W - 18, 16);
+      ctx.fillStyle = C.muted; ctx.font = "500 15px 'Pixelify Sans', monospace";
+      ctx.fillText(MODES[race.mode].name.toUpperCase(), W - 18, 42);
+      ctx.font = "500 20px 'Pixelify Sans', monospace";
     }
 
     ctx.textAlign = "center";
@@ -537,12 +672,14 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     if (state === "lobby") {
       const n = others.length + 1;
       if (busy) centerText("ГОНКА ТРИВАЄ", "Дочекайся фінішу, і наступна гонка буде з тобою");
-      else centerText("НАТИСНИ ПРОБІЛ АБО ТАПНИ", n > 1 ? "Старт для всіх " + n + " гравців у кімнаті" : "Поки ти сам. Поклич друга або біжи соло");
+      else centerText("НАТИСНИ ПРОБІЛ АБО ТАПНИ", "Режим «" + MODES[mode].name + "» · " + (n > 1 ? "старт для всіх " + n + " гравців у кімнаті" : "поки ти сам, поклич друга або біжи соло"));
     }
     if (state === "count") {
       const left = Math.max(0, (race.at - performance.now()) / 1000);
       ctx.fillStyle = C.accent; ctx.font = "700 72px 'Pixelify Sans', monospace";
-      ctx.fillText(String(Math.ceil(left) || "GO"), W / 2, 70);
+      ctx.fillText(String(Math.ceil(left) || "GO"), W / 2, 60);
+      ctx.fillStyle = C.muted; ctx.font = "500 17px 'Rubik', sans-serif";
+      ctx.fillText("Режим «" + MODES[race.mode].name + "»: " + MODES[race.mode].hint.toLowerCase(), W / 2, 146);
     }
     if (state === "dead") centerText("ТИ ВПАВ", "Дивись, як біжать інші…");
     if (state === "done") {
@@ -656,6 +793,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     const busy = peersNow().some(p => !p.me && p.st === "run");
     btnStart.disabled = state === "count" || state === "run" || state === "dead" || busy;
     btnStart.textContent = state === "done" ? "▶ Ще гонка" : "▶ Старт гонки";
+    renderModes();
     const on = !!(R && R.connected());
     statusEl.classList.toggle("on", on);
     statusText.innerHTML = "";
@@ -664,6 +802,96 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     else { statusText.append(on ? "Кімната " : "Перепідключення… "); const b = document.createElement("b"); b.textContent = roomCode.toUpperCase(); statusText.append(b); }
     renderPlayers();
   }
+
+  // ---------- race mode picker ----------
+  let mode = MODES[store.get("mode", "")] ? store.get("mode", "") : "normal";
+  const modesEl = document.getElementById("modes");
+  function renderModes() {
+    modesEl.innerHTML = "";
+    for (const [k, m] of Object.entries(MODES)) {
+      const b = document.createElement("button");
+      b.type = "button"; b.id = "mode-" + k; b.textContent = m.name; b.title = m.hint;
+      b.setAttribute("aria-pressed", String(k === mode));
+      b.disabled = state === "count" || state === "run" || state === "dead";
+      b.onclick = () => { mode = k; store.set("mode", k); renderModes(); };
+      modesEl.append(b);
+    }
+  }
+
+  // ---------- chat and emotes, carried in presence as counters so a late joiner never replays them ----------
+  const EMOTES = ["👍", "😂", "😮", "😡", "🔥", "🦖", "👋"];
+  const cleanText = v => String(v || "").replace(/[\p{C}]/gu, "").trim().slice(0, 140);
+  const chatLog = document.getElementById("chatLog"), chatForm = document.getElementById("chatForm"), chatInput = document.getElementById("chatInput");
+  const lastSay = new Map(), lastEmo = new Map(), known = new Map();
+  let sayN = 0, emoN = 0, lastChatAt = 0, lastEmoAt = 0;
+  function addMsg(name, col, text, sys) {
+    chatLog.querySelector(".empty")?.remove();
+    const li = document.createElement("li");
+    if (sys) { li.className = "sys"; li.textContent = text; }
+    else { const b = document.createElement("b"); b.style.color = bodyColor(col); b.textContent = name; li.append(b, document.createTextNode(text)); }
+    const atBottom = chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight < 40;
+    chatLog.append(li);
+    while (chatLog.children.length > 60) chatLog.firstElementChild.remove();
+    if (atBottom || !sys) chatLog.scrollTop = chatLog.scrollHeight;
+  }
+  const sysMsg = text => addMsg("", "", text, true);
+  function clearChat() {
+    chatLog.innerHTML = ""; lastSay.clear(); lastEmo.clear(); known.clear();
+    const li = document.createElement("li"); li.className = "empty"; li.textContent = "Тут поки тихо. Привітайся першим 👋"; chatLog.append(li);
+  }
+  function sendChat(text) {
+    text = cleanText(text);
+    if (!text || performance.now() - lastChatAt < 600) return false;
+    lastChatAt = performance.now(); sayN++;
+    if (R) R.presence({ say: { n: sayN, tx: text } }).catch(() => {});
+    addMsg(nick, color, text);
+    return true;
+  }
+  function sendEmote(e) {
+    if (!EMOTES.includes(e) || performance.now() - lastEmoAt < 350) return;
+    lastEmoAt = performance.now(); emoN++;
+    if (R) R.presence({ emo: { n: emoN, e } }).catch(() => {});
+    emotes.set("me", { e, life: 1.6 }); beep(1000, .05, "triangle", .04, 1.4);
+  }
+  function watchChat() {
+    const early = performance.now() - joinedAt < 1500;
+    const here = new Set();
+    for (const p of peersNow()) {
+      if (p.me) continue;
+      here.add(p.peer);
+      if (!known.has(p.peer) && !early) sysMsg(p.nick + " зайшов у кімнату");
+      known.set(p.peer, p.nick);
+      const say = p.say, emo = p.emo;
+      if (say && Number.isFinite(Number(say.n))) {
+        const prev = lastSay.get(p.peer); lastSay.set(p.peer, Number(say.n));
+        const tx = cleanText(say.tx);
+        if (prev !== Number(say.n) && !(prev === undefined && early) && tx) { addMsg(p.nick, p.color, tx); beep(760, .05, "triangle", .03); }
+      }
+      if (emo && Number.isFinite(Number(emo.n)) && EMOTES.includes(emo.e)) {
+        const prev = lastEmo.get(p.peer); lastEmo.set(p.peer, Number(emo.n));
+        if (prev !== Number(emo.n) && !(prev === undefined && early)) emotes.set(p.peer, { e: emo.e, life: 1.6 });
+      }
+    }
+    for (const [id, nm] of known) if (!here.has(id)) { known.delete(id); lastSay.delete(id); lastEmo.delete(id); sysMsg(nm + " вийшов"); }
+  }
+  chatForm.addEventListener("submit", e => { e.preventDefault(); if (sendChat(chatInput.value)) chatInput.value = ""; });
+  const emosEl = document.getElementById("emos");
+  EMOTES.forEach((e, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = "emo-" + i; b.textContent = e; b.setAttribute("aria-label", "Реакція " + e + " (клавіша " + (i + 1) + ")");
+    b.onclick = () => sendEmote(e);
+    emosEl.append(b);
+  });
+
+  // ---------- stats and sound ----------
+  const statsEl = document.getElementById("stats"), optSound = document.getElementById("optSound");
+  function renderStats() {
+    const rows = [["Забігів", store.get("games", 0)], ["Перемог", store.get("wins", 0)], ["Рекорд", store.get("best", 0)], ["Бонусів", store.get("powerups", 0)]];
+    statsEl.innerHTML = "";
+    for (const [k, v] of rows) { const d = document.createElement("div"), b = document.createElement("b"), sp = document.createElement("span"); b.textContent = v; sp.textContent = k; d.append(b, sp); statsEl.append(d); }
+  }
+  optSound.checked = soundOn;
+  optSound.onchange = () => { soundOn = optSound.checked; store.set("sound", soundOn); };
 
   // ---------- networking ----------
   let unsub = [];
@@ -676,13 +904,13 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     if (old) old.leave().catch(() => {});
     roomCode = code; codeEl.value = code; store.set("room", code);
     state = "lobby"; race = null; sim = null; results = []; wins = {};
-    renderUI();
+    clearChat(); renderUI();
     lobby.presence({ room: code }).catch(() => {});
     try { R = await lobby.join("race-" + code); }
     catch { statusText.textContent = "Не вдалося увійти в кімнату. Спробуй ще раз."; return; }
     if (roomCode !== code) { R.leave().catch(() => {}); R = null; return; }
     joinedAt = performance.now();
-    unsub.push(R.onPeers(() => { watchStarts(); renderUI(); renderRooms(); syncVoice(); }));
+    unsub.push(R.onPeers(() => { watchStarts(); watchChat(); renderUI(); renderRooms(); syncVoice(); }));
     unsub.push(R.onConnection(() => renderUI()));
     sendPresence(true); renderUI(); renderRooms(); renderVoice();
   }
@@ -896,7 +1124,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     joinRoom(cleanCode(store.get("room", "")) || "main");
   }
 
-  renderColors();
+  renderColors(); renderModes(); renderStats(); clearChat();
   codeEl.value = cleanCode(store.get("room", "")) || "main";
   roomCode = "";
   initNet();
