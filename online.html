@@ -713,9 +713,18 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       if (flushT) return;
       flushT = setTimeout(() => { flushT = 0; const m = { ...others, [myId]: mine }; for (const c of conns.values()) if (c.open) c.send({ t: "all", m }); }, 50);
     };
-    const retry = () => { if (dead) return; setOpen(false); try { peer && peer.destroy(); } catch {} others = {}; rebuild(); setTimeout(host, 300 + Math.random() * 1200); };
+    let retrying = false;
+    const retry = () => {
+      if (dead || retrying) return;
+      retrying = true; setOpen(false); hostConn = null;
+      try { peer && peer.destroy(); } catch {}
+      others = {}; rebuild();
+      setTimeout(() => { retrying = false; host(); }, 300 + Math.random() * 1200);
+    };
+    // A frozen background tab (iPad Safari) can hold an id without answering, so every step has a deadline.
     function common(p) {
       p.on("disconnected", () => { if (!dead && !p.destroyed) p.reconnect(); });
+      setTimeout(() => { if (p === peer && !p.open && !p.destroyed) retry(); }, 10000);
     }
     function host() {
       if (dead) return;
@@ -738,6 +747,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       p.on("open", id => {
         myId = id;
         const c = hostConn = p.connect(hostId, { reliable: true });
+        setTimeout(() => { if (c === hostConn && !c.open) retry(); }, 7000);
         c.on("open", () => { setOpen(true); c.send({ t: "p", p: mine }); for (const f of readyFns) f(p); });
         lastHost = Date.now();
         c.on("data", d => { if (d && d.t === "all" && d.m && typeof d.m === "object") { lastHost = Date.now(); others = { ...d.m }; delete others[myId]; rebuild(); } });
