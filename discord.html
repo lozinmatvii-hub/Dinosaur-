@@ -468,6 +468,7 @@ input { font: inherit; color: var(--ink); }
     if (!msg.text) return;
     history[m.chan].push(msg);
     if (history[m.chan].length > MAX_HIST) history[m.chan].shift();
+    saveHist();
     typing.delete(msg.from);
     if (m.chan !== chan) unread[m.chan]++;
     else if (document.hidden) document.title = "(•) ДіноКорд";
@@ -481,7 +482,37 @@ input { font: inherit; color: var(--ink); }
     const i = ids.indexOf(r.who);
     if (r.on && i < 0) ids.push(r.who);
     if (!r.on && i >= 0) ids.splice(i, 1);
+    saveHist();
     if (r.chan === chan) renderMsgs();
+  }
+
+  // ---------- history kept in every browser, so a chat survives closing the tab ----------
+  let saveTimer = 0;
+  function saveHist() {
+    if (!code) return;
+    const c = code;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => store.set("hist-" + c, history), 400);
+  }
+
+  function mergeHist(h) {
+    // add messages we don't have, union reactions, keep time order
+    if (!h || typeof h !== "object") return;
+    const keepUnread = { ...unread };
+    for (const c of CHANNELS) {
+      const arr = Array.isArray(h[c.id]) ? h[c.id].slice(-MAX_HIST) : [];
+      for (const m of arr) {
+        if (!m || m.chan !== c.id) continue;
+        addMsg(m);
+        const mine = history[c.id].find(x => x.id === m.id);
+        const theirs = sanitizeReacts(m.reacts);
+        if (mine) for (const e in theirs) mine.reacts[e] = [...new Set([...(mine.reacts[e] || []), ...theirs[e]])];
+      }
+      history[c.id].sort((a, b) => a.t - b.t);
+      if (history[c.id].length > MAX_HIST) history[c.id].splice(0, history[c.id].length - MAX_HIST);
+    }
+    Object.assign(unread, keepUnread);
+    saveHist();
   }
 
   function setMember(id, u) {
@@ -529,6 +560,7 @@ input { font: inherit; color: var(--ink); }
     if (!msg || typeof msg !== "object") return;
     if (msg.t === "hello" && isHost && fromConn) {
       fromConn.uid = fromConn.peer;
+      mergeHist(msg.hist);
       const fresh = setMember(fromConn.peer, msg.u || {});
       fromConn.send({ t: "sync", history, members: [...members.entries()], voice: [...voice.entries()], live: [...live.entries()] });
       relay({ t: "member", id: fromConn.peer, u: members.get(fromConn.peer) }, fromConn, conns);
@@ -536,12 +568,8 @@ input { font: inherit; color: var(--ink); }
       return;
     }
     if (msg.t === "sync" && !isHost) {
-      for (const c of CHANNELS) {
-        const arr = Array.isArray(msg.history?.[c.id]) ? msg.history[c.id] : [];
-        history[c.id] = [];
-        for (const m of arr) { addMsg(m); const h = history[c.id].at(-1); if (h && h.id === m.id) h.reacts = sanitizeReacts(m.reacts); }
-        unread[c.id] = 0;
-      }
+      mergeHist(msg.history);
+      CHANNELS.forEach(c => { unread[c.id] = 0; });
       members.clear();
       for (const [id, u] of msg.members || []) setMember(id, u);
       live.clear();
@@ -574,7 +602,11 @@ input { font: inherit; color: var(--ink); }
       if (msg.on) voice.set(id, { muted: !!msg.muted }); else dropVoice(id);
       renderChans();
     }
-    else if (msg.t === "leave") { if (!isHost) dropMember(msg.id); return; }
+    else if (msg.t === "leave") {
+      // the host said goodbye: take over at once instead of waiting for the connection to time out
+      if (!isHost) { if (msg.id === PREFIX + code) migrate(); else dropMember(msg.id); }
+      return;
+    }
     else return;
     if (isHost) relay(msg, fromConn, conns);
   }
@@ -593,7 +625,7 @@ input { font: inherit; color: var(--ink); }
       c.on("data", d => handle(d, hostConn ? null : c, conns));
       c.on("close", () => {
         conns.delete(c);
-        if (hostConn) { leave("Власник закрив сервер."); return; }
+        if (hostConn) { migrate(); return; }
         dropMember(c.peer);
         relay({ t: "leave", id: c.peer }, null, conns);
       });
@@ -622,16 +654,9 @@ input { font: inherit; color: var(--ink); }
     };
   }
 
-  async function enter(create) {
-    if (net) return;
-    let c = $("joinCode").value.replace(/\D/g, "").slice(0, 6);
-    if (create) c = String(1000 + Math.floor(Math.random() * 9000));
-    if (c.length < 4) { setStatus("Введи код сервера: щонайменше 4 цифри.", true); $("joinCode").focus(); return; }
-    $("btnJoin").disabled = $("btnCreate").disabled = true;
-    setStatus("Підключаюсь…");
-    try {
-      await loadPeerJs();
-      net = await new Promise((res, rej) => {
+  async function connect(c, create) {
+    await loadPeerJs();
+    return new Promise((res, rej) => {
         const peer = create ? new Peer(PREFIX + c) : new Peer();
         const fail = e => { peer.destroy(); rej(e); };
         peer.on("error", fail);
@@ -643,11 +668,32 @@ input { font: inherit; color: var(--ink); }
           conn.on("open", () => {
             clearTimeout(timer); peer.off("error", fail); peer.on("error", () => {});
             const n = makeNet(peer, conn);
-            conn.send({ t: "hello", u: me });
+            conn.send({ t: "hello", u: me, hist: history });
             res(n);
           });
         });
       });
+  }
+
+  const hasHist = c => { const h = store.get("hist-" + c, null); return !!h && CHANNELS.some(x => Array.isArray(h[x.id]) && h[x.id].length); };
+
+  async function enter(create, auto) {
+    if (net) return;
+    let c = $("joinCode").value.replace(/\D/g, "").slice(0, 6);
+    if (create) c = String(1000 + Math.floor(Math.random() * 9000));
+    if (c.length < 4) { setStatus("Введи код сервера: щонайменше 4 цифри.", true); $("joinCode").focus(); return; }
+    $("btnJoin").disabled = $("btnCreate").disabled = true;
+    setStatus(auto ? "Повертаюсь на сервер " + c + "…" : "Підключаюсь…");
+    // start from what this browser remembers about the server
+    CHANNELS.forEach(x => { history[x.id] = []; unread[x.id] = 0; });
+    code = c; mergeHist(store.get("hist-" + c, null)); code = "";
+    try {
+      try { net = await connect(c, create); }
+      catch (e) {
+        // nobody is hosting it right now, but I have its chat: bring the server back myself
+        if (create || e?.type !== "peer-unavailable" || !hasHist(c)) throw e;
+        net = await connect(c, true); create = true;
+      }
     } catch (e) {
       $("btnJoin").disabled = $("btnCreate").disabled = false;
       const t = e && e.type;
@@ -658,10 +704,11 @@ input { font: inherit; color: var(--ink); }
       return;
     }
     code = c; isHost = create;
+    saveHist();
     store.set("lastCode", code);
     members.clear();
     setMember(myId, { ...me, host: isHost });
-    if (isHost) sysMsg("Сервер створено! Код для друзів: " + code);
+    if (isHost) sysMsg(hasHist(c) && history.general.length > 1 ? me.nick + " повернув сервер онлайн 🦖" : "Сервер створено! Код для друзів: " + code);
     $("ovJoin").hidden = true;
     $("text").disabled = false;
     $("btnJoin").disabled = $("btnCreate").disabled = false;
@@ -670,18 +717,49 @@ input { font: inherit; color: var(--ink); }
     $("text").focus();
   }
 
-  function leave(reason) {
-    if (!net) return;
-    leaveVoice(); stopLive(); closeStage(); live.clear();
-    net.send({ t: "leave", id: myId }); net.close(); net = null; peerObj = null;
-    voice.clear();
+  let migrating = false;
+  async function migrate() {
+    if (migrating || !net) return;
+    migrating = true;
+    const c = code;
+    leaveVoice(); stopLive(); closeStage();
+    live.clear(); voice.clear(); typing.clear();
+    net.close(); net = null; peerObj = null;
+    for (const id of [...members.keys()]) if (id !== myId) members.delete(id);
+    $("text").disabled = true;
+    sysLocal("Власник вийшов. Передаю сервер комусь із вас…");
+    for (let i = 0; i < 8 && !net; i++) {
+      await new Promise(r => setTimeout(r, 400 + Math.random() * 1200 + i * 700));
+      try { net = await connect(c, true); isHost = true; break; } catch (e) { if (e?.type !== "unavailable-id") continue; }
+      try { net = await connect(c, false); isHost = false; } catch {}
+    }
+    migrating = false;
+    if (!net) { code = c; leaveUi("Сервер " + c + " зараз недоступний. Натисни «Приєднатися», щоб спробувати ще раз."); return; }
+    code = c;
+    members.clear();
+    setMember(myId, { ...me, host: isHost });
+    if (isHost) sysMsg(me.nick + " тепер власник сервера.");
+    $("text").disabled = false;
+    renderAll(); renderLiveBtns();
+  }
+
+  function leaveUi(reason) {
     code = ""; isHost = false; myId = "me";
-    members.clear(); typing.clear();
+    members.clear(); typing.clear(); voice.clear(); live.clear();
     CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
     $("text").disabled = true; $("text").placeholder = "Спершу створи сервер або приєднайся";
     $("ovJoin").hidden = false;
     setStatus(reason || "", !!reason);
     renderAll(); renderLiveBtns();
+  }
+
+  function leave(reason) {
+    if (!net) return;
+    leaveVoice(); stopLive(); closeStage(); live.clear();
+    net.send({ t: "leave", id: myId }); net.close(); net = null; peerObj = null;
+    clearTimeout(saveTimer); store.set("hist-" + code, history);
+    if (!reason) store.set("lastCode", "");
+    leaveUi(reason);
   }
 
   // ---------- voice: PeerJS media calls, everyone in the channel calls everyone else ----------
@@ -906,12 +984,16 @@ input { font: inherit; color: var(--ink); }
   applyTheme();
 
   document.addEventListener("visibilitychange", () => { if (!document.hidden) document.title = "ДіноКорд"; });
-  window.addEventListener("pagehide", () => { if (net) net.send({ t: "leave", id: myId }); });
+  window.addEventListener("pagehide", () => {
+    if (code) { clearTimeout(saveTimer); store.set("hist-" + code, history); }
+    if (net) net.send({ t: "leave", id: myId });
+  });
   setInterval(renderTyping, 1000);
 
   const hashCode = (location.hash.match(/\d{4,6}/) || [])[0];
   $("joinCode").value = hashCode || store.get("lastCode", "");
   renderMe(); renderAll();
+  if ($("joinCode").value.length >= 4 && (hashCode || hasHist($("joinCode").value))) enter(false, true);
 })();
 </script>
 </body>
