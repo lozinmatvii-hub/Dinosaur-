@@ -1,0 +1,830 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Динозаврик Реверс</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Rubik:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centred column — game screen first, then skin wardrobe and settings under it */
+:root {
+  --bg: #e9edf2;
+  --panel: #f7f9fb;
+  --ink: #252a31;
+  --muted: #6a7380;
+  --line: #c9d0d9;
+  --accent: #d48a00;
+  --sky: #f7f9fb;
+  --ground: #535a64;
+  --danger: #c4372b;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11141a; --panel: #191d25; --ink: #dfe4ec; --muted: #8b95a3; --line: #2c333e;
+    --accent: #ffbf3a; --sky: #171b22; --ground: #a3acb8; --danger: #ff6b5c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11141a; --panel: #191d25; --ink: #dfe4ec; --muted: #8b95a3; --line: #2c333e;
+  --accent: #ffbf3a; --sky: #171b22; --ground: #a3acb8; --danger: #ff6b5c; color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 5vw, 38px); margin: 0; letter-spacing: .02em; text-wrap: balance; }
+h1 .rev { color: var(--accent); }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+kbd { font-family: var(--display); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--panel); }
+
+.screen { position: relative; border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--sky); touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+canvas#game { display: block; width: 100%; height: auto; aspect-ratio: 3 / 1; max-width: 100%; cursor: pointer; }
+
+.touch { display: none; gap: 10px; }
+@media (pointer: coarse) { .touch { display: grid; grid-template-columns: 1fr 1fr; } }
+.touch button { font-family: var(--display); font-size: 18px; padding: 16px 0; border-radius: 6px; border: 2px solid var(--ink); background: var(--panel); color: var(--ink); touch-action: none; }
+.touch button:active { background: var(--accent); color: #1b1300; }
+
+section h2 { font-family: var(--display); font-weight: 500; font-size: 20px; margin: 0 0 4px; }
+section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.skin { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 8px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; color: var(--ink); font: inherit; cursor: pointer; }
+.skin canvas { width: 72px; height: 72px; }
+.skin .name { font-weight: 600; font-size: 14px; }
+.skin .req { font-family: var(--display); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.skin[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.skin[aria-pressed="true"] .req { color: var(--accent); }
+.skin.locked { cursor: not-allowed; }
+.skin.locked.buy { cursor: pointer; border-style: dashed; border-color: var(--accent); }
+.skin.locked.buy canvas { filter: grayscale(1) opacity(.6); }
+.skin.locked canvas { filter: brightness(0) opacity(.25); }
+.skin:focus-visible, .touch button:focus-visible, .opt input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px 28px; }
+.duo section { min-width: 0; }
+.quests, .board { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.quest { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; padding: 10px 12px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; }
+.quest.done { border-color: var(--accent); }
+.quest .qt { font-weight: 500; min-width: 0; }
+.quest .bar { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.quest .bar i { display: block; height: 100%; background: var(--accent); }
+.quest .qp { font-family: var(--display); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.quest button { font-family: var(--display); font-size: 14px; padding: 4px 10px; border-radius: 5px; border: 2px solid var(--accent); background: var(--accent); color: #1b1300; cursor: pointer; }
+.quest button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.board li { display: grid; grid-template-columns: 2.2em 1fr auto; gap: 10px; align-items: baseline; padding: 7px 12px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; }
+.board li.me { border-color: var(--accent); }
+.board .rk { font-family: var(--display); color: var(--muted); font-variant-numeric: tabular-nums; }
+.board li:nth-child(1) .rk { color: var(--accent); }
+.board .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .nm small { color: var(--muted); margin-left: 6px; }
+.board .sc { font-family: var(--display); font-variant-numeric: tabular-nums; font-size: 17px; }
+.board .empty { grid-template-columns: 1fr; color: var(--muted); }
+.opts { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.opt { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.opt input { width: 18px; height: 18px; accent-color: var(--accent); }
+.stats { font-family: var(--display); font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
+.stats b { color: var(--ink); font-weight: 500; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Динозаврик <span class="rev">Реверс →</span></h1>
+    <p class="hint">Біжить праворуч. <kbd>Пробіл</kbd>/<kbd>↑</kbd> стрибок, <kbd>↓</kbd> пригнутись, <kbd>P</kbd> пауза. На телефоні тапни екран. Збирай монети, щит береже від одного удару, ×2 дає подвійний стрибок. Кожні 1000 очок падає метеоритний дощ.</p>
+  </header>
+
+  <div class="screen" id="screen">
+    <canvas id="game" width="900" height="300" aria-label="Ігрове поле"></canvas>
+  </div>
+
+  <div class="touch">
+    <button id="btnDuck" type="button" aria-label="Пригнутись">▼ Пригнутись</button>
+    <button id="btnJump" type="button" aria-label="Стрибок">▲ Стрибок</button>
+  </div>
+
+  <div class="duo">
+    <section>
+      <h2>Завдання дня</h2>
+      <p class="sub">Нові завдання щодня опівночі. Виконав, то забирай монети.</p>
+      <ul class="quests" id="quests"></ul>
+    </section>
+    <section>
+      <h2>Таблиця рекордів</h2>
+      <p class="sub" id="boardNote">Завантаження…</p>
+      <ol class="board" id="board"></ol>
+    </section>
+  </div>
+
+  <section>
+    <h2>Скіни</h2>
+    <p class="sub">Відкриваються за рекорд або купуються за монети ●. <span class="stats">Рекорд: <b id="best">0</b> · Ігор: <b id="games">0</b> · Монет: <b id="coins">0</b></span></p>
+    <div class="skins" id="skins"></div>
+  </section>
+
+  <section>
+    <h2>Налаштування</h2>
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="optFlip"> 🙃 Переворот світу кожні 300 очок</label>
+      <label class="opt"><input type="checkbox" id="optSound" checked> 🔊 Звук</label>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- pixel art (drawn facing right, mirrored for the dino) ----------
+  const TOP = [
+    "           ######## ",
+    "          ##e#######",
+    "          ##########",
+    "          ##########",
+    "          #####     ",
+    "          ########  ",
+    "#        ######     ",
+    "#       #######     ",
+    "##     #########    ",
+    "###   ######## ##   ",
+    "############### #   ",
+    " #############      ",
+    "  ###########       ",
+    "   #########        ",
+    "    #######         ",
+  ];
+  const LEGS_A = ["     ### ##         ", "     ##   #         ", "     #    ##        ", "     ##             "];
+  const LEGS_B = ["     ### ##         ", "     #     #        ", "     ##    #        ", "           ##       "];
+  const LEGS_J = ["     ### ##         ", "     #    #         ", "     #    #         ", "     ##   ##        "];
+  const DUCK_TOP = [
+    "                   ######## ",
+    "#                 ##e#######",
+    "##     ######### ###########",
+    "############################",
+    " ##########################  ",
+    "  ################ #######   ",
+    "   ##############  #         ",
+  ];
+  const DUCK_A = ["    ### ##                  ", "    #    ##                 ", "    ##                      "];
+  const DUCK_B = ["    ### ##                  ", "     #   #                  ", "         ##                 "];
+  const DINO = {
+    runA: TOP.concat(LEGS_A), runB: TOP.concat(LEGS_B), jump: TOP.concat(LEGS_J),
+    duckA: DUCK_TOP.concat(DUCK_A), duckB: DUCK_TOP.concat(DUCK_B),
+    dead: TOP.map(r => r.replace("e", "x")).concat(LEGS_J),
+  };
+  const CACTUS_S = [
+    "   ##   ", "  ####  ", "  ####  ", "# #### #", "# #### #", "# #### #", "########",
+    " ###### ", "  ####  ", "  ####  ", "  ####  ", "  ####  ", "  ####  ", "  ####  ",
+  ];
+  const CACTUS_L = [
+    "    ###    ", "   #####   ", "   #####   ", "## ##### ##", "## ##### ##", "## ##### ##", "## ##### ##",
+    "## ##### ##", "###########", " ######### ", "   #####   ", "   #####   ", "   #####   ", "   #####   ",
+    "   #####   ", "   #####   ", "   #####   ", "   #####   ",
+  ];
+  const BIRD_UP = [
+    "     ##           ", "     ###          ", "     ####     ##  ", "     #####   #e## ",
+    "   ################", "  ###########     ", "         ######   ",
+  ];
+  const BIRD_DN = [
+    "              ##  ", "             #e## ", "   ################", "  ###########     ",
+    "     #####        ", "     ####         ", "     ###          ",
+  ];
+  // Accessories are placed in dino-grid coordinates (standing pose); duck pose shifts them.
+  const ACC = {
+    helmet: { rows: ["           #########", "          ###########"], y: -2, x: 0 },
+    goggles: { rows: ["            ###"], y: 1, x: 0 },
+    crown: { rows: ["            # ## #", "            ######", "            ######"], y: -3, x: 0 },
+    horns: { rows: ["           #     # ", "           ##   ## "], y: -2, x: 0 },
+    bandage: { rows: ["          ##########"], y: 3, x: 0 },
+    headband: { rows: ["          ##########", "         ##         ", "        ##          "], y: 2, x: 0 },
+    antenna: { rows: ["             ###", "              # ", "              # "], y: -3, x: 0 },
+  };
+  const COIN = [" #### ", "##..##", "#.##.#", "#.##.#", "##..##", " #### "];
+
+  // ---------- skins ----------
+  const SKINS = [
+    { id: "classic", name: "Класичний", need: 0, body: "ink" },
+    { id: "neon", name: "Неон", need: 100, body: "#1ee8c0", glow: "#1ee8c0" },
+    { id: "airsoft", name: "Страйкболіст", need: 250, body: "#5d6e3b", camo: "#3f4b26", acc: [["helmet", "#4a5530"], ["goggles", "#ffb000"]] },
+    { id: "zombie", name: "Зомбі", need: 500, body: "#79a865", eye: "#ff2a2a", acc: [["bandage", "#e9e2cf"]] },
+    { id: "gold", name: "Золотий", need: 800, body: "#e3b021", glow: "#ffd34d", acc: [["crown", "#ff3d6e"]] },
+    { id: "lava", name: "Лава", need: 1200, body: "#ff5a2c", eye: "#fff2a8", acc: [["horns", "#2b1a14"]], trail: "fire" },
+    { id: "ghost", name: "Привид", need: 1600, body: "#e8f0ff", alpha: .7, glow: "#b9cfff", trail: "ghost" },
+    { id: "rainbow", name: "Райдуга", need: 2500, body: "rainbow", trail: "rainbow" },
+    { id: "ninja", name: "Ніндзя", need: 3500, body: "#1d1f24", eye: "#ffffff", acc: [["headband", "#e0262f"]] },
+    { id: "robot", name: "Робот", need: 5000, body: "#8e9aab", camo: "#6b7686", eye: "#29e3ff", glow: "#29e3ff", acc: [["antenna", "#ff4d4d"]] },
+  ];
+  // Locked skins can also be bought with coins collected in runs.
+  const price = s => Math.round(s.need / 10);
+
+  // ---------- storage (optional) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("dinorev:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("dinorev:" + k, JSON.stringify(v)); } catch {} },
+  };
+  let best = store.get("best", 0), games = store.get("games", 0);
+  let skinId = store.get("skin", "classic");
+  let coins = store.get("coins", 0), owned = store.get("owned", []);
+  const hasSkin = s => best >= s.need || owned.includes(s.id);
+  const optFlip = document.getElementById("optFlip"), optSound = document.getElementById("optSound");
+  optFlip.checked = store.get("flip", false);
+  optSound.checked = store.get("sound", true);
+  optFlip.onchange = () => store.set("flip", optFlip.checked);
+  optSound.onchange = () => store.set("sound", optSound.checked);
+
+  // ---------- theme colours from CSS tokens ----------
+  let C = {};
+  const readColors = () => {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["ink", "sky", "ground", "accent", "muted", "danger", "line"]) C[k] = cs.getPropertyValue("--" + k).trim();
+  };
+  readColors();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", readColors);
+  new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ---------- drawing helpers ----------
+  const PX = 3;
+  function drawGrid(ctx, grid, x, y, s, color, opts = {}) {
+    const w = Math.max(...grid.map(r => r.length));
+    ctx.fillStyle = color;
+    for (let r = 0; r < grid.length; r++) {
+      const row = grid[r];
+      for (let c = 0; c < row.length; c++) {
+        const ch = row[c];
+        if (ch === " ") continue;
+        const cc = opts.mirror ? w - 1 - c : c;
+        if (ch === "e" || ch === "x") {
+          ctx.fillStyle = opts.eye || C.sky;
+          ctx.fillRect(x + cc * s, y + r * s, s, s);
+          if (ch === "x") { ctx.fillStyle = color; ctx.fillRect(x + cc * s + s * .3, y + r * s + s * .3, s * .4, s * .4); }
+          ctx.fillStyle = color;
+          continue;
+        }
+        if (ch === ".") ctx.fillStyle = opts.shine || color;
+        else if (opts.camo &&((c * 7 + r * 13) % 5 === 0 || (c * 3 + r * 5) % 11 === 0)) ctx.fillStyle = opts.camo;
+        else if (opts.rainbow) ctx.fillStyle = `hsl(${(opts.hue + c * 9 + r * 6) % 360} 85% 58%)`;
+        else ctx.fillStyle = color;
+        ctx.fillRect(x + cc * s, y + r * s, s + .02, s + .02);
+      }
+    }
+  }
+  const gridW = g => Math.max(...g.map(r => r.length));
+
+  function drawDino(ctx, pose, x, y, s, skin, t) {
+    const grid = DINO[pose];
+    const ducking = pose.startsWith("duck");
+    const body = skin.body === "ink" ? C.ink : skin.body === "rainbow" ? "#f55" : skin.body;
+    ctx.save();
+    if (skin.alpha) ctx.globalAlpha = skin.alpha + Math.sin(t * 6) * .12;
+    if (skin.glow) { ctx.shadowColor = skin.glow; ctx.shadowBlur = 14; }
+    const o = { mirror: true, eye: skin.eye, camo: skin.camo, rainbow: skin.body === "rainbow", hue: t * 160 };
+    drawGrid(ctx, grid, x, y, s, body, o);
+    ctx.shadowBlur = 0;
+    // accessories follow the head: in duck pose the head sits lower and further forward
+    const w = gridW(grid);
+    for (const [name, col] of skin.acc || []) {
+      const a = ACC[name];
+      const dy = ducking ? a.y + 0 : a.y, dx = ducking ? 8 : 0;
+      // pad accessory rows to the full grid width so mirroring lines up with the body
+      const rows = a.rows.map(r => (" ".repeat(dx) + r).padEnd(w, " "));
+      drawGrid(ctx, rows, x, y + dy * s, s, col, { mirror: true });
+    }
+    ctx.restore();
+  }
+
+  // ---------- game ----------
+  const cv = document.getElementById("game"), ctx = cv.getContext("2d");
+  const W = 900, H = 300, GROUND = 250;
+  const fit = () => {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  fit(); addEventListener("resize", fit);
+
+  const DX = W - 140; // dino's left edge; it runs leftwards, world flows to the right
+  let state = "ready"; // ready | run | dead | pause
+  let dino, obstacles, clouds, pebbles, particles, speed, score, nextGap, t, flipScale, flipTarget, lastFlipAt, flash, deadT;
+  let items, nextItem, runCoins, shield, dbl, invuln, nightT, stars, popups;
+  let rain, rainAt, rainSpawn, meteors, banner;
+  const skin = () => SKINS.find(s => s.id === skinId) || SKINS[0];
+
+  function reset() {
+    dino = { y: 0, vy: 0, duck: false, onGround: true, legT: 0, airJumps: 1 };
+    rain = 0; rainAt = 1000; rainSpawn = 0; meteors = []; banner = null;
+    items = []; nextItem = 900; runCoins = 0; shield = false; dbl = 0; invuln = 0; nightT = 0; popups = [];
+    stars = Array.from({ length: 30 }, () => ({ x: Math.random() * W, y: 10 + Math.random() * 150 }));
+    obstacles = []; particles = [];
+    clouds = Array.from({ length: 5 }, () => ({ x: Math.random() * W, y: 30 + Math.random() * 90, s: .6 + Math.random() * .6 }));
+    pebbles = Array.from({ length: 40 }, () => ({ x: Math.random() * W, y: GROUND + 4 + Math.random() * 18, w: 2 + Math.floor(Math.random() * 3) * 2 }));
+    speed = 380; score = 0; nextGap = 420; t = 0; flipScale = 1; flipTarget = 1; lastFlipAt = 0; flash = 0; deadT = 0;
+  }
+  reset();
+
+  // ---------- sound ----------
+  let ac;
+  function beep(freq, dur, type = "square", vol = .06, slide = 0) {
+    if (!optSound.checked) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      const o = ac.createOscillator(), g = ac.createGain(), n = ac.currentTime;
+      o.type = type; o.frequency.setValueAtTime(freq, n);
+      if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, n + dur);
+      g.gain.setValueAtTime(vol, n); g.gain.exponentialRampToValueAtTime(.0001, n + dur);
+      o.connect(g).connect(ac.destination); o.start(n); o.stop(n + dur);
+    } catch {}
+  }
+
+  // ---------- input ----------
+  let jumpHeld = false, duckHeld = false;
+  function pressJump() {
+    if (state === "ready" || state === "dead") { if (state === "dead" && deadT < .4) return; start(); return; }
+    if (state === "pause") { state = "run"; return; }
+    jumpHeld = true;
+    if (dino.onGround && !dino.duck) { dino.vy = -820; dino.onGround = false; beep(620, .09, "square", .05, 1.6); }
+    else if (!dino.onGround && dbl > 0 && dino.airJumps > 0) { dino.airJumps--; dino.vy = -720; beep(900, .09, "square", .05, 1.5); puff(); }
+  }
+  function start() { reset(); state = "run"; games++; store.set("games", games); updateStats(); quest("game", 1); beep(440, .08); }
+  addEventListener("keydown", e => {
+    if (["Space", "ArrowUp", "KeyW"].includes(e.code)) { e.preventDefault(); if (!e.repeat) pressJump(); }
+    else if (["ArrowDown", "KeyS"].includes(e.code)) { e.preventDefault(); duckHeld = true; }
+    else if (e.code === "KeyP" || e.code === "Escape") { if (state === "run") state = "pause"; else if (state === "pause") state = "run"; }
+  });
+  addEventListener("keyup", e => {
+    if (["Space", "ArrowUp", "KeyW"].includes(e.code)) jumpHeld = false;
+    if (["ArrowDown", "KeyS"].includes(e.code)) duckHeld = false;
+  });
+  cv.addEventListener("pointerdown", e => { e.preventDefault(); pressJump(); });
+  addEventListener("pointerup", () => { jumpHeld = false; });
+  const bJ = document.getElementById("btnJump"), bD = document.getElementById("btnDuck");
+  bJ.addEventListener("pointerdown", e => { e.preventDefault(); pressJump(); });
+  bJ.addEventListener("pointerup", () => jumpHeld = false);
+  bD.addEventListener("pointerdown", e => { e.preventDefault(); duckHeld = true; if (state !== "run") pressJump(); });
+  for (const ev of ["pointerup", "pointercancel", "pointerleave"]) bD.addEventListener(ev, () => duckHeld = false);
+  document.addEventListener("visibilitychange", () => { if (document.hidden && state === "run") state = "pause"; });
+
+  // ---------- spawning ----------
+  function spawn() {
+    const r = Math.random();
+    if (score > 150 && r < .28) {
+      const lvl = [GROUND - 20, GROUND - 52, GROUND - 92][Math.floor(Math.random() * 3)];
+      const h = BIRD_UP.length * PX;
+      obstacles.push({ kind: "bird", x: -gridW(BIRD_UP) * PX, y: lvl - h, w: gridW(BIRD_UP) * PX, h, extra: 60 });
+    } else {
+      const big = Math.random() < .45;
+      const g = big ? CACTUS_L : CACTUS_S;
+      const max = speed > 600 ? 3 : speed > 470 ? 2 : 1;
+      const n = 1 + Math.floor(Math.random() * max);
+      const w = gridW(g) * PX, h = g.length * PX, gap = 3;
+      obstacles.push({ kind: "cactus", grid: g, n, x: -(w * n + gap * (n - 1)), y: GROUND - h, w: w * n + gap * (n - 1), h, unit: w, gap });
+    }
+  }
+
+  // Coins come in arcs; now and then a power-up instead: shield (one free hit) or double jump (10 s).
+  function spawnItem() {
+    if (Math.random() < .22) {
+      const kind = Math.random() < .5 ? "shield" : "dbl";
+      items.push({ kind, x: -30, y: GROUND - 70 - Math.random() * 60, r: 13 });
+      return;
+    }
+    const n = 3 + Math.floor(Math.random() * 3), base = GROUND - 40 - Math.random() * 50, arc = Math.random() < .5 ? 50 : 0;
+    for (let i = 0; i < n; i++) items.push({ kind: "coin", x: -30 - i * 34, y: base - Math.sin(i / (n - 1) * Math.PI) * arc, r: 9 });
+  }
+  // Meteors land upstream, then leave a burning crater that rolls toward the dino: jump it.
+  function spawnMeteor() {
+    const fall = 1 + Math.random() * .3, land = 60 + Math.random() * (DX - 260), y0 = -20;
+    meteors.push({ x: land - speed * fall, y: y0, vy: (GROUND - 10 - y0) / fall, r: 11 });
+  }
+  function puff() {
+    for (let i = 0; i < 10; i++) particles.push({ x: DX + 30, y: GROUND + dino.y - 4, vx: (Math.random() - .5) * 200, vy: Math.random() * 80, life: .6, kind: "ghost", hue: 0 });
+  }
+  function popup(text, x, y, color) { popups.push({ text, x, y, life: 1, color }); }
+
+  // ---------- update ----------
+  function update(dt) {
+    t += dt;
+    if (state !== "run") { if (state === "dead") deadT += dt; return; }
+    speed = Math.min(980, speed + dt * 9);
+    const prev = Math.floor(score / 100);
+    score += speed * dt * .025;
+    if (Math.floor(score / 100) > prev) { beep(880, .07, "square", .05); setTimeout(() => beep(1320, .1, "square", .05), 80); flash = 1; }
+
+    // world flip
+    if (optFlip.checked && score - lastFlipAt >= 300) { lastFlipAt = Math.floor(score / 300) * 300; flipTarget *= -1; beep(300, .35, "sawtooth", .05, 2.5); }
+    if (!optFlip.checked) flipTarget = 1;
+    flipScale += (flipTarget - flipScale) * Math.min(1, dt * 6);
+
+    // dino physics
+    dino.duck = duckHeld && dino.onGround;
+    const g = duckHeld && !dino.onGround ? 7200 : (jumpHeld && dino.vy < 0 ? 2300 : 3600);
+    dino.vy += g * dt; dino.y += dino.vy * dt;
+    if (dino.y >= 0) { if (!dino.onGround) dino.legT = 0; dino.y = 0; dino.vy = 0; dino.onGround = true; dino.airJumps = 1; }
+    dbl = Math.max(0, dbl - dt); invuln = Math.max(0, invuln - dt);
+    // day and night swap every 700 points
+    nightT += ((Math.floor(score / 700) % 2) - nightT) * Math.min(1, dt * 1.5);
+    for (const s of stars) { s.x += speed * .03 * dt; if (s.x > W) s.x -= W; }
+
+    // coins and power-ups
+    nextItem -= speed * dt;
+    if (nextItem <= 0) { spawnItem(); nextItem = 700 + Math.random() * 900; }
+    const dTop = GROUND + dino.y - (dino.duck ? DINO.duckA.length : DINO.runA.length) * PX;
+    const dLeft = dino.duck ? DX - 8 * PX : DX, dRight = dLeft + (dino.duck ? 28 : 20) * PX;
+    for (const it of items) {
+      it.x += speed * dt;
+      if (it.x + it.r > dLeft && it.x - it.r < dRight && it.y + it.r > dTop && it.y - it.r < GROUND + dino.y) {
+        it.taken = true;
+        if (it.kind !== "coin") quest("power", 1);
+        if (it.kind === "coin") { runCoins++; quest("coin", 1); score += 5; beep(1400, .06, "square", .04, 1.3); popup("+5", it.x, it.y - 14, C.accent); }
+        else if (it.kind === "shield") { shield = true; beep(500, .25, "triangle", .07, 2); popup("ЩИТ", it.x, it.y - 20, "#3d8bff"); }
+        else { dbl = 10; dino.airJumps = 1; beep(700, .25, "triangle", .07, 2); popup("ПОДВІЙНИЙ СТРИБОК", it.x, it.y - 20, "#2fbf5b"); }
+      }
+    }
+    items = items.filter(it => !it.taken && it.x < W + 40);
+    for (const p of popups) { p.y -= 40 * dt; p.life -= dt * 1.2; }
+    popups = popups.filter(p => p.life > 0);
+    dino.legT += dt * speed / 40;
+
+    // world
+    for (const c of clouds) { c.x += speed * .12 * c.s * dt; if (c.x > W + 60) { c.x = -80; c.y = 30 + Math.random() * 90; } }
+    for (const p of pebbles) { p.x += speed * dt; if (p.x > W) p.x -= W + 10; }
+    for (const o of obstacles) {
+      o.x += (speed + (o.extra || 0)) * dt;
+      if (!o.passed && o.x > DX + 60) {
+        o.passed = true;
+        if (o.kind === "cactus") quest("cactus", o.n);
+        else if (o.kind === "bird") quest("bird", 1);
+      }
+    }
+
+    // boss event: meteor shower every 1000 points
+    if (rain <= 0 && score >= rainAt) {
+      rain = 8; rainAt += 1000; rainSpawn = .8;
+      banner = { text: "☄ МЕТЕОРИТНИЙ ДОЩ!", life: 2.2, color: C.danger };
+      beep(160, .6, "sawtooth", .07, .5);
+    }
+    if (rain > 0) {
+      rain -= dt; rainSpawn -= dt;
+      if (rainSpawn <= 0 && rain > 1.2) { spawnMeteor(); rainSpawn = .5 + Math.random() * .45; }
+      if (rain <= 0) {
+        score += 100; runCoins += 20; quest("rain", 1);
+        banner = { text: "ВИЖИВ! +100 очок, +20 ●", life: 2.2, color: C.accent };
+        beep(660, .1); setTimeout(() => beep(880, .1), 110); setTimeout(() => beep(1320, .18), 220);
+      }
+    }
+    for (const m of meteors) {
+      m.x += speed * dt; m.y += m.vy * dt;
+      if (Math.random() < dt * 50) particles.push({ x: m.x, y: m.y, vx: -m.vy * .15 + Math.random() * 40, vy: -m.vy * .35, life: .7, kind: "fire", hue: 0 });
+      if (m.y >= GROUND - m.r) {
+        m.dead = true;
+        obstacles.push({ kind: "crater", x: m.x - 18, y: GROUND - 15, w: 36, h: 15, passed: true });
+        for (let i = 0; i < 16; i++) particles.push({ x: m.x, y: GROUND - 6, vx: (Math.random() - .5) * 320, vy: -Math.random() * 260, life: .7, kind: "fire", hue: 0 });
+        beep(90, .25, "sawtooth", .08, .4);
+      }
+    }
+    meteors = meteors.filter(m => !m.dead);
+    if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
+    obstacles = obstacles.filter(o => !o.broken && o.x < W + 40);
+    nextGap -= speed * dt;
+    if (nextGap <= 0) { if (rain <= 0) spawn(); nextGap = speed * (.55 + Math.random() * .9) + 160; }
+
+    // trails
+    const sk = skin();
+    if (sk.trail && Math.random() < dt * 60) {
+      const dy = GROUND + dino.y - (dino.duck ? 18 : 30);
+      particles.push({ x: DX + 57, y: dy + (Math.random() - .5) * 20, vx: speed * .4 + Math.random() * 60, vy: (Math.random() - .5) * 40 - (sk.trail === "fire" ? 60 : 0), life: 1, kind: sk.trail, hue: (t * 200) % 360 });
+    }
+    for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 1.8; }
+    particles = particles.filter(p => p.life > 0);
+    flash = Math.max(0, flash - dt * 2);
+
+    // collision with a forgiving hitbox
+    const hb = dino.duck
+      ? { x: DX - 8 * PX + 8, y: GROUND + dino.y - DINO.duckA.length * PX + 6, w: gridW(DINO.duckA) * PX - 14, h: DINO.duckA.length * PX - 8 }
+      : { x: DX + 12, y: GROUND + dino.y - DINO.runA.length * PX + 4, w: 20 * PX - 26, h: DINO.runA.length * PX - 8 };
+    const hazards = obstacles.concat(meteors.map(m => ({ x: m.x - m.r, y: m.y - m.r, w: m.r * 2 + 8, h: m.r * 2 + 6, ref: m })));
+    for (const o of hazards) {
+      const ox = o.x + 5, oy = o.y + 5, ow = o.w - 10, oh = o.h - 8;
+      if (hb.x < ox + ow && hb.x + hb.w > ox && hb.y < oy + oh && hb.y + hb.h > oy) {
+        if (invuln > 0) continue;
+        if (shield) {
+          shield = false; invuln = .8; o.broken = true; if (o.ref) o.ref.dead = true;
+          quest("break", 1);
+          for (let i = 0; i < 18; i++) particles.push({ x: o.x + o.w / 2, y: o.y + o.h / 2, vx: (Math.random() - .3) * 400, vy: (Math.random() - .7) * 300, life: .8, kind: "spark", hue: 0 });
+          beep(180, .2, "square", .07, 3); popup("БАХ!", o.x, o.y - 10, "#3d8bff");
+          continue;
+        }
+        die(); break;
+      }
+    }
+  }
+  function die() {
+    state = "dead"; deadT = 0; banner = null;
+    beep(220, .35, "sawtooth", .07, .3);
+    const s = Math.floor(score);
+    if (s > best) { best = s; store.set("best", best); }
+    coins += runCoins; store.set("coins", coins);
+    quest("score", s);
+    runs.push({ s, skin: skinId, at: Date.now() }); runs.sort((a, b) => b.s - a.s); runs = runs.slice(0, 5); store.set("runs", runs);
+    saveQuests(); renderQuests(); submitScore(); renderBoard();
+    updateStats(); renderSkins();
+  }
+
+  // ---------- render ----------
+  function render() {
+    const dpr = cv.width / W;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = C.sky; ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.translate(0, H / 2); ctx.scale(1, flipScale || .001); ctx.translate(0, -H / 2);
+    // mirror the whole world horizontally: the dino now runs to the right
+    ctx.translate(W, 0); ctx.scale(-1, 1);
+
+    // stars (only visible at night; the whole screen is inverted then)
+    if (nightT > .05) {
+      ctx.globalAlpha = nightT; ctx.fillStyle = C.ink;
+      for (const s of stars) ctx.fillRect(s.x, s.y, 2, 2);
+      ctx.globalAlpha = 1;
+    }
+    // clouds
+    ctx.fillStyle = C.line;
+    for (const c of clouds) { const w = 46 * c.s, h = 12 * c.s; ctx.fillRect(c.x, c.y, w, h); ctx.fillRect(c.x + w * .2, c.y - h * .7, w * .5, h * .7); }
+
+    // ground
+    ctx.fillStyle = C.ground;
+    ctx.fillRect(0, GROUND - 1, W, 2);
+    for (const p of pebbles) ctx.fillRect(p.x, p.y, p.w, 2);
+
+    // obstacles
+    for (const o of obstacles) {
+      if (o.kind === "cactus") for (let i = 0; i < o.n; i++) drawGrid(ctx, o.grid, o.x + i * (o.unit + o.gap), o.y, PX, C.ground);
+      else if (o.kind === "crater") {
+        ctx.fillStyle = C.ground; ctx.fillRect(o.x, GROUND - 4, o.w, 4);
+        for (let i = 0; i < 6; i++) {
+          const fh = 6 + Math.abs(Math.sin(t * 14 + i * 1.7 + o.x)) * 10;
+          ctx.fillStyle = i % 2 ? "#ff7a1a" : "#ffc93c";
+          ctx.fillRect(o.x + 3 + i * 5, GROUND - 4 - fh, 5, fh);
+        }
+      }
+      else drawGrid(ctx, Math.floor(t * 7) % 2 ? BIRD_UP : BIRD_DN, o.x, o.y, PX, C.ground);
+    }
+
+    // meteors with a blinking landing marker
+    for (const m of meteors) {
+      const left = (GROUND - m.r - m.y) / m.vy;
+      if (Math.floor(t * 10) % 2) { ctx.fillStyle = C.danger; ctx.fillRect(m.x + left * speed - 14, GROUND + 3, 28, 3); }
+      ctx.fillStyle = "#5a3a2a"; ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ff8a2a"; ctx.beginPath(); ctx.arc(m.x - 3, m.y + 3, m.r * .55, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // coins and power-ups
+    for (const it of items) {
+      const bob = Math.sin(t * 5 + it.x * .05) * 3;
+      if (it.kind === "coin") {
+        const sx = Math.abs(Math.cos(t * 4 + it.x * .03));
+        ctx.save(); ctx.translate(it.x, it.y + bob); ctx.scale(Math.max(.2, sx), 1);
+        drawGrid(ctx, COIN, -9, -9, 3, "#e8a400", { shine: "#ffe27a" });
+        ctx.restore();
+      } else {
+        const col = it.kind === "shield" ? "#3d8bff" : "#2fbf5b";
+        ctx.save(); ctx.translate(it.x, it.y + bob);
+        ctx.shadowColor = col; ctx.shadowBlur = 12;
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, 0, it.r, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0; ctx.fillStyle = "#fff";
+        if (it.kind === "shield") { ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(6, -6); ctx.lineTo(6, 0); ctx.lineTo(0, 7); ctx.lineTo(-6, 0); ctx.closePath(); ctx.fill(); }
+        else for (const dy of [-5, 1]) { ctx.beginPath(); ctx.moveTo(-6, dy + 4); ctx.lineTo(0, dy - 2); ctx.lineTo(6, dy + 4); ctx.lineTo(3, dy + 4); ctx.lineTo(0, dy + 1); ctx.lineTo(-3, dy + 4); ctx.closePath(); ctx.fill(); }
+        ctx.restore();
+      }
+    }
+
+    // particles
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.kind === "fire" ? `hsl(${20 + (1 - p.life) * 30} 100% ${50 + p.life * 15}%)` : p.kind === "rainbow" ? `hsl(${p.hue} 90% 60%)` : p.kind === "spark" ? "#3d8bff" : "#c9d8ff";
+      const s = p.kind === "ghost" ? 6 : 4 + p.life * 4;
+      ctx.fillRect(p.x, p.y, s, s);
+    }
+    ctx.globalAlpha = 1;
+
+    // dino
+    const sk = skin();
+    let pose;
+    if (state === "dead") pose = "dead";
+    else if (!dino.onGround) pose = "jump";
+    else if (state === "ready") pose = "jump";
+    else if (dino.duck) pose = Math.floor(dino.legT) % 2 ? "duckA" : "duckB";
+    else pose = Math.floor(dino.legT) % 2 ? "runA" : "runB";
+    const g = DINO[pose];
+    const dx = DX - (pose.startsWith("duck") ? 8 * PX : 0), dy = GROUND + dino.y - g.length * PX + 1;
+    if (!(invuln > 0 && Math.floor(t * 20) % 2)) drawDino(ctx, pose, dx, dy, PX, sk, t);
+    if (shield) {
+      const w = gridW(g) * PX, h = g.length * PX;
+      ctx.strokeStyle = "#3d8bff"; ctx.lineWidth = 3; ctx.globalAlpha = .55 + Math.sin(t * 8) * .2;
+      ctx.beginPath(); ctx.ellipse(dx + w / 2, dy + h / 2, w / 2 + 12, h / 2 + 10, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    cv.style.filter = nightT > .01 ? `invert(${nightT.toFixed(3)}) hue-rotate(${Math.round(nightT * 180)}deg)` : "";
+
+    // floating labels, mapped from world space to the screen (world is mirrored and maybe flipped)
+    ctx.textAlign = "center"; ctx.font = "700 16px 'Pixelify Sans', monospace";
+    for (const p of popups) {
+      ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color;
+      ctx.fillText(p.text, W - p.x, H / 2 + (p.y - H / 2) * flipScale);
+    }
+    ctx.globalAlpha = 1;
+
+    // HUD (never flipped)
+    ctx.font = "500 20px 'Pixelify Sans', monospace";
+    ctx.textBaseline = "top";
+    const pad = n => String(Math.floor(n)).padStart(5, "0");
+    const blink = flash > 0 && Math.floor(flash * 8) % 2;
+    ctx.fillStyle = C.muted; ctx.textAlign = "left";
+    ctx.fillText("РЕК " + pad(best), 18, 16);
+    ctx.fillStyle = blink ? C.accent : C.ink;
+    ctx.fillText(pad(score), 150, 16);
+    ctx.fillStyle = "#e8a400"; ctx.fillText("● " + runCoins, 250, 16);
+    let hx = 330;
+    if (shield) { ctx.fillStyle = "#3d8bff"; ctx.fillText("ЩИТ", hx, 16); hx += 60; }
+    if (dbl > 0) {
+      ctx.fillStyle = "#2fbf5b"; ctx.fillText("×2 СТРИБОК " + Math.ceil(dbl), hx, 16);
+    }
+    if (rain > 0 && state === "run") { ctx.fillStyle = C.danger; ctx.textAlign = "right"; ctx.fillText("☄ " + Math.ceil(rain), W - 18, 44); ctx.textAlign = "left"; }
+    if (banner) {
+      ctx.globalAlpha = Math.min(1, banner.life * 2); ctx.textAlign = "center"; ctx.fillStyle = banner.color;
+      ctx.font = "700 28px 'Pixelify Sans', monospace"; ctx.fillText(banner.text, W / 2, 70);
+      ctx.globalAlpha = 1; ctx.textAlign = "left"; ctx.font = "500 20px 'Pixelify Sans', monospace";
+    }
+    if (optFlip.checked && state === "run") {
+      const left = 300 - (score - lastFlipAt);
+      if (left < 40) { ctx.fillStyle = C.accent; ctx.textAlign = "right"; ctx.fillText("🙃 ПЕРЕВОРОТ!", W - 18, 16); }
+    }
+
+    ctx.textAlign = "center";
+    if (state === "ready") centerText("НАТИСНИ ПРОБІЛ АБО ТАПНИ", "Біжимо праворуч →");
+    if (state === "pause") centerText("ПАУЗА", "P або тап, щоб продовжити");
+    if (state === "dead") centerText("ГРУ ЗАКІНЧЕНО", Math.floor(score) >= best && best > 0 ? "Новий рекорд: " + best + "!" : "Пробіл або тап, щоб ще раз");
+  }
+  function centerText(a, b) {
+    ctx.fillStyle = C.ink; ctx.font = "700 30px 'Pixelify Sans', monospace";
+    ctx.fillText(a, W / 2, 96);
+    ctx.fillStyle = C.muted; ctx.font = "500 17px 'Rubik', sans-serif";
+    ctx.fillText(b, W / 2, 138);
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    update(dt); render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ---------- skins UI ----------
+  const skinsEl = document.getElementById("skins");
+  function renderSkins() {
+    skinsEl.innerHTML = "";
+    for (const s of SKINS) {
+      const unlocked = hasSkin(s), canBuy = !unlocked && coins >= price(s);
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "skin" + (unlocked ? "" : " locked"); b.id = "skin-" + s.id;
+      b.setAttribute("aria-pressed", String(s.id === skinId));
+      b.setAttribute("aria-label", s.name + (unlocked ? "" : ", відкривається з рекордом " + s.need));
+      const c = document.createElement("canvas");
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      c.width = 72 * dpr; c.height = 72 * dpr;
+      const x = c.getContext("2d"); x.scale(dpr, dpr);
+      drawDino(x, "runA", 6, 14, 3, s, 1);
+      b.append(c);
+      const n = document.createElement("span"); n.className = "name"; n.textContent = s.name;
+      const r = document.createElement("span"); r.className = "req";
+      r.textContent = s.id === skinId ? "Вибрано" : unlocked ? "Вибрати" : canBuy ? "Купити ● " + price(s) : "🔒 " + s.need + " / ● " + price(s);
+      if (canBuy) b.classList.add("buy");
+      b.append(n, r);
+      b.onclick = () => {
+        if (canBuy) { coins -= price(s); owned.push(s.id); store.set("coins", coins); store.set("owned", owned); beep(1200, .15, "square", .05, 1.5); updateStats(); }
+        else if (!unlocked) { beep(160, .12, "square", .05); return; } skinId = s.id; store.set("skin", skinId); renderSkins(); };
+      skinsEl.append(b);
+    }
+  }
+  function updateStats() { document.getElementById("best").textContent = best; document.getElementById("games").textContent = games; document.getElementById("coins").textContent = coins; }
+  // ---------- daily quests ----------
+  const QUESTS = [
+    { ev: "coin", text: "Збери монет: {n}", n: [25, 40, 60] },
+    { ev: "cactus", text: "Перестрибни кактусів: {n}", n: [30, 50, 80] },
+    { ev: "bird", text: "Проскоч повз птерозаврів: {n}", n: [6, 10, 16] },
+    { ev: "score", text: "Набери {n} очок за один забіг", n: [400, 700, 1100], max: true },
+    { ev: "game", text: "Зіграй забігів: {n}", n: [3, 5, 8] },
+    { ev: "break", text: "Розбий щитом перешкод: {n}", n: [1, 2, 3] },
+    { ev: "rain", text: "Переживи метеоритних дощів: {n}", n: [1, 2] },
+    { ev: "power", text: "Підбери бонусів: {n}", n: [2, 4, 6] },
+  ];
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+  function makeQuests(day) {
+    let h = 0; for (const ch of day) h = (h * 31 + ch.charCodeAt(0)) | 0;
+    const rnd = () => { h = (h * 1103515245 + 12345) | 0; return ((h >>> 8) & 0xffff) / 65536; };
+    const pool = QUESTS.slice(), list = [];
+    while (list.length < 3) {
+      const q = pool.splice(Math.floor(rnd() * pool.length), 1)[0], tier = Math.floor(rnd() * q.n.length);
+      list.push({ ev: q.ev, n: q.n[tier], reward: 20 + tier * 20, prog: 0, claimed: false });
+    }
+    return { day, list };
+  }
+  let quests = store.get("quests", null);
+  if (!quests || quests.day !== today()) quests = makeQuests(today());
+  const saveQuests = () => store.set("quests", quests);
+  function quest(ev, amount) {
+    if (quests.day !== today()) { quests = makeQuests(today()); renderQuests(); }
+    for (const q of quests.list) {
+      if (q.ev !== ev || q.prog >= q.n) continue;
+      const def = QUESTS.find(d => d.ev === ev);
+      q.prog = Math.min(q.n, def.max ? Math.max(q.prog, amount) : q.prog + amount);
+      if (q.prog >= q.n) {
+        banner = { text: "✓ ЗАВДАННЯ ВИКОНАНО", life: 2, color: C.accent };
+        beep(990, .12, "square", .05, 1.4); saveQuests(); renderQuests();
+      }
+    }
+  }
+  const questsEl = document.getElementById("quests");
+  function renderQuests() {
+    questsEl.innerHTML = "";
+    for (const [i, q] of quests.list.entries()) {
+      const def = QUESTS.find(d => d.ev === q.ev), done = q.prog >= q.n;
+      const li = document.createElement("li"); li.className = "quest" + (done ? " done" : "");
+      const tx = document.createElement("span"); tx.className = "qt"; tx.textContent = def.text.replace("{n}", q.n);
+      const right = document.createElement(done && !q.claimed ? "button" : "span");
+      if (done && !q.claimed) {
+        right.type = "button"; right.id = "claim-" + i; right.textContent = "Забрати ● " + q.reward;
+        right.onclick = () => { q.claimed = true; coins += q.reward; store.set("coins", coins); saveQuests(); beep(1200, .15, "square", .05, 1.5); renderQuests(); updateStats(); renderSkins(); };
+      } else { right.className = "qp"; right.textContent = q.claimed ? "✓ Отримано" : q.prog + " / " + q.n + " · ● " + q.reward; }
+      const bar = document.createElement("div"); bar.className = "bar";
+      const fill = document.createElement("i"); fill.style.width = Math.round(q.prog / q.n * 100) + "%"; bar.append(fill);
+      li.append(tx, right, bar); questsEl.append(li);
+    }
+  }
+
+  // ---------- leaderboard: shared through the artifact's db, local runs as a fallback ----------
+  let runs = store.get("runs", []);
+  const boardEl = document.getElementById("board"), noteEl = document.getElementById("boardNote");
+  let db = null, me = null, uid = null, rows = null, names = {}, remoteBest = 0, canWrite = true;
+  function renderBoard() {
+    boardEl.innerHTML = "";
+    const add = (rank, name, sub, score, mine) => {
+      const li = document.createElement("li"); if (mine) li.className = "me";
+      const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = rank;
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
+      if (sub) { const sm = document.createElement("small"); sm.textContent = sub; nm.append(sm); }
+      const sc = document.createElement("span"); sc.className = "sc"; sc.textContent = score;
+      li.append(rk, nm, sc); boardEl.append(li);
+    };
+    const empty = text => { const li = document.createElement("li"); li.className = "empty"; li.textContent = text; boardEl.append(li); };
+    const skinName = id => (SKINS.find(s => s.id === id) || {}).name || "";
+    if (rows) {
+      noteEl.textContent = canWrite ? "Спільна для всіх, хто відкриває цю гру. Твій рекорд додається сам." : "Спільна таблиця. Щоб потрапити в неї, власник має дати тобі доступ Contributor.";
+      if (!rows.length) empty("Ще порожньо. Зіграй першим!");
+      rows.forEach((r, i) => add(i + 1, names[r.id] || "Гравець", skinName(r.skin), r.best, r.id === uid));
+    } else {
+      noteEl.textContent = "Твої 5 найкращих забігів у цьому браузері.";
+      if (!runs.length) empty("Ще немає забігів. Натисни пробіл, щоб почати.");
+      runs.forEach((r, i) => add(i + 1, new Date(r.at).toLocaleDateString("uk-UA"), skinName(r.skin), r.s, false));
+    }
+  }
+  async function submitScore() {
+    if (!db || !uid || !canWrite || best <= remoteBest) return;
+    remoteBest = best;
+    try { await db.doc("scores/" + uid).set({ best, skin: skinId, at: Date.now() }); }
+    catch (e) { if (e && (e.code === "invalid_argument" || e.code === "not_granted")) { canWrite = false; renderBoard(); } }
+  }
+  async function initBoard() {
+    renderBoard();
+    if (!window.claude?.use) return;
+    const [d, u] = await Promise.all([window.claude.use("db"), window.claude.use("user")]).catch(() => [null, null]);
+    if (!d) return;
+    db = d; me = u;
+    uid = u ? await u.id() : null;
+    if (!uid) canWrite = false;
+    if (u && (await u.can("data.write")) === false && !(await u.isOwner())) canWrite = false;
+    if (uid) {
+      try { const snap = await db.doc("scores/" + uid).get(); if (snap.exists) remoteBest = Number(snap.data().best) || 0; } catch {}
+      submitScore();
+    }
+    db.collection("scores").orderBy("best", "desc").limit(10).onSnapshot(async snap => {
+      rows = snap.docs.map(doc => { const v = doc.data() || {}; return { id: doc.id, best: Math.max(0, Math.floor(Number(v.best) || 0)), skin: String(v.skin || "") }; });
+      renderBoard();
+      if (me && rows.length) {
+        try { const ps = await me.profiles(rows.map(r => r.id)); for (const r of rows) names[r.id] = ps[r.id]?.name || ""; renderBoard(); } catch {}
+      }
+    }, () => { rows = null; renderBoard(); });
+  }
+
+  updateStats();
+  renderSkins();
+  renderQuests();
+  initBoard();
+  document.fonts?.ready.then(renderSkins);
+})();
+</script>
+
+</body></html>
