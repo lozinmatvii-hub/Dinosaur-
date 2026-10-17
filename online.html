@@ -350,7 +350,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     const st = ["lobby", "count", "run", "dead"].includes(v.st) ? v.st : "lobby";
     const num = (x, lo, hi) => { const n = Number(x); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : 0; };
     return { peer: p.peer, me: p.sameTab, nick: nickV, color: colV, st, rid: typeof v.rid === "string" ? v.rid.slice(0, 24) : null,
-      y: num(v.y, -500, 0), duck: !!v.duck, d: num(v.d, 0, 1e9), start: v.start, mic: v.mic };
+      y: num(v.y, -500, 0), duck: !!v.duck, d: num(v.d, 0, 1e9), start: v.start, mic: v.mic, vid: typeof v.vid === "string" ? v.vid : "" };
   }
   const peersNow = () => (R ? R.peers() : []).map(readPeer);
   function racers() {
@@ -611,8 +611,8 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
       if (sm.textContent) nm.append(sm);
       const mic = p.me ? (voice.on ? (voice.muted ? "muted" : "on") : null) : (p.mic === "on" || p.mic === "muted" ? p.mic : null);
       if (mic) {
-        const m = document.createElement("span"); m.className = "mic" + (speaking(p.peer, p.me) ? " talk" : "");
-        m.textContent = mic === "muted" ? "🔇" : speaking(p.peer, p.me) ? "🔊" : "🎤";
+        const m = document.createElement("span"); m.className = "mic" + (speaking(p.vid, p.me) ? " talk" : "");
+        m.textContent = mic === "muted" ? "🔇" : speaking(p.vid, p.me) ? "🔊" : "🎤";
         m.title = mic === "muted" ? "Мікрофон вимкнено" : "У голосовому чаті";
         nm.append(m);
       }
@@ -686,117 +686,100 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     unsub.push(R.onConnection(() => renderUI()));
     sendPresence(true); renderUI(); renderRooms(); renderVoice();
   }
-  // ---------- rooms over PeerJS (plain websites, e.g. Vercel) ----------
-  // Same shape as the claude.ai room: one tab per room claims a fixed host id and relays everyone's presence.
-  const PEER_OPTS = window.DINO_PEER_OPTS || {};
-  function loadPeerJS() {
-    return new Promise((res, rej) => {
-      if (window.Peer) return res();
-      const s = document.createElement("script");
-      s.src = "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";
-      s.onload = () => res(); s.onerror = rej; document.head.append(s);
-    });
+  // ---------- rooms over MQTT (plain websites, e.g. Vercel) ----------
+  // A public MQTT broker relays everyone's presence over a WebSocket, so it works on any network.
+  // Same shape as the claude.ai room: presence(), peers(), onPeers(), connected(), join().
+  const BROKER = window.DINO_MQTT_URL || "wss://broker.emqx.io:8084/mqtt";
+  const TOPIC = "dinoonline-v1/";
+  const loadScript = src => new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = src; s.onload = () => res(); s.onerror = rej; document.head.append(s);
+  });
+  let mq = null, mqId = "";
+  const mqRooms = new Set();
+  function mqttClient() {
+    if (mq) return mq;
+    mqId = Math.random().toString(36).slice(2, 12).replace(/[^a-z0-9]/g, "") || "p" + Date.now();
+    mq = window.mqtt.connect(BROKER, { clientId: "dino-" + mqId, clean: true, keepalive: 20, reconnectPeriod: 2000, connectTimeout: 8000 });
+    mq.on("connect", () => { for (const r of mqRooms) r._connected(); });
+    mq.on("close", () => { for (const r of mqRooms) r._setOpen(false); });
+    mq.on("message", (topic, buf, packet) => { for (const r of mqRooms) r._msg(topic, buf, packet); });
+    addEventListener("pagehide", () => { for (const r of mqRooms) r._clear(); });
+    return mq;
   }
-  function peerRoom(name) {
-    const hostId = "dinorace1-" + name;
-    let peer = null, isHost = false, hostConn = null, myId = "", open = false, dead = false, flushT = 0;
-    let others = {}, mine = {}, snapshot = [], lastHost = 0;
-    const seen = new Map();
-    const conns = new Map(), peerFns = new Set(), connFns = new Set(), readyFns = new Set();
+  function mqttRoom(name) {
+    const c = mqttClient(), base = TOPIC + name + "/";
+    const others = new Map(), peerFns = new Set(), connFns = new Set();
+    let mine = {}, snapshot = [], open = false, dead = false, lastPub = 0, pubT = 0;
     const rebuild = () => {
-      snapshot = [{ peer: myId || "me", sameTab: true, isMe: true, presence: mine },
-        ...Object.entries(others).filter(([id]) => id !== myId).map(([id, p]) => ({ peer: id, sameTab: false, isMe: false, presence: p && typeof p === "object" ? p : {} }))];
+      snapshot = [{ peer: mqId, sameTab: true, isMe: true, presence: mine },
+        ...[...others].map(([id, o]) => ({ peer: id, sameTab: false, isMe: false, presence: o.p }))];
       for (const f of peerFns) f({ peers: snapshot });
     };
-    const setOpen = v => { if (open !== v) { open = v; for (const f of connFns) f(v); } };
-    const broadcast = () => {
-      if (flushT) return;
-      flushT = setTimeout(() => { flushT = 0; const m = { ...others, [myId]: mine }; for (const c of conns.values()) if (c.open) c.send({ t: "all", m }); }, 50);
+    const pub = () => {
+      if (dead || !c.connected) return;
+      lastPub = Date.now();
+      c.publish(base + mqId, JSON.stringify({ p: mine, at: lastPub }), { qos: 0, retain: true });
     };
-    let retrying = false;
-    const retry = () => {
-      if (dead || retrying) return;
-      retrying = true; setOpen(false); hostConn = null;
-      try { peer && peer.destroy(); } catch {}
-      others = {}; rebuild();
-      setTimeout(() => { retrying = false; host(); }, 300 + Math.random() * 1200);
+    const schedule = () => {
+      if (pubT) return;
+      pubT = setTimeout(() => { pubT = 0; pub(); }, Math.max(0, 100 - (Date.now() - lastPub)));
     };
-    // A frozen background tab (iPad Safari) can hold an id without answering, so every step has a deadline.
-    function common(p) {
-      p.on("disconnected", () => { if (!dead && !p.destroyed) p.reconnect(); });
-      setTimeout(() => { if (p === peer && !p.open && !p.destroyed) retry(); }, 10000);
-    }
-    function host() {
-      if (dead) return;
-      isHost = false; hostConn = null; conns.clear(); others = {};
-      const p = peer = new Peer(hostId, PEER_OPTS); common(p);
-      p.on("open", id => { isHost = true; myId = id; setOpen(true); rebuild(); for (const f of readyFns) f(p); });
-      p.on("connection", c => {
-        c.on("open", () => { conns.set(c.peer, c); broadcast(); });
-        c.on("data", d => { if (d && d.t === "p" && d.p && typeof d.p === "object") { seen.set(c.peer, Date.now()); others[c.peer] = d.p; rebuild(); broadcast(); } });
-        c.on("close", () => { conns.delete(c.peer); seen.delete(c.peer); delete others[c.peer]; rebuild(); broadcast(); });
-      });
-      p.on("error", e => {
-        if (e.type === "unavailable-id") { p.destroy(); client(); }
-        else if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) { setTimeout(retry, 2000); }
-      });
-    }
-    function client() {
-      if (dead) return;
-      const p = peer = new Peer(PEER_OPTS); common(p);
-      p.on("open", id => {
-        myId = id;
-        const c = hostConn = p.connect(hostId, { reliable: true });
-        setTimeout(() => { if (c === hostConn && !c.open) retry(); }, 7000);
-        c.on("open", () => { setOpen(true); c.send({ t: "p", p: mine }); for (const f of readyFns) f(p); });
-        lastHost = Date.now();
-        c.on("data", d => { if (d && d.t === "all" && d.m && typeof d.m === "object") { lastHost = Date.now(); others = { ...d.m }; delete others[myId]; rebuild(); } });
-        c.on("close", retry);
-      });
-      p.on("error", e => {
-        // the host left between our id claim and our connect: elect a new one
-        if (e.type === "peer-unavailable" && String(e.message).includes(hostId)) retry();
-        else if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) setTimeout(retry, 2000);
-      });
-    }
-    host();
-    // Heartbeat: a closed tab often sends no goodbye, so silence is how we notice it.
-    const beat = setInterval(() => {
-      if (dead) return clearInterval(beat);
-      const now = Date.now();
-      if (isHost) {
-        for (const [id, at] of seen) if (now - at > 6000) { const c = conns.get(id); try { c && c.close(); } catch {} conns.delete(id); seen.delete(id); delete others[id]; rebuild(); }
-        broadcast();
-      } else if (hostConn && hostConn.open) {
-        hostConn.send({ t: "p", p: mine });
-        if (now - lastHost > 5000) retry();
-      }
-    }, 1500);
-    addEventListener("pagehide", () => { try { peer && peer.destroy(); } catch {} });
-    const api = {
+    const room = {
       name,
+      _setOpen(v) { if (open !== v) { open = v; for (const f of connFns) f(v); } },
+      _connected() { if (dead) return; c.subscribe(base + "+"); room._setOpen(true); pub(); },
+      _clear() { if (c.connected) c.publish(base + mqId, "", { qos: 0, retain: true }); },
+      _msg(topic, buf, packet) {
+        if (dead || !topic.startsWith(base)) return;
+        const id = topic.slice(base.length);
+        if (id === mqId || !/^[a-z0-9]{1,16}$/.test(id)) return;
+        if (!buf.length) { if (others.delete(id)) rebuild(); return; }
+        if (buf.length > 4096) return;
+        let v; try { v = JSON.parse(buf.toString()); } catch { return; }
+        if (!v || typeof v.p !== "object" || !v.p || Array.isArray(v.p)) return;
+        // a retained message from a tab that crashed long ago
+        if (packet && packet.retain && !(Math.abs(Date.now() - Number(v.at)) < 15000)) return;
+        others.set(id, { p: v.p, seen: Date.now() }); rebuild();
+      },
       presence(patch) {
         mine = { ...mine, ...patch };
         for (const k of Object.keys(mine)) if (mine[k] === null) delete mine[k];
-        rebuild();
-        if (isHost) broadcast(); else if (hostConn && hostConn.open) hostConn.send({ t: "p", p: mine });
+        rebuild(); schedule();
         return Promise.resolve();
       },
       peers: () => snapshot,
       onPeers(f) { peerFns.add(f); setTimeout(() => peerFns.has(f) && f({ peers: snapshot })); return () => peerFns.delete(f); },
       onConnection(f) { connFns.add(f); setTimeout(() => connFns.has(f) && f(open)); return () => connFns.delete(f); },
       connected: () => open,
-      onReady(f) { readyFns.add(f); if (open && peer) f(peer); return () => readyFns.delete(f); },
-      me: () => myId,
-      leave() { dead = true; setOpen(false); try { peer && peer.destroy(); } catch {} return Promise.resolve(); },
-      join: n => Promise.resolve(peerRoom(n)),
+      web: true,
+      leave() {
+        dead = true; clearInterval(beat); room._clear();
+        try { c.unsubscribe(base + "+"); } catch {}
+        mqRooms.delete(room); room._setOpen(false);
+        return Promise.resolve();
+      },
+      join: n => Promise.resolve(mqttRoom(n)),
     };
-    return api;
+    // heartbeat: re-announce ourselves and forget anyone silent for a while (closed tab, lost network)
+    const beat = setInterval(() => {
+      if (Date.now() - lastPub > 1800) pub();
+      let changed = false;
+      for (const [id, o] of others) if (Date.now() - o.seen > 7000) { others.delete(id); changed = true; }
+      if (changed) rebuild();
+    }, 1000);
+    mqRooms.add(room); rebuild();
+    if (c.connected) room._connected();
+    return room;
   }
 
-  // ---------- voice chat (PeerJS only: the claude.ai frame blocks the microphone and WebRTC) ----------
-  const voice = { on: false, muted: false, stream: null, calls: new Map(), audio: new Map(), level: new Map(), unready: null, myLevel: null };
+  // ---------- voice chat over WebRTC (plain websites only: the claude.ai frame blocks the microphone and WebRTC) ----------
+  // PeerJS brokers the calls; each voice user's PeerJS id travels in room presence as `vid`.
+  const VOICE_OPTS = window.DINO_PEER_OPTS || { config: { iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }, { urls: "stun:global.stun.twilio.com:3478" },
+  ] } };
+  const voice = { on: false, muted: false, stream: null, peer: null, vid: "", calls: new Map(), audio: new Map(), level: new Map(), myLevel: null };
   const btnVoice = document.getElementById("btnVoice"), btnMute = document.getElementById("btnMute"), voiceNote = document.getElementById("voiceNote");
+  const cleanVid = v => typeof v === "string" && /^[A-Za-z0-9-]{1,64}$/.test(v) ? v : "";
   function meter(stream) {
     try {
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
@@ -825,25 +808,14 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
   }
   // Everyone with voice on is connected to everyone else with voice on; the lower id places the call.
   function syncVoice() {
-    if (!R || !R.onReady) return;
-    const myId = R.me(), want = new Set();
-    if (voice.on) for (const p of R.peers()) if (!p.sameTab && p.presence && p.presence.mic) want.add(p.peer);
+    const want = new Set();
+    if (voice.on && R) for (const p of R.peers()) if (!p.sameTab && p.presence && p.presence.mic) { const v = cleanVid(p.presence.vid); if (v) want.add(v); }
     for (const id of [...voice.calls.keys()]) if (!want.has(id)) dropCall(id);
-    if (!voice.on || !voice.peer) return;
-    for (const id of want) if (!voice.calls.has(id) && myId < id) wireCall(voice.peer.call(id, voice.stream));
-  }
-  function voiceReady(p) {
-    voice.peer = p;
-    for (const id of [...voice.calls.keys()]) dropCall(id);
-    p.on("call", call => {
-      if (!voice.on || p !== voice.peer) { call.close(); return; }
-      if (voice.calls.has(call.peer)) dropCall(call.peer);
-      call.answer(voice.stream); wireCall(call);
-    });
-    syncVoice();
+    if (!voice.on || !voice.vid) return;
+    for (const id of want) if (!voice.calls.has(id) && voice.vid < id) wireCall(voice.peer.call(id, voice.stream));
   }
   async function voiceOn() {
-    if (voice.on || !R || !R.onReady) return;
+    if (voice.on || !R || !R.web) return;
     btnVoice.disabled = true;
     try {
       voice.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
@@ -854,29 +826,45 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     }
     ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume?.();
     voice.on = true; voice.muted = false; voice.myLevel = meter(voice.stream);
-    voice.unready = R.onReady(voiceReady);
-    R.presence({ mic: "on" }).catch(() => {});
-    renderVoice(); syncVoice();
+    renderVoice();
+    try { if (!window.Peer) await loadScript("https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"); }
+    catch { voiceOff(); voiceNote.textContent = "Не вдалося завантажити голосовий модуль. Перевір інтернет."; return; }
+    if (!voice.on) return;
+    const p = voice.peer = new Peer(VOICE_OPTS);
+    p.on("open", id => {
+      if (p !== voice.peer) return;
+      voice.vid = id;
+      if (R) R.presence({ mic: voice.muted ? "muted" : "on", vid: id }).catch(() => {});
+      syncVoice(); renderVoice();
+    });
+    p.on("call", call => {
+      if (!voice.on || p !== voice.peer) { call.close(); return; }
+      if (voice.calls.has(call.peer)) dropCall(call.peer);
+      call.answer(voice.stream); wireCall(call);
+    });
+    p.on("disconnected", () => { if (p === voice.peer && !p.destroyed) p.reconnect(); });
+    setTimeout(() => { if (p === voice.peer && !voice.vid) { voiceOff(); voiceNote.textContent = "Голосовий сервер не відповідає. Спробуй ще раз за хвилину."; } }, 12000);
   }
   function voiceOff() {
     if (!voice.on) return;
     voice.on = false;
-    if (voice.unready) voice.unready(); voice.unready = null; voice.peer = null;
     for (const id of [...voice.calls.keys()]) dropCall(id);
+    try { voice.peer && voice.peer.destroy(); } catch {}
+    voice.peer = null; voice.vid = "";
     if (voice.stream) for (const tr of voice.stream.getTracks()) tr.stop();
     voice.stream = null; voice.myLevel = null;
-    if (R) R.presence({ mic: null }).catch(() => {});
+    if (R) R.presence({ mic: null, vid: null }).catch(() => {});
     renderVoice();
   }
   function toggleMute() {
     if (!voice.on) return;
     voice.muted = !voice.muted;
     for (const tr of voice.stream.getAudioTracks()) tr.enabled = !voice.muted;
-    R.presence({ mic: voice.muted ? "muted" : "on" }).catch(() => {});
+    if (voice.vid) R.presence({ mic: voice.muted ? "muted" : "on" }).catch(() => {});
     renderVoice();
   }
   function renderVoice() {
-    const can = !!(R && R.onReady);
+    const can = !!(R && R.web);
     btnVoice.hidden = !can; btnMute.hidden = !voice.on;
     btnVoice.disabled = false;
     btnVoice.textContent = voice.on ? "🎧 Вийти з голосу" : "🎤 Голосовий чат";
@@ -884,13 +872,13 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     btnMute.textContent = voice.muted ? "🔇 Увімкнути мік" : "🎙 Вимкнути мік";
     btnMute.setAttribute("aria-pressed", String(voice.muted));
     voiceNote.textContent = !can
-      ? (lobby || offline ? "Голосовий чат працює на сайті гри (Vercel). У claude.ai мікрофон заблокований." : "")
-      : voice.on ? "Тебе чують усі в кімнаті, хто теж увімкнув голос." : "Увімкни, щоб говорити з усіма в кімнаті. Потрібен мікрофон.";
+      ? (lobby && !lobby.web ? "Голосовий чат працює на сайті гри (Vercel). У claude.ai мікрофон заблокований." : "")
+      : voice.on ? (voice.vid ? "Тебе чують усі в кімнаті, хто теж увімкнув голос." : "Підключаю голос…") : "Увімкни, щоб говорити з усіма в кімнаті. Потрібен мікрофон.";
   }
   btnVoice.onclick = () => voice.on ? voiceOff() : voiceOn();
   btnMute.onclick = toggleMute;
-  const speaking = (id, me) => {
-    const f = me ? voice.myLevel : voice.level.get(id);
+  const speaking = (vid, me) => {
+    const f = me ? voice.myLevel : voice.level.get(vid);
     return !!(f && !(me && voice.muted) && f() > 10);
   };
 
@@ -900,7 +888,7 @@ section .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     if (window.claude?.use) {
       try { room = await window.claude.use("room"); } catch {}
     } else {
-      try { await loadPeerJS(); room = peerRoom("lobby"); } catch {}
+      try { if (!window.mqtt) await loadScript("https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"); room = mqttRoom("lobby"); } catch {}
     }
     if (!room) { offline = true; renderUI(); renderRooms(); renderVoice(); return; }
     lobby = room;
