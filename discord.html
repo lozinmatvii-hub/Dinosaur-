@@ -126,6 +126,22 @@ input { font: inherit; color: var(--ink); }
 .emojis button { font-size: 24px; width: 42px; height: 42px; border-radius: 8px; background: var(--input); }
 .emojis button.on { outline: 2px solid var(--accent); }
 
+/* voice */
+.vchan { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 8px; border-radius: 4px; color: var(--muted); text-align: left; }
+.vchan:hover { background: var(--hover); color: var(--ink); }
+.vchan.on { color: var(--head); }
+.vlist { padding: 2px 0 6px 30px; display: flex; flex-direction: column; gap: 2px; }
+.vuser { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); min-width: 0; }
+.vuser .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vuser .ava { width: 24px; height: 24px; font-size: 13px; box-shadow: 0 0 0 2px transparent; transition: box-shadow .1s; }
+.vuser.talk .ava { box-shadow: 0 0 0 2px var(--ok); }
+.vuser .mic { margin-left: auto; font-size: 12px; }
+.vbar { background: color-mix(in srgb, var(--rail) 60%, var(--side)); border-bottom: 1px solid var(--line); padding: 8px; display: flex; align-items: center; gap: 6px; }
+.vbar .st { flex: 1; min-width: 0; font-size: 13px; line-height: 1.25; }
+.vbar .st b { display: block; color: var(--ok); font-weight: 600; }
+.vbar .st span { color: var(--muted); }
+.vbar .icon-btn.off { color: var(--danger); }
+.vbar .hang { color: var(--danger); }
 @media (max-width: 1000px) { .app { grid-template-columns: 72px 220px 1fr; } .members { display: none; } }
 @media (max-width: 700px) {
   .app { grid-template-columns: 1fr; }
@@ -150,6 +166,12 @@ input { font: inherit; color: var(--ink); }
   <aside class="side">
     <div class="side-head"><span id="srvName">ДіноКорд</span><span class="code" id="srvCode"></span></div>
     <div class="chans" id="chans"></div>
+    <div class="vbar" id="vbar" hidden>
+      <div class="st"><b>Голос підключено</b><span id="vbarName">🔊 Балачка</span></div>
+      <button class="icon-btn" id="btnMute" title="Вимкнути мікрофон">🎤</button>
+      <button class="icon-btn hang" id="btnHang" title="Покинути дзвінок">📞</button>
+    </div>
+    <div id="voiceAudio" hidden></div>
     <div class="me-bar">
       <button class="ava sm" id="meAva" title="Змінити аватар"></button>
       <input id="nick" maxlength="16" aria-label="Нік">
@@ -236,6 +258,10 @@ input { font: inherit; color: var(--ink); }
   const members = new Map();   // id -> {nick, ava, color, host}
   const unread = {};
   const typing = new Map();    // id -> {chan, until}
+  const voice = new Map();     // id -> {muted} for everyone in the voice channel
+  const calls = new Map();     // peer id -> PeerJS media call (mesh: each pair talks directly)
+  let peerObj = null, localStream = null, muted = false;
+  const talking = new Set();
   CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
 
   // ---------- render ----------
@@ -249,6 +275,24 @@ input { font: inherit; color: var(--ink); }
       b.children[1].textContent = c.name;
       b.onclick = () => { chan = c.id; unread[c.id] = 0; $("app").classList.remove("drawer"); renderAll(); $("text").focus(); };
       box.append(b);
+    }
+    const vc = document.createElement("div"); vc.className = "cat"; vc.textContent = "Голосові канали"; box.append(vc);
+    const vb = document.createElement("button");
+    vb.className = "vchan" + (localStream ? " on" : "");
+    vb.innerHTML = '<span class="hash">🔊</span><span>Балачка</span>';
+    vb.title = localStream ? "Ти в дзвінку" : "Приєднатися до дзвінка";
+    vb.onclick = () => { if (!localStream) joinVoice(); };
+    box.append(vb);
+    if (voice.size) {
+      const vl = document.createElement("div"); vl.className = "vlist";
+      for (const [id, v] of voice) {
+        const u = members.get(id); if (!u) continue;
+        const r = document.createElement("div"); r.className = "vuser" + (talking.has(id) && !v.muted ? " talk" : "");
+        const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = u.nick;
+        const mic = document.createElement("span"); mic.className = "mic"; mic.textContent = v.muted ? "🔇" : "";
+        r.append(avaEl(u), nm, mic); vl.append(r);
+      }
+      box.append(vl);
     }
     const c = CHANNELS.find(c => c.id === chan);
     $("chanName").textContent = c.name; $("chanTopic").textContent = c.topic;
@@ -410,7 +454,7 @@ input { font: inherit; color: var(--ink); }
   function dropMember(id) {
     const u = members.get(id);
     if (!u) return;
-    members.delete(id); typing.delete(id);
+    members.delete(id); typing.delete(id); dropVoice(id);
     if (isHost) sysMsg(u.nick + " пішов із сервера.");
     renderMembers(); renderTyping();
   }
@@ -445,7 +489,7 @@ input { font: inherit; color: var(--ink); }
     if (msg.t === "hello" && isHost && fromConn) {
       fromConn.uid = fromConn.peer;
       const fresh = setMember(fromConn.peer, msg.u || {});
-      fromConn.send({ t: "sync", history, members: [...members.entries()] });
+      fromConn.send({ t: "sync", history, members: [...members.entries()], voice: [...voice.entries()] });
       relay({ t: "member", id: fromConn.peer, u: members.get(fromConn.peer) }, fromConn, conns);
       if (fresh) sysMsg(members.get(fromConn.peer).nick + " приєднався до сервера! 🦖");
       return;
@@ -459,6 +503,8 @@ input { font: inherit; color: var(--ink); }
       }
       members.clear();
       for (const [id, u] of msg.members || []) setMember(id, u);
+      voice.clear();
+      for (const [id, v] of Array.isArray(msg.voice) ? msg.voice : []) if (typeof id === "string") voice.set(id, { muted: !!v?.muted });
       renderAll();
       return;
     }
@@ -468,6 +514,12 @@ input { font: inherit; color: var(--ink); }
     else if (msg.t === "react") { if (!msg.r || typeof msg.r !== "object") return; if (sender) msg.r.who = sender; applyReact(msg.r); }
     else if (msg.t === "member") { const id = sender || msg.id; setMember(id, msg.u || {}); msg.id = id; }
     else if (msg.t === "typing") { const id = sender || msg.id; msg.id = id; typing.set(id, { chan: msg.chan, until: Date.now() + 4000 }); renderTyping(); }
+    else if (msg.t === "voice") {
+      const id = sender || msg.id; msg.id = id;
+      if (typeof id !== "string" || id === myId) return;
+      if (msg.on) voice.set(id, { muted: !!msg.muted }); else dropVoice(id);
+      renderChans();
+    }
     else if (msg.t === "leave") { if (!isHost) dropMember(msg.id); return; }
     else return;
     if (isHost) relay(msg, fromConn, conns);
@@ -494,6 +546,14 @@ input { font: inherit; color: var(--ink); }
     };
     if (hostConn) { conns.add(hostConn); wire(hostConn); }
     else peer.on("connection", c => { conns.add(c); wire(c); });
+    peerObj = peer;
+    peer.on("call", call => {
+      // only answer while I'm in the voice channel; if we both dialled at once, the lower id's call wins
+      if (!localStream || (calls.has(call.peer) && myId < call.peer)) { call.close(); return; }
+      calls.get(call.peer)?.close();
+      call.answer(localStream);
+      wireCall(call);
+    });
     return {
       send: msg => { for (const c of conns) if (c.open) c.send(msg); },
       close: () => setTimeout(() => peer.destroy(), 150),
@@ -550,7 +610,9 @@ input { font: inherit; color: var(--ink); }
 
   function leave(reason) {
     if (!net) return;
-    net.send({ t: "leave", id: myId }); net.close(); net = null;
+    leaveVoice();
+    net.send({ t: "leave", id: myId }); net.close(); net = null; peerObj = null;
+    voice.clear();
     code = ""; isHost = false; myId = "me";
     members.clear(); typing.clear();
     CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
@@ -558,6 +620,89 @@ input { font: inherit; color: var(--ink); }
     $("ovJoin").hidden = false;
     setStatus(reason || "", !!reason);
     renderAll();
+  }
+
+  // ---------- voice: PeerJS media calls, everyone in the channel calls everyone else ----------
+  function wireCall(call) {
+    calls.set(call.peer, call);
+    call.on("stream", stream => {
+      let a = document.getElementById("va-" + call.peer);
+      if (!a) { a = document.createElement("audio"); a.id = "va-" + call.peer; a.autoplay = true; a.setAttribute("playsinline", ""); $("voiceAudio").append(a); }
+      a.srcObject = stream; a.play().catch(() => {});
+      watchLevel(call.peer, stream);
+    });
+    const end = () => { if (calls.get(call.peer) === call) { calls.delete(call.peer); document.getElementById("va-" + call.peer)?.remove(); stopLevel(call.peer); } };
+    call.on("close", end); call.on("error", end);
+  }
+
+  function dropVoice(id) {
+    voice.delete(id); talking.delete(id);
+    calls.get(id)?.close(); calls.delete(id);
+    document.getElementById("va-" + id)?.remove(); stopLevel(id);
+  }
+
+  let actx = null;
+  const meters = new Map();
+  function watchLevel(id, stream) {
+    // green ring while someone speaks
+    try {
+      actx ||= new (window.AudioContext || window.webkitAudioContext)();
+      stopLevel(id);
+      const src = actx.createMediaStreamSource(stream), an = actx.createAnalyser(); an.fftSize = 512; src.connect(an);
+      const buf = new Uint8Array(an.fftSize);
+      const timer = setInterval(() => {
+        an.getByteTimeDomainData(buf);
+        let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v - 128));
+        const on = peak > 10, was = talking.has(id);
+        if (on !== was) { on ? talking.add(id) : talking.delete(id); renderChans(); }
+      }, 150);
+      meters.set(id, { timer, src });
+    } catch {}
+  }
+  function stopLevel(id) { const m = meters.get(id); if (m) { clearInterval(m.timer); try { m.src.disconnect(); } catch {} meters.delete(id); } talking.delete(id); }
+
+  async function joinVoice() {
+    if (!net || !peerObj || localStream) return;
+    if (!navigator.mediaDevices?.getUserMedia) { sysLocal("Цей браузер не підтримує дзвінки."); return; }
+    try { localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false }); }
+    catch { sysLocal("Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера."); return; }
+    actx?.resume?.();
+    muted = false;
+    voice.set(myId, { muted });
+    watchLevel(myId, localStream);
+    net.send({ t: "voice", id: myId, on: true, muted });
+    for (const id of voice.keys()) if (id !== myId) wireCall(peerObj.call(id, localStream));
+    $("vbar").hidden = false; renderMute(); renderChans();
+  }
+
+  function leaveVoice() {
+    if (!localStream) return;
+    localStream.getTracks().forEach(t => t.stop()); localStream = null;
+    for (const call of calls.values()) call.close();
+    calls.clear(); $("voiceAudio").innerHTML = "";
+    for (const id of [...meters.keys()]) stopLevel(id);
+    voice.delete(myId);
+    net?.send({ t: "voice", id: myId, on: false });
+    $("vbar").hidden = true; renderChans();
+  }
+
+  function renderMute() {
+    $("btnMute").textContent = muted ? "🔇" : "🎤";
+    $("btnMute").classList.toggle("off", muted);
+    $("btnMute").title = muted ? "Увімкнути мікрофон" : "Вимкнути мікрофон";
+  }
+  $("btnMute").onclick = () => {
+    if (!localStream) return;
+    muted = !muted;
+    localStream.getAudioTracks().forEach(t => t.enabled = !muted);
+    voice.set(myId, { muted });
+    net?.send({ t: "voice", id: myId, on: true, muted });
+    renderMute(); renderChans();
+  };
+  $("btnHang").onclick = leaveVoice;
+
+  function sysLocal(text) {
+    addMsg({ id: newId(), chan, from: "sys", nick: "ДіноБот", ava: "📢", color: "#888888", text, t: Date.now(), sys: true });
   }
 
   const setStatus = (t, bad) => { $("joinStatus").textContent = t; $("joinStatus").className = "status" + (bad ? " bad" : ""); };
