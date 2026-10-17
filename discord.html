@@ -66,6 +66,18 @@ input { font: inherit; color: var(--ink); }
 .ava { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 22px; position: relative; }
 .ava.sm { width: 32px; height: 32px; font-size: 17px; }
 .ava .dot { position: absolute; right: -2px; bottom: -2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ok); border: 3px solid var(--side); }
+.ava .dot.away { background: #f0b232; }
+.ava .dot.dnd { background: var(--danger); }
+.member .sub { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { font-size: 12px; margin-right: 4px; }
+.voice-msg { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.voice-msg audio { height: 36px; max-width: 100%; }
+.voice-msg .len { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.gone { color: var(--muted); font-style: italic; }
+#btnRec.rec { color: var(--danger); width: auto; padding: 0 8px; font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; }
+.st-row { display: flex; gap: 6px; margin-top: 6px; }
+.st-row button { flex: 1; padding: 8px 6px; border-radius: 6px; background: var(--input); font-size: 13px; }
+.st-row button.on { outline: 2px solid var(--accent); }
 
 /* chat */
 .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--chat); position: relative; }
@@ -230,6 +242,8 @@ input { font: inherit; color: var(--ink); }
     <div class="composer">
       <form id="form" autocomplete="off">
         <input id="text" maxlength="500" placeholder="Спершу створи сервер або приєднайся" disabled>
+        <button class="icon-btn" type="button" id="btnRecCancel" title="Скасувати запис" hidden>✕</button>
+        <button class="icon-btn" type="button" id="btnRec" title="Записати голосове повідомлення">🎙</button>
         <button class="icon-btn" type="button" id="btnRoar" title="Гаркнути">🦖</button>
       </form>
     </div>
@@ -263,9 +277,17 @@ input { font: inherit; color: var(--ink); }
 
 <div class="ov" id="ovAva" hidden>
   <div class="dlg">
-    <h2>Аватар</h2>
-    <p>Обери свого звіра.</p>
+    <h2>Профіль</h2>
+    <p>Обери свого звіра і статус.</p>
     <div class="emojis" id="avaPick"></div>
+    <label>Статус</label>
+    <div class="st-row" id="stPick">
+      <button data-st="on">🟢 В мережі</button>
+      <button data-st="away">🌙 Відійшов</button>
+      <button data-st="dnd">⛔ Не турбувати</button>
+    </div>
+    <label for="stText">Що ти зараз робиш?</label>
+    <input id="stText" maxlength="40" placeholder="Наприклад: граю в Динозаврика">
     <div class="row"><button class="btn" id="avaDone">Готово</button></div>
   </div>
 </div>
@@ -298,7 +320,11 @@ input { font: inherit; color: var(--ink); }
     nick: store.get("nick", "Динозаврик " + (10 + Math.floor(Math.random() * 90))),
     ava: store.get("ava", pick(AVAS)),
     color: store.get("color", pick(COLORS)),
+    st: ["on", "away", "dnd"].includes(store.get("st", "on")) ? store.get("st", "on") : "on",
+    stx: store.get("stx", ""),
   };
+  let autoAway = false;
+  const myStatus = () => me.st === "on" && autoAway ? "away" : me.st;
   store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
 
   let net = null, myId = "me", code = "", isHost = false, chan = "general";
@@ -364,8 +390,9 @@ input { font: inherit; color: var(--ink); }
     $("chanName").textContent = c.name; $("chanTopic").textContent = c.topic;
     const ownLock = !!c.own && !iOwn(), mute = myPub && isMuted(myPub) ? adm.mutes.get(myPub).until : 0;
     if (net) {
-      $("text").disabled = $("btnRoar").disabled = ownLock || !!mute;
-      $("text").placeholder = mute ? "Адмін заборонив тобі писати до " + fmtTime(mute) : ownLock ? "Тут пише тільки творець сервера 👑" : "Написати в #" + c.name;
+      $("text").disabled = $("btnRoar").disabled = $("btnRec").disabled = ownLock || !!mute;
+      $("btnRec").hidden = !!c.own || !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia;
+      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? "Тут пише тільки творець сервера 👑" : "Написати в #" + c.name;
     }
   }
 
@@ -414,9 +441,18 @@ input { font: inherit; color: var(--ink); }
         const h = document.createElement("div");
         const who = document.createElement("span"); who.className = "who"; who.style.color = m.sys ? "var(--muted)" : m.color; who.textContent = m.sys ? "ДіноБот" : m.nick;
         const tm = document.createElement("span"); tm.className = "time"; tm.textContent = fmtTime(m.t);
-        h.append(who, tm); body.append(h);
+        h.append(who);
+        const bg = m.sys ? "" : badgeFor(m.pub);
+        if (bg) { const sp = document.createElement("span"); sp.className = "badge"; sp.textContent = bg; h.append(sp); }
+        h.append(tm); body.append(h);
       }
-      const tx = document.createElement("div"); tx.className = "text"; textNodes(tx, m.text); body.append(tx);
+      if (m.audio) {
+        const vm = document.createElement("div"); vm.className = "voice-msg";
+        const au = document.createElement("audio"); au.controls = true; au.preload = "metadata"; au.src = m.audio;
+        vm.append(au); body.append(vm);
+      } else if (m.audioGone) {
+        const g = document.createElement("div"); g.className = "text gone"; g.textContent = "🎤 Голосове повідомлення (вже недоступне)"; body.append(g);
+      } else { const tx = document.createElement("div"); tx.className = "text"; textNodes(tx, m.text); body.append(tx); }
       const rs = Object.entries(m.reacts || {}).filter(([, ids]) => ids.length);
       if (rs.length) {
         const rb = document.createElement("div"); rb.className = "reacts";
@@ -437,7 +473,7 @@ input { font: inherit; color: var(--ink); }
           b.onclick = () => toggleReact(m, e);
           tools.append(b);
         }
-        if (iOwn()) {
+        if (iOwn() || (iMod() && m.pub !== meta.owner)) {
           const d = document.createElement("button"); d.textContent = "🗑"; d.title = "Видалити повідомлення";
           d.onclick = () => { if (confirm("Видалити це повідомлення для всіх?")) doAdmin({ a: "del", id: m.id, chan: m.chan }); };
           tools.append(d);
@@ -459,16 +495,19 @@ input { font: inherit; color: var(--ink); }
     list.sort((a, b) => (b[1].host - a[1].host) || a[1].nick.localeCompare(b[1].nick, "uk"));
     for (const [id, u] of list) {
       const r = document.createElement("div"); r.className = "member";
-      const a = avaEl(u, "sm"); const d = document.createElement("span"); d.className = "dot"; a.append(d);
+      const a = avaEl(u, "sm"); const d = document.createElement("span"); d.className = "dot " + (u.st || "on"); a.append(d);
       const n = document.createElement("div"); n.style.minWidth = "0";
       const nm = document.createElement("div"); nm.className = "nm"; nm.style.color = u.color; nm.textContent = u.nick + (id === myId ? " (ти)" : "");
       n.append(nm);
+      if (u.stx || u.st !== "on") { const sb = document.createElement("div"); sb.className = "sub"; sb.textContent = u.stx || (u.st === "dnd" ? "Не турбувати" : "Відійшов"); n.append(sb); }
       const tags = [];
       if (u.pub && u.pub === meta.owner) tags.push("👑 адмін");
+      const rl = u.pub && adm.roles.get(u.pub)?.role;
+      if (rl === "mod") tags.push("🛡️ модератор"); else if (rl === "vip") tags.push("⭐ VIP");
       if (u.host) tags.push("🖥️ тримає сервер");
       if (u.pub && isMuted(u.pub)) tags.push("🔇 заглушений");
       if (tags.length) { const t = document.createElement("div"); t.className = "tag"; t.textContent = tags.join(" · "); n.append(t); }
-      if (iOwn() && id !== myId) { r.classList.add("can"); r.title = "Керувати учасником"; r.onclick = () => memberMenu(id); }
+      if (canManage(u) && id !== myId) { r.classList.add("can"); r.title = "Керувати учасником"; r.onclick = () => memberMenu(id); }
       r.append(a, n); box.append(r);
     }
   }
@@ -481,6 +520,7 @@ input { font: inherit; color: var(--ink); }
 
   function renderMe() {
     const a = $("meAva"); a.textContent = me.ava; a.style.background = me.color;
+    const d = document.createElement("span"); d.className = "dot " + myStatus(); a.append(d);
     $("nick").value = me.nick;
   }
 
@@ -510,14 +550,18 @@ input { font: inherit; color: var(--ink); }
       ava: clean(m.ava, 4) || "🦖", color: /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#888",
       text: clean(m.text, 500), t: Number(m.t) || Date.now(), sys: !!m.sys, reacts: sanitizeReacts(m.reacts) };
     if (typeof m.sig === "string") msg.sig = m.sig.slice(0, 200);
+    if (validPub(m.pub)) msg.pub = m.pub;
+    if (typeof m.audio === "string" && /^data:audio\/[\w.+-]+(;[\w=.+-]+)*;base64,[A-Za-z0-9+/=]+$/.test(m.audio) && m.audio.length <= MAX_AUDIO) { msg.audio = m.audio; msg.dur = Math.min(120, Number(m.dur) || 0); }
+    else if (m.audioGone) msg.audioGone = true;
     if (!msg.text) return;
     history[m.chan].push(msg);
     if (history[m.chan].length > 1 && history[m.chan].at(-2).t > msg.t) history[m.chan].sort((a, b) => a.t - b.t);
     if (history[m.chan].length > MAX_HIST) history[m.chan].shift();
+    if (msg.audio) pruneAudio();
     saveHist();
     typing.delete(msg.from);
     if (m.chan !== chan) unread[m.chan]++;
-    else if (document.hidden) document.title = "(•) ДіноКорд";
+    else if (document.hidden && myStatus() !== "dnd") document.title = "(•) ДіноКорд";
     renderChans(); renderMsgs(); renderTyping();
   }
 
@@ -587,43 +631,62 @@ input { font: inherit; color: var(--ink); }
   // ---------- admin: every action is signed by the owner's key and replayed by everyone ----------
   let acts = [];
   const seenSigs = new Set();
-  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {} };
+  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {}, roles: new Map() };
   const isMuted = pub => (adm.mutes.get(pub)?.until || 0) > Date.now();
   const isBanned = pub => !!pub && adm.bans.has(pub);
-  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear"];
+  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear", "role"];
+  const MOD_ACTS = ["del", "mute", "unmute", "kick"];   // what a moderator may do; the rest is the creator's
+  const iMod = () => !!myPub && adm.roles.get(myPub)?.role === "mod";
+  const isStaff = pub => !!pub && (pub === meta.owner || adm.roles.get(pub)?.role === "mod");
+  const canManage = u => iOwn() || (iMod() && !isStaff(u.pub));
+  const badgeFor = pub => !pub ? "" : pub === meta.owner ? "👑" : adm.roles.get(pub)?.role === "mod" ? "🛡️" : adm.roles.get(pub)?.role === "vip" ? "⭐" : "";
+  const keyCache = new Map();
+  async function pubKey(pub) {
+    if (!keyCache.has(pub)) {
+      const [x, y] = pub.split(".");
+      keyCache.set(pub, await crypto.subtle.importKey("jwk", { kty: "EC", crv: "P-256", x, y, ext: true }, ALG, false, ["verify"]));
+    }
+    return keyCache.get(pub);
+  }
 
   function resetAdmin() {
     acts = []; seenSigs.clear();
-    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {};
+    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {}; adm.roles.clear();
   }
 
   async function addActs(list) {
     const fresh = [];
-    let key = null;
-    try { key = await ownerKey(); } catch {}
-    if (!key) return fresh;
+    if (!meta.owner) return fresh;
     for (const a of list.slice(-300)) {
       if (!a || typeof a.p !== "string" || typeof a.s !== "string" || a.p.length > 600 || seenSigs.has(a.s)) continue;
+      const by = validPub(a.by) ? a.by : meta.owner;
       let d;
       try {
-        if (!await crypto.subtle.verify(SIG, key, unb64(a.s), new TextEncoder().encode(a.p))) continue;
+        if (!await crypto.subtle.verify(SIG, await pubKey(by), unb64(a.s), new TextEncoder().encode(a.p))) continue;
         d = JSON.parse(a.p);
       } catch { continue; }
       if (!d || !ADM_ACTS.includes(d.a) || !Number.isFinite(d.ts)) continue;
       seenSigs.add(a.s);
-      acts.push({ p: a.p, s: a.s, d });
-      fresh.push(d);
+      const rec = { p: a.p, s: a.s, d, by: by === meta.owner ? undefined : by };
+      acts.push(rec); fresh.push(rec);
     }
     if (fresh.length) applyAdmin();
-    return fresh;
+    return fresh.filter(r => r.ok).map(r => r.d);
   }
 
   function applyAdmin() {
     acts.sort((x, y) => x.d.ts - y.d.ts);
     if (acts.length > 300) acts.splice(0, acts.length - 300);
     adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {};
-    for (const { d } of acts) {
-      if (d.a === "rename") adm.name = clean(d.name, 24);
+    adm.roles.clear();
+    for (const rec of acts) {
+      const d = rec.d;
+      // replay in time order: a moderator's action counts only if they were a moderator then, and never against staff
+      rec.ok = !rec.by || (adm.roles.get(rec.by)?.role === "mod" && MOD_ACTS.includes(d.a)
+        && !(d.pub && (d.pub === meta.owner || adm.roles.get(d.pub)?.role === "mod")));
+      if (!rec.ok) continue;
+      if (d.a === "role" && validPub(d.pub)) { if (d.role === "mod" || d.role === "vip") adm.roles.set(d.pub, { role: d.role, nick: clean(d.nick, 16) }); else adm.roles.delete(d.pub); }
+      else if (d.a === "rename") adm.name = clean(d.name, 24);
       else if (d.a === "ban" && validPub(d.pub)) { adm.bans.set(d.pub, clean(d.nick, 16)); adm.mutes.delete(d.pub); }
       else if (d.a === "unban") adm.bans.delete(d.pub);
       else if (d.a === "mute" && validPub(d.pub)) adm.mutes.set(d.pub, { until: Number(d.until) || 0, nick: clean(d.nick, 16) });
@@ -635,19 +698,20 @@ input { font: inherit; color: var(--ink); }
       const cut = adm.cleared[c.id] || 0;
       history[c.id] = history[c.id].filter(m => !adm.deleted.has(m.id) && m.t > cut);
     }
-    meta.acts = acts.map(({ p, s }) => ({ p, s }));
+    meta.acts = acts.map(({ p, s, by }) => by ? { p, s, by } : { p, s });
     if (code) store.set("meta-" + code, meta);
     saveHist();
     renderAll();
   }
 
   async function doAdmin(d) {
-    if (!net || !iOwn() || !myKeys) return;
+    if (!net || !myKeys || !(iOwn() || (iMod() && MOD_ACTS.includes(d.a)))) return;
     d.ts = Date.now(); d.n = Math.random().toString(36).slice(2, 8);
     const p = JSON.stringify(d);
     const s = b64(await crypto.subtle.sign(SIG, myKeys.privateKey, new TextEncoder().encode(p)));
-    const fresh = await addActs([{ p, s }]);
-    net?.send({ t: "admin", act: { p, s } });
+    const act = iOwn() ? { p, s } : { p, s, by: myPub };
+    const fresh = await addActs([act]);
+    net?.send({ t: "admin", act });
     fresh.forEach(enforce);
   }
 
@@ -656,7 +720,7 @@ input { font: inherit; color: var(--ink); }
     if (d.a !== "ban" && d.a !== "kick" && d.a !== "mute") return;
     if (d.a === "kick" && Date.now() - d.ts > 60000) return;
     const me1 = (d.pub && d.pub === myPub) || (d.a === "kick" && d.peer === myId);
-    if (me1 && !iOwn() && d.a !== "mute") { store.set("lastCode", ""); leave(d.a === "ban" ? "Адмін заблокував тебе на цьому сервері." : "Адмін вигнав тебе з сервера."); return; }
+    if (me1 && !iOwn() && d.a !== "mute") { store.set("lastCode", ""); leave(d.a === "ban" ? "Адмін заблокував тебе на цьому сервері." : "Тебе вигнали з сервера."); return; }
     if (isHost && d.a !== "mute") for (const c of hostConns) if ((d.pub && c.pub === d.pub) || (d.a === "kick" && c.peer === d.peer)) { c.send({ t: "kicked", ban: d.a === "ban" }); setTimeout(() => c.close(), 300); }
     renderChans(); renderMembers();
   }
@@ -686,7 +750,14 @@ input { font: inherit; color: var(--ink); }
   function memberMenu(id) {
     const u = members.get(id); if (!u) return;
     const pub = u.pub;
+    if (!canManage(u)) return;
     openAdmin(u.nick, pub ? "Що зробити з цим учасником?" : "Цей учасник зайшов зі старої версії, тому його можна тільки вигнати.", body => {
+      if (pub && iOwn()) {
+        const rl = adm.roles.get(pub)?.role;
+        if (rl !== "mod") admBtn(body, "🛡️ Зробити модератором", "", () => { doAdmin({ a: "role", pub, nick: u.nick, role: "mod" }); sysMsg(u.nick + " тепер модератор 🛡️"); });
+        if (rl !== "vip") admBtn(body, "⭐ Дати роль VIP", "", () => { doAdmin({ a: "role", pub, nick: u.nick, role: "vip" }); sysMsg(u.nick + " тепер VIP ⭐"); });
+        if (rl) admBtn(body, "Забрати роль", "sec", () => doAdmin({ a: "role", pub, nick: u.nick, role: "" }));
+      }
       if (pub) {
         if (isMuted(pub)) admBtn(body, "🔊 Дозволити писати", "sec", () => doAdmin({ a: "unmute", pub }));
         else {
@@ -695,8 +766,8 @@ input { font: inherit; color: var(--ink); }
           admBtn(body, "🔇 Заглушити на добу", "sec", () => doAdmin({ a: "mute", pub, nick: u.nick, until: Date.now() + 24 * 3600e3 }));
         }
       }
-      admBtn(body, "👢 Вигнати з сервера", "sec", () => { doAdmin({ a: "kick", pub, peer: id }); sysMsg(u.nick + " вигнаний адміном."); });
-      if (pub) admBtn(body, "⛔ Заблокувати назавжди", "danger", () => { if (confirm("Заблокувати " + u.nick + "? Він не зможе повернутися на сервер.")) { doAdmin({ a: "ban", pub, nick: u.nick }); sysMsg(u.nick + " заблокований адміном."); } });
+      admBtn(body, "👢 Вигнати з сервера", "sec", () => { doAdmin({ a: "kick", pub, peer: id }); sysMsg(u.nick + " вигнаний " + (iOwn() ? "адміном." : "модератором.")); });
+      if (pub && iOwn()) admBtn(body, "⛔ Заблокувати назавжди", "danger", () => { if (confirm("Заблокувати " + u.nick + "? Він не зможе повернутися на сервер.")) { doAdmin({ a: "ban", pub, nick: u.nick }); sysMsg(u.nick + " заблокований адміном."); } });
     });
   }
 
@@ -721,6 +792,7 @@ input { font: inherit; color: var(--ink); }
         }
       };
       list("Заблоковані", adm.bans, "Нікого не заблоковано", { a: "unban", text: "Розблокувати" }, nick => nick || "Без імені");
+      list("Ролі", adm.roles, "Ролей ще ніхто не має", { a: "role", text: "Забрати" }, v => (v.role === "mod" ? "🛡️ " : "⭐ ") + (v.nick || "Без імені"));
       list("Заглушені", adm.mutes, "Ніхто не заглушений", { a: "unmute", text: "Дозволити" }, v => v.until > Date.now() ? (v.nick || "Без імені") + " · до " + fmtTime(v.until) : null);
     });
   }
@@ -731,7 +803,26 @@ input { font: inherit; color: var(--ink); }
     if (!code) return;
     const c = code;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => store.set("hist-" + c, history), 400);
+    saveTimer = setTimeout(() => writeHist(c), 400);
+  }
+
+  function writeHist(c) {
+    // voice notes are big: if the browser's storage is full, keep the text and drop the audio
+    try { localStorage.setItem("dinocord-hist-" + c, JSON.stringify(history)); }
+    catch {
+      const lite = {};
+      for (const k in history) lite[k] = history[k].map(m => m.audio ? { ...m, audio: undefined, audioGone: true } : m);
+      try { localStorage.setItem("dinocord-hist-" + c, JSON.stringify(lite)); } catch {}
+    }
+  }
+
+  // only the newest voice notes keep their sound, so history stays small enough to sync and save
+  const MAX_AUDIO = 700000, KEEP_AUDIO = 8;
+  function pruneAudio() {
+    const all = [];
+    for (const k in history) for (const m of history[k]) if (m.audio) all.push(m);
+    all.sort((a, b) => b.t - a.t);
+    for (const m of all.slice(KEEP_AUDIO)) { delete m.audio; m.audioGone = true; }
   }
 
   function mergeHist(h) {
@@ -758,7 +849,8 @@ input { font: inherit; color: var(--ink); }
   function setMember(id, u) {
     const was = members.has(id);
     members.set(id, { nick: clean(u.nick, 16) || "Динозаврик", ava: clean(u.ava, 4) || "🦖",
-      color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888", host: !!u.host, pub: validPub(u.pub) ? u.pub : "" });
+      color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888", host: !!u.host, pub: validPub(u.pub) ? u.pub : "",
+      st: ["on", "away", "dnd"].includes(u.st) ? u.st : "on", stx: clean(u.stx, 40) });
     renderMembers();
     return !was;
   }
@@ -839,7 +931,7 @@ input { font: inherit; color: var(--ink); }
     const sender = isHost && fromConn ? fromConn.peer : null;
     if (msg.t === "msg") {
       if (!msg.m || typeof msg.m !== "object") return;
-      if (sender) { if (fromConn.pub && isMuted(fromConn.pub)) return; msg.m.from = sender; }
+      if (sender) { if (fromConn.pub && isMuted(fromConn.pub)) return; msg.m.from = sender; msg.m.pub = fromConn.pub || ""; }
       addChecked(msg.m);
     }
     else if (msg.t === "admin") {
@@ -937,7 +1029,7 @@ input { font: inherit; color: var(--ink); }
           conn.on("open", () => {
             clearTimeout(timer); peer.off("error", fail); peer.on("error", () => {});
             const n = makeNet(peer, conn);
-            helloProof(id).then(proof => { conn.send({ t: "hello", u: me, hist: history, meta, pub: myPub, proof }); res(n); });
+            helloProof(id).then(proof => { conn.send({ t: "hello", u: { ...me, st: myStatus() }, hist: history, meta, pub: myPub, proof }); res(n); });
           });
         });
       });
@@ -978,7 +1070,7 @@ input { font: inherit; color: var(--ink); }
     saveHist();
     store.set("lastCode", code);
     members.clear();
-    setMember(myId, { ...me, host: isHost, pub: myPub });
+    setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
     if (isHost) sysMsg(hasHist(c) && history.general.length > 1 ? me.nick + " повернув сервер онлайн 🦖" : "Сервер створено! Код для друзів: " + code);
     $("ovJoin").hidden = true;
     $("text").disabled = false;
@@ -1008,7 +1100,7 @@ input { font: inherit; color: var(--ink); }
     if (!net) { code = c; leaveUi("Сервер " + c + " зараз недоступний. Натисни «Приєднатися», щоб спробувати ще раз."); return; }
     code = c;
     members.clear();
-    setMember(myId, { ...me, host: isHost, pub: myPub });
+    setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
     if (isHost) sysMsg(me.nick + " тепер тримає сервер.");
     $("text").disabled = false;
     renderAll(); renderLiveBtns();
@@ -1028,7 +1120,7 @@ input { font: inherit; color: var(--ink); }
     if (!net) return;
     leaveVoice(); stopLive(); closeStage(); live.clear();
     net.send({ t: "leave", id: myId }); net.close(); net = null; peerObj = null;
-    clearTimeout(saveTimer); store.set("hist-" + code, history);
+    clearTimeout(saveTimer); writeHist(code);
     if (!reason) store.set("lastCode", "");
     leaveUi(reason);
   }
@@ -1204,7 +1296,7 @@ input { font: inherit; color: var(--ink); }
     if (!text || !net) return;
     if (chan === OWN && !iOwn()) return;
     $("text").value = "";
-    const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text, t: Date.now() };
+    const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text, t: Date.now(), pub: myPub };
     if (chan !== OWN) { addMsg(m); net.send({ t: "msg", m }); }
     else crypto.subtle.sign(SIG, myKeys.privateKey, signed(m)).then(sig => { m.sig = b64(sig); addMsg(m, true); net?.send({ t: "msg", m }); });
     $("msgs").scrollTop = $("msgs").scrollHeight;
@@ -1220,11 +1312,14 @@ input { font: inherit; color: var(--ink); }
     $("form").requestSubmit();
   };
 
+  const fmtDur = sec => Math.floor(sec / 60) + ":" + String(Math.floor(sec % 60)).padStart(2, "0");
+
   function pushMe() {
     store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
+    store.set("st", me.st); store.set("stx", me.stx);
     renderMe();
     if (!net) return;
-    setMember(myId, { ...me, host: isHost, pub: myPub });
+    setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
     net.send({ t: "member", id: myId, u: members.get(myId) });
   }
   $("nick").addEventListener("change", () => { me.nick = clean($("nick").value, 16) || "Динозаврик"; pushMe(); });
@@ -1238,8 +1333,63 @@ input { font: inherit; color: var(--ink); }
       avaPick.append(b);
     }
   }
-  $("meAva").onclick = () => { renderAvaPick(); $("ovAva").hidden = false; };
-  $("avaDone").onclick = () => { $("ovAva").hidden = true; pushMe(); };
+  function renderStPick() { for (const b of $("stPick").children) b.classList.toggle("on", b.dataset.st === me.st); }
+  for (const b of $("stPick").children) b.onclick = () => { me.st = b.dataset.st; renderStPick(); };
+  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); $("stText").value = me.stx; $("ovAva").hidden = false; };
+  $("avaDone").onclick = () => { $("ovAva").hidden = true; me.stx = clean($("stText").value, 40); pushMe(); };
+
+  // away by itself after 5 minutes in another tab or app
+  let awayTimer = 0;
+  document.addEventListener("visibilitychange", () => {
+    clearTimeout(awayTimer);
+    if (document.hidden) awayTimer = setTimeout(() => { autoAway = true; pushMe(); }, 5 * 60e3);
+    else if (autoAway) { autoAway = false; pushMe(); }
+  });
+
+  // ---------- voice notes: tap 🎙 to record, tap again to send ----------
+  let rec = null, recChunks = [], recStart = 0, recTimer = 0, recCancelled = false;
+  const MAX_REC = 45;
+  async function startRec() {
+    if (rec || !net) return;
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+    catch { sysLocal("Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера."); return; }
+    const type = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"].find(t => MediaRecorder.isTypeSupported?.(t)) || "";
+    try { rec = new MediaRecorder(stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 32000 }); }
+    catch { rec = new MediaRecorder(stream); }
+    recChunks = []; recCancelled = false; recStart = Date.now();
+    rec.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
+    rec.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      const dur = (Date.now() - recStart) / 1000, blob = new Blob(recChunks, { type: rec.mimeType || type || "audio/webm" });
+      rec = null; clearInterval(recTimer); renderRec();
+      if (recCancelled || dur < 0.7) return;
+      const fr = new FileReader();
+      fr.onload = () => sendVoice(String(fr.result), dur);
+      fr.readAsDataURL(blob);
+    };
+    rec.start(250);
+    recTimer = setInterval(() => { renderRec(); if ((Date.now() - recStart) / 1000 >= MAX_REC) rec?.stop(); }, 250);
+    renderRec();
+  }
+  function renderRec() {
+    const b = $("btnRec");
+    b.classList.toggle("rec", !!rec);
+    b.textContent = rec ? "⏹ " + fmtDur((Date.now() - recStart) / 1000) : "🎙";
+    b.title = rec ? "Надіслати" : "Записати голосове повідомлення";
+    $("btnRecCancel").hidden = !rec;
+    $("text").hidden = !!rec; $("btnRoar").hidden = !!rec;
+  }
+  function sendVoice(audio, dur) {
+    if (!net) return;
+    const data = audio.replace(/^data:([^;,]+)[^,]*,/, "data:$1;base64,");
+    if (data.length > MAX_AUDIO) { sysLocal("Голосове повідомлення завелике. Спробуй коротше."); return; }
+    const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text: "🎤 Голосове повідомлення", audio: data, dur: Math.round(dur), t: Date.now(), pub: myPub };
+    addMsg(m); net.send({ t: "msg", m });
+    $("msgs").scrollTop = $("msgs").scrollHeight;
+  }
+  $("btnRec").onclick = () => { if (rec) rec.stop(); else startRec(); };
+  $("btnRecCancel").onclick = () => { recCancelled = true; rec?.stop(); };
 
   $("btnCreate").onclick = () => enter(true);
   $("btnJoin").onclick = () => enter(false);
@@ -1262,7 +1412,7 @@ input { font: inherit; color: var(--ink); }
 
   document.addEventListener("visibilitychange", () => { if (!document.hidden) document.title = "ДіноКорд"; });
   window.addEventListener("pagehide", () => {
-    if (code) { clearTimeout(saveTimer); store.set("hist-" + code, history); }
+    if (code) { clearTimeout(saveTimer); writeHist(code); }
     if (net) net.send({ t: "leave", id: myId });
   });
   setInterval(renderTyping, 1000);
