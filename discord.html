@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ДіноКорд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Rubik:wght@400;500;600&display=swap">
+<style>
+/* Layout: Discord-style — server rail, channel list, chat, member list. Rooms go over PeerJS (the host relays and keeps history). */
+:root {
+  --rail: #1e1f22; --side: #2b2d31; --chat: #313338; --input: #383a40; --hover: #35373c; --sel: #404249;
+  --ink: #dbdee1; --muted: #949ba4; --head: #f2f3f5; --line: #1f2023;
+  --accent: #5865f2; --accent-2: #4752c4; --ok: #23a55a; --danger: #f23f43; --dino: #ffbf3a;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --rail: #e3e5e8; --side: #f2f3f5; --chat: #ffffff; --input: #ebedef; --hover: #e8eaed; --sel: #d7dadf;
+    --ink: #313338; --muted: #5c5e66; --head: #060607; --line: #e1e2e4; --dino: #c98400; color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --rail: #e3e5e8; --side: #f2f3f5; --chat: #ffffff; --input: #ebedef; --hover: #e8eaed; --sel: #d7dadf;
+  --ink: #313338; --muted: #5c5e66; --head: #060607; --line: #e1e2e4; --dino: #c98400; color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--chat); color: var(--ink); font: 15px/1.4 var(--body); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+input { font: inherit; color: var(--ink); }
+
+.app { display: grid; grid-template-columns: 72px 240px 1fr 240px; height: 100dvh; }
+
+/* server rail */
+.rail { background: var(--rail); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; overflow-y: auto; }
+.srv { width: 48px; height: 48px; border-radius: 50%; background: var(--side); display: grid; place-items: center; font: 700 18px var(--display); color: var(--ink); transition: border-radius .15s, background .15s; flex: none; position: relative; }
+.srv:hover, .srv.on { border-radius: 16px; background: var(--accent); color: #fff; }
+.srv.on::before { content: ""; position: absolute; left: -12px; width: 4px; height: 36px; border-radius: 0 4px 4px 0; background: var(--head); }
+.srv.add { color: var(--ok); font-size: 26px; }
+.srv.add:hover { background: var(--ok); color: #fff; }
+.rail hr { width: 32px; border: 0; border-top: 2px solid var(--side); margin: 2px 0; }
+
+/* channel side */
+.side { background: var(--side); display: flex; flex-direction: column; min-width: 0; }
+.side-head { height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); font-weight: 600; color: var(--head); gap: 8px; }
+.side-head .code { font: 500 13px var(--display); color: var(--dino); white-space: nowrap; }
+.chans { flex: 1; overflow-y: auto; padding: 12px 8px; }
+.cat { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); padding: 12px 8px 4px; letter-spacing: .02em; }
+.chan { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 8px; border-radius: 4px; color: var(--muted); text-align: left; }
+.chan:hover { background: var(--hover); color: var(--ink); }
+.chan.on { background: var(--sel); color: var(--head); }
+.chan .hash { font-size: 20px; line-height: 1; opacity: .7; width: 18px; text-align: center; }
+.chan .unread { margin-left: auto; background: var(--danger); color: #fff; font-size: 11px; font-weight: 600; border-radius: 8px; padding: 0 6px; }
+.me-bar { background: color-mix(in srgb, var(--rail) 60%, var(--side)); padding: 8px; display: flex; align-items: center; gap: 8px; }
+.me-bar input { flex: 1; min-width: 0; background: var(--input); border: 0; border-radius: 4px; padding: 6px 8px; outline: none; }
+.icon-btn { width: 32px; height: 32px; border-radius: 4px; display: grid; place-items: center; color: var(--muted); font-size: 18px; flex: none; }
+.icon-btn:hover { background: var(--hover); color: var(--ink); }
+
+/* avatars */
+.ava { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 22px; position: relative; }
+.ava.sm { width: 32px; height: 32px; font-size: 17px; }
+.ava .dot { position: absolute; right: -2px; bottom: -2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ok); border: 3px solid var(--side); }
+
+/* chat */
+.main { display: flex; flex-direction: column; min-width: 0; background: var(--chat); }
+.main-head { height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); color: var(--head); font-weight: 600; }
+.main-head .hash { color: var(--muted); font-size: 22px; }
+.main-head .topic { color: var(--muted); font-weight: 400; font-size: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-left: 1px solid var(--sel); padding-left: 10px; margin-left: 4px; }
+.main-head .sp { flex: 1; }
+.menu-btn { display: none; }
+.msgs { flex: 1; overflow-y: auto; padding: 16px 0 8px; }
+.welcome { padding: 16px; }
+.welcome .big { width: 68px; height: 68px; border-radius: 50%; background: var(--sel); display: grid; place-items: center; font-size: 38px; margin-bottom: 8px; }
+.welcome h2 { margin: 0 0 4px; color: var(--head); font-size: 28px; }
+.welcome p { margin: 0; color: var(--muted); }
+.msg { display: flex; gap: 16px; padding: 2px 16px; margin-top: 14px; position: relative; }
+.msg.cont { margin-top: 0; }
+.msg.cont .ava { visibility: hidden; height: 0; }
+.msg:hover { background: color-mix(in srgb, var(--rail) 18%, transparent); }
+.msg .body { min-width: 0; flex: 1; }
+.msg .who { font-weight: 600; margin-right: 6px; }
+.msg .time { color: var(--muted); font-size: 12px; }
+.msg .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.sys .text { color: var(--muted); font-style: italic; }
+.msg .text .ping { background: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--head); border-radius: 3px; padding: 0 2px; }
+.reacts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.react { background: var(--input); border: 1px solid transparent; border-radius: 8px; padding: 0 6px; font-size: 14px; }
+.react.mine { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--input)); }
+.msg .tools { position: absolute; right: 16px; top: -14px; display: none; background: var(--chat); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 2px 8px #0003; }
+.msg:hover .tools, .msg:focus-within .tools { display: flex; }
+.msg .tools button { padding: 4px 6px; font-size: 16px; }
+.msg .tools button:hover { background: var(--hover); }
+.typing { height: 22px; padding: 0 16px; font-size: 13px; color: var(--muted); }
+.composer { padding: 0 16px 20px; }
+.composer form { display: flex; align-items: center; gap: 8px; background: var(--input); border-radius: 8px; padding: 0 8px 0 12px; }
+.composer input { flex: 1; min-width: 0; background: none; border: 0; outline: none; padding: 11px 0; }
+.composer input:disabled { opacity: .5; }
+
+/* members */
+.members { background: var(--side); overflow-y: auto; padding: 16px 8px; }
+.member { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 4px; }
+.member:hover { background: var(--hover); }
+.member .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member .tag { font-size: 11px; color: var(--dino); font-family: var(--display); }
+
+/* dialog */
+.ov { position: fixed; inset: 0; background: #000a; display: grid; place-items: center; padding: 16px; z-index: 10; }
+.ov[hidden] { display: none; }
+.dlg { background: var(--chat); border-radius: 8px; width: min(440px, 100%); padding: 24px; text-align: center; box-shadow: 0 8px 32px #0006; }
+.dlg h2 { margin: 0 0 6px; color: var(--head); font-family: var(--display); font-size: 26px; }
+.dlg p { margin: 0 0 16px; color: var(--muted); }
+.dlg label { display: block; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin: 12px 0 6px; }
+.dlg input { width: 100%; background: var(--input); border: 0; border-radius: 4px; padding: 10px; outline: none; }
+.dlg .row { display: flex; gap: 8px; margin-top: 18px; }
+.btn { flex: 1; padding: 10px 16px; border-radius: 4px; background: var(--accent); color: #fff; font-weight: 500; }
+.btn:hover { background: var(--accent-2); }
+.btn.sec { background: var(--sel); color: var(--ink); }
+.btn:disabled { opacity: .5; cursor: default; }
+.status { min-height: 20px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.status.bad { color: var(--danger); }
+.emojis { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.emojis button { font-size: 24px; width: 42px; height: 42px; border-radius: 8px; background: var(--input); }
+.emojis button.on { outline: 2px solid var(--accent); }
+
+@media (max-width: 1000px) { .app { grid-template-columns: 72px 220px 1fr; } .members { display: none; } }
+@media (max-width: 700px) {
+  .app { grid-template-columns: 1fr; }
+  .rail, .side { position: fixed; top: 0; bottom: 0; z-index: 5; transform: translateX(-110vw); transition: transform .2s; }
+  .rail { left: 0; width: 72px; }
+  .side { left: 72px; width: min(260px, calc(100vw - 72px)); }
+  .app.drawer .rail, .app.drawer .side { transform: none; }
+  .menu-btn { display: grid; }
+  .main-head .topic { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <nav class="rail" id="rail" aria-label="Сервери">
+    <button class="srv on" id="srvHome" title="ДіноКорд">🦖</button>
+    <hr>
+    <div id="srvList" style="display:contents"></div>
+    <button class="srv add" id="srvAdd" title="Створити або приєднатися">+</button>
+  </nav>
+
+  <aside class="side">
+    <div class="side-head"><span id="srvName">ДіноКорд</span><span class="code" id="srvCode"></span></div>
+    <div class="chans" id="chans"></div>
+    <div class="me-bar">
+      <button class="ava sm" id="meAva" title="Змінити аватар"></button>
+      <input id="nick" maxlength="16" aria-label="Нік">
+      <button class="icon-btn" id="btnTheme" title="Тема">◐</button>
+      <button class="icon-btn" id="btnLeave" title="Вийти з сервера" hidden>⎋</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-head">
+      <button class="icon-btn menu-btn" id="btnMenu" aria-label="Меню">☰</button>
+      <span class="hash">#</span><span id="chanName">загальний</span>
+      <span class="topic" id="chanTopic"></span>
+      <span class="sp"></span>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="typing" id="typing"></div>
+    <div class="composer">
+      <form id="form" autocomplete="off">
+        <input id="text" maxlength="500" placeholder="Спершу створи сервер або приєднайся" disabled>
+        <button class="icon-btn" type="button" id="btnRoar" title="Гаркнути">🦖</button>
+      </form>
+    </div>
+  </main>
+
+  <aside class="members" id="members" aria-label="Учасники"></aside>
+</div>
+
+<div class="ov" id="ovJoin">
+  <div class="dlg">
+    <h2>ДіноКорд</h2>
+    <p>Чат для динозавриків. Створи сервер і скинь друзям код, або введи код друга.</p>
+    <label for="joinCode">Код сервера</label>
+    <input id="joinCode" inputmode="numeric" maxlength="6" placeholder="Наприклад, 4821">
+    <div class="row">
+      <button class="btn sec" id="btnJoin">Приєднатися</button>
+      <button class="btn" id="btnCreate">Створити сервер</button>
+    </div>
+    <div class="status" id="joinStatus"></div>
+  </div>
+</div>
+
+<div class="ov" id="ovAva" hidden>
+  <div class="dlg">
+    <h2>Аватар</h2>
+    <p>Обери свого звіра.</p>
+    <div class="emojis" id="avaPick"></div>
+    <div class="row"><button class="btn" id="avaDone">Готово</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("dinocord-" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("dinocord-" + k, JSON.stringify(v)); } catch {} },
+  };
+
+  const CHANNELS = [
+    { id: "general", name: "загальний", topic: "Балачки про все" },
+    { id: "games", name: "ігри", topic: "Рекорди в Динозаврику, кличте на перегони" },
+    { id: "memes", name: "мемчики", topic: "Тільки смішне" },
+    { id: "help", name: "допомога", topic: "Питання та відповіді" },
+  ];
+  const AVAS = ["🦖", "🦕", "🐊", "🐢", "🦎", "🐉", "🐲", "🥚", "🐸", "🦤", "🐍", "🦩"];
+  const COLORS = ["#f47b67", "#ffbf3a", "#4fd27a", "#5ec8f2", "#a98bff", "#f28bd2", "#f2a35e", "#7ce0c3"];
+  const REACTS = ["👍", "😂", "🔥", "🦖", "❤️"];
+  const PREFIX = "dinocord-";
+  const MAX_HIST = 200;
+
+  const clean = (v, n) => String(v ?? "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, n);
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+
+  let me = {
+    nick: store.get("nick", "Динозаврик " + (10 + Math.floor(Math.random() * 90))),
+    ava: store.get("ava", pick(AVAS)),
+    color: store.get("color", pick(COLORS)),
+  };
+  store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
+
+  let net = null, myId = "me", code = "", isHost = false, chan = "general";
+  const history = {};          // chan -> [msg]
+  const members = new Map();   // id -> {nick, ava, color, host}
+  const unread = {};
+  const typing = new Map();    // id -> {chan, until}
+  CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
+
+  // ---------- render ----------
+  function renderChans() {
+    const box = $("chans");
+    box.innerHTML = '<div class="cat">Текстові канали</div>';
+    for (const c of CHANNELS) {
+      const b = document.createElement("button");
+      b.className = "chan" + (c.id === chan ? " on" : "");
+      b.innerHTML = '<span class="hash">#</span><span></span>' + (unread[c.id] ? '<span class="unread">' + Math.min(99, unread[c.id]) + "</span>" : "");
+      b.children[1].textContent = c.name;
+      b.onclick = () => { chan = c.id; unread[c.id] = 0; $("app").classList.remove("drawer"); renderAll(); $("text").focus(); };
+      box.append(b);
+    }
+    const c = CHANNELS.find(c => c.id === chan);
+    $("chanName").textContent = c.name; $("chanTopic").textContent = c.topic;
+    if (net) $("text").placeholder = "Написати в #" + c.name;
+  }
+
+  function avaEl(u, cls = "") {
+    const a = document.createElement("div");
+    a.className = "ava " + cls;
+    a.style.background = u.color || "#888";
+    a.textContent = u.ava || "🦖";
+    return a;
+  }
+
+  const fmtTime = t => new Date(t).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
+
+  function textNodes(el, text) {
+    // highlight @mentions of my nick, otherwise plain text
+    const re = /@[^\s@]+(?:\s[^\s@]+)?/g; let last = 0, m;
+    while ((m = re.exec(text))) {
+      const tag = m[0].slice(1);
+      const hit = me.nick.toLowerCase().startsWith(tag.toLowerCase()) && tag.length >= 2;
+      if (!hit) continue;
+      el.append(text.slice(last, m.index));
+      const s = document.createElement("span"); s.className = "ping"; s.textContent = m[0]; el.append(s);
+      last = m.index + m[0].length;
+    }
+    el.append(text.slice(last));
+  }
+
+  function renderMsgs() {
+    const box = $("msgs");
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    box.innerHTML = "";
+    const c = CHANNELS.find(c => c.id === chan);
+    const w = document.createElement("div"); w.className = "welcome";
+    w.innerHTML = '<div class="big">#</div><h2></h2><p></p>';
+    w.querySelector("h2").textContent = "Ласкаво просимо в #" + c.name + "!";
+    w.querySelector("p").textContent = net ? "Це початок каналу #" + c.name + ". " + c.topic + "." : "Створи сервер або приєднайся за кодом, щоб почати спілкування.";
+    box.append(w);
+    let prev = null;
+    for (const m of history[chan]) {
+      const cont = prev && !m.sys && !prev.sys && prev.from === m.from && m.t - prev.t < 5 * 60e3;
+      const row = document.createElement("div");
+      row.className = "msg" + (cont ? " cont" : "") + (m.sys ? " sys" : "");
+      row.append(avaEl(m.sys ? { ava: "📢", color: "var(--sel)" } : m));
+      const body = document.createElement("div"); body.className = "body";
+      if (!cont) {
+        const h = document.createElement("div");
+        const who = document.createElement("span"); who.className = "who"; who.style.color = m.sys ? "var(--muted)" : m.color; who.textContent = m.sys ? "ДіноБот" : m.nick;
+        const tm = document.createElement("span"); tm.className = "time"; tm.textContent = fmtTime(m.t);
+        h.append(who, tm); body.append(h);
+      }
+      const tx = document.createElement("div"); tx.className = "text"; textNodes(tx, m.text); body.append(tx);
+      const rs = Object.entries(m.reacts || {}).filter(([, ids]) => ids.length);
+      if (rs.length) {
+        const rb = document.createElement("div"); rb.className = "reacts";
+        for (const [e, ids] of rs) {
+          const b = document.createElement("button");
+          b.className = "react" + (ids.includes(myId) ? " mine" : "");
+          b.textContent = e + " " + ids.length;
+          b.onclick = () => toggleReact(m, e);
+          rb.append(b);
+        }
+        body.append(rb);
+      }
+      row.append(body);
+      if (!m.sys && net) {
+        const tools = document.createElement("div"); tools.className = "tools";
+        for (const e of REACTS) {
+          const b = document.createElement("button"); b.textContent = e; b.title = "Реакція";
+          b.onclick = () => toggleReact(m, e);
+          tools.append(b);
+        }
+        row.append(tools);
+      }
+      box.append(row);
+      prev = m;
+    }
+    if (atBottom || box.dataset.chan !== chan) box.scrollTop = box.scrollHeight;
+    box.dataset.chan = chan;
+  }
+
+  function renderMembers() {
+    const box = $("members");
+    const list = [...members.entries()];
+    box.innerHTML = '<div class="cat">В мережі: ' + list.length + "</div>";
+    list.sort((a, b) => (b[1].host - a[1].host) || a[1].nick.localeCompare(b[1].nick, "uk"));
+    for (const [id, u] of list) {
+      const r = document.createElement("div"); r.className = "member";
+      const a = avaEl(u, "sm"); const d = document.createElement("span"); d.className = "dot"; a.append(d);
+      const n = document.createElement("div"); n.style.minWidth = "0";
+      const nm = document.createElement("div"); nm.className = "nm"; nm.style.color = u.color; nm.textContent = u.nick + (id === myId ? " (ти)" : "");
+      n.append(nm);
+      if (u.host) { const t = document.createElement("div"); t.className = "tag"; t.textContent = "👑 власник"; n.append(t); }
+      r.append(a, n); box.append(r);
+    }
+  }
+
+  function renderTyping() {
+    const now = Date.now();
+    const names = [...typing.entries()].filter(([id, t]) => t.chan === chan && t.until > now && id !== myId).map(([id]) => members.get(id)?.nick).filter(Boolean);
+    $("typing").textContent = names.length === 0 ? "" : names.length === 1 ? names[0] + " друкує…" : names.length < 4 ? names.join(", ") + " друкують…" : "Кілька динозавриків друкують…";
+  }
+
+  function renderMe() {
+    const a = $("meAva"); a.textContent = me.ava; a.style.background = me.color;
+    $("nick").value = me.nick;
+  }
+
+  function renderRail() {
+    const list = $("srvList"); list.innerHTML = "";
+    if (code) {
+      const b = document.createElement("button"); b.className = "srv on"; b.title = "Сервер " + code;
+      b.textContent = code.slice(0, 2); list.append(b);
+      $("srvHome").classList.remove("on");
+    } else $("srvHome").classList.add("on");
+    $("srvName").textContent = code ? "Сервер " + code : "ДіноКорд";
+    $("srvCode").textContent = code ? "#" + code : "";
+    $("btnLeave").hidden = !net;
+  }
+
+  function renderAll() { renderChans(); renderMsgs(); renderMembers(); renderTyping(); renderRail(); }
+
+  // ---------- state changes (same on every peer; host relays) ----------
+  function addMsg(m) {
+    if (!m || !history[m.chan] || typeof m.id !== "string") return;
+    if (history[m.chan].some(x => x.id === m.id)) return;
+    const msg = { id: m.id.slice(0, 40), chan: m.chan, from: String(m.from || ""), nick: clean(m.nick, 16) || "Динозаврик",
+      ava: clean(m.ava, 4) || "🦖", color: /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#888",
+      text: clean(m.text, 500), t: Number(m.t) || Date.now(), sys: !!m.sys, reacts: {} };
+    if (!msg.text) return;
+    history[m.chan].push(msg);
+    if (history[m.chan].length > MAX_HIST) history[m.chan].shift();
+    typing.delete(msg.from);
+    if (m.chan !== chan) unread[m.chan]++;
+    else if (document.hidden) document.title = "(•) ДіноКорд";
+    renderChans(); renderMsgs(); renderTyping();
+  }
+
+  function applyReact(r) {
+    const m = history[r.chan]?.find(x => x.id === r.msg);
+    if (!m || !REACTS.includes(r.e)) return;
+    const ids = m.reacts[r.e] || (m.reacts[r.e] = []);
+    const i = ids.indexOf(r.who);
+    if (r.on && i < 0) ids.push(r.who);
+    if (!r.on && i >= 0) ids.splice(i, 1);
+    if (r.chan === chan) renderMsgs();
+  }
+
+  function setMember(id, u) {
+    const was = members.has(id);
+    members.set(id, { nick: clean(u.nick, 16) || "Динозаврик", ava: clean(u.ava, 4) || "🦖",
+      color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888", host: !!u.host });
+    renderMembers();
+    return !was;
+  }
+
+  function dropMember(id) {
+    const u = members.get(id);
+    if (!u) return;
+    members.delete(id); typing.delete(id);
+    if (isHost) sysMsg(u.nick + " пішов із сервера.");
+    renderMembers(); renderTyping();
+  }
+
+  let seq = 0;
+  const newId = () => myId + "-" + Date.now().toString(36) + "-" + (seq++);
+  function sysMsg(text) {
+    const m = { id: newId(), chan: "general", from: "sys", nick: "ДіноБот", ava: "📢", color: "#888888", text, t: Date.now(), sys: true };
+    addMsg(m); net?.send({ t: "msg", m });
+  }
+
+  function toggleReact(m, e) {
+    if (!net) return;
+    const on = !(m.reacts[e] || []).includes(myId);
+    const r = { chan: m.chan, msg: m.id, e, who: myId, on };
+    applyReact(r); net.send({ t: "react", r });
+  }
+
+  // ---------- network: PeerJS star, host keeps history and relays ----------
+  function loadPeerJs() {
+    if (window.Peer) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";
+      s.onload = res; s.onerror = () => rej(new Error("load"));
+      document.head.append(s);
+    });
+  }
+
+  function handle(msg, fromConn, conns) {
+    if (!msg || typeof msg !== "object") return;
+    if (msg.t === "hello" && isHost && fromConn) {
+      fromConn.uid = fromConn.peer;
+      const fresh = setMember(fromConn.peer, msg.u || {});
+      fromConn.send({ t: "sync", history, members: [...members.entries()] });
+      relay({ t: "member", id: fromConn.peer, u: members.get(fromConn.peer) }, fromConn, conns);
+      if (fresh) sysMsg(members.get(fromConn.peer).nick + " приєднався до сервера! 🦖");
+      return;
+    }
+    if (msg.t === "sync" && !isHost) {
+      for (const c of CHANNELS) {
+        const arr = Array.isArray(msg.history?.[c.id]) ? msg.history[c.id] : [];
+        history[c.id] = [];
+        for (const m of arr) { addMsg(m); const h = history[c.id].at(-1); if (h && h.id === m.id) h.reacts = sanitizeReacts(m.reacts); }
+        unread[c.id] = 0;
+      }
+      members.clear();
+      for (const [id, u] of msg.members || []) setMember(id, u);
+      renderAll();
+      return;
+    }
+    // from a guest, trust only its own connection id
+    const sender = isHost && fromConn ? fromConn.peer : null;
+    if (msg.t === "msg") { if (!msg.m || typeof msg.m !== "object") return; if (sender) msg.m.from = sender; addMsg(msg.m); }
+    else if (msg.t === "react") { if (!msg.r || typeof msg.r !== "object") return; if (sender) msg.r.who = sender; applyReact(msg.r); }
+    else if (msg.t === "member") { const id = sender || msg.id; setMember(id, msg.u || {}); msg.id = id; }
+    else if (msg.t === "typing") { const id = sender || msg.id; msg.id = id; typing.set(id, { chan: msg.chan, until: Date.now() + 4000 }); renderTyping(); }
+    else if (msg.t === "leave") { if (!isHost) dropMember(msg.id); return; }
+    else return;
+    if (isHost) relay(msg, fromConn, conns);
+  }
+
+  function sanitizeReacts(r) {
+    const out = {};
+    if (r && typeof r === "object") for (const e of REACTS) if (Array.isArray(r[e])) out[e] = r[e].filter(x => typeof x === "string").slice(0, 100);
+    return out;
+  }
+
+  function relay(msg, except, conns) { for (const c of conns) if (c !== except && c.open) c.send(msg); }
+
+  function makeNet(peer, hostConn) {
+    const conns = new Set();
+    const wire = c => {
+      c.on("data", d => handle(d, hostConn ? null : c, conns));
+      c.on("close", () => {
+        conns.delete(c);
+        if (hostConn) { leave("Власник закрив сервер."); return; }
+        dropMember(c.peer);
+        relay({ t: "leave", id: c.peer }, null, conns);
+      });
+    };
+    if (hostConn) { conns.add(hostConn); wire(hostConn); }
+    else peer.on("connection", c => { conns.add(c); wire(c); });
+    return {
+      send: msg => { for (const c of conns) if (c.open) c.send(msg); },
+      close: () => setTimeout(() => peer.destroy(), 150),
+    };
+  }
+
+  async function enter(create) {
+    if (net) return;
+    let c = $("joinCode").value.replace(/\D/g, "").slice(0, 6);
+    if (create) c = String(1000 + Math.floor(Math.random() * 9000));
+    if (c.length < 4) { setStatus("Введи код сервера: щонайменше 4 цифри.", true); $("joinCode").focus(); return; }
+    $("btnJoin").disabled = $("btnCreate").disabled = true;
+    setStatus("Підключаюсь…");
+    try {
+      await loadPeerJs();
+      net = await new Promise((res, rej) => {
+        const peer = create ? new Peer(PREFIX + c) : new Peer();
+        const fail = e => { peer.destroy(); rej(e); };
+        peer.on("error", fail);
+        peer.on("open", id => {
+          myId = id;
+          if (create) { peer.off("error", fail); peer.on("error", () => {}); res(makeNet(peer, null)); return; }
+          const conn = peer.connect(PREFIX + c, { reliable: true });
+          const timer = setTimeout(() => fail({ type: "peer-unavailable" }), 9000);
+          conn.on("open", () => {
+            clearTimeout(timer); peer.off("error", fail); peer.on("error", () => {});
+            const n = makeNet(peer, conn);
+            conn.send({ t: "hello", u: me });
+            res(n);
+          });
+        });
+      });
+    } catch (e) {
+      $("btnJoin").disabled = $("btnCreate").disabled = false;
+      const t = e && e.type;
+      setStatus(t === "unavailable-id" ? "Сервер з таким кодом уже є. Спробуй ще раз."
+        : t === "peer-unavailable" ? "Сервер " + c + " не знайдено. Перевір код або попроси друга створити його."
+        : e && e.message === "load" ? "Не вдалося завантажити чат. Перевір інтернет."
+        : "Не вдалося підключитися. Спробуй ще раз.", true);
+      return;
+    }
+    code = c; isHost = create;
+    store.set("lastCode", code);
+    members.clear();
+    setMember(myId, { ...me, host: isHost });
+    if (isHost) sysMsg("Сервер створено! Код для друзів: " + code);
+    $("ovJoin").hidden = true;
+    $("text").disabled = false;
+    $("btnJoin").disabled = $("btnCreate").disabled = false;
+    setStatus("");
+    renderAll();
+    $("text").focus();
+  }
+
+  function leave(reason) {
+    if (!net) return;
+    net.send({ t: "leave", id: myId }); net.close(); net = null;
+    code = ""; isHost = false; myId = "me";
+    members.clear(); typing.clear();
+    CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
+    $("text").disabled = true; $("text").placeholder = "Спершу створи сервер або приєднайся";
+    $("ovJoin").hidden = false;
+    setStatus(reason || "", !!reason);
+    renderAll();
+  }
+
+  const setStatus = (t, bad) => { $("joinStatus").textContent = t; $("joinStatus").className = "status" + (bad ? " bad" : ""); };
+
+  // ---------- UI wiring ----------
+  $("form").addEventListener("submit", e => {
+    e.preventDefault();
+    const text = clean($("text").value, 500);
+    if (!text || !net) return;
+    $("text").value = "";
+    const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text, t: Date.now() };
+    addMsg(m); net.send({ t: "msg", m });
+    $("msgs").scrollTop = $("msgs").scrollHeight;
+  });
+  let lastTyping = 0;
+  $("text").addEventListener("input", () => {
+    if (!net || Date.now() - lastTyping < 2500) return;
+    lastTyping = Date.now(); net.send({ t: "typing", id: myId, chan });
+  });
+  $("btnRoar").onclick = () => {
+    if (!net) return;
+    $("text").value = pick(["РРРАААР! 🦖", "Рррр… 🦕", "*гучно тупотить* 🦖🦖", "Хто тут найшвидший динозаврик? 🏃🦖"]);
+    $("form").requestSubmit();
+  };
+
+  function pushMe() {
+    store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
+    renderMe();
+    if (!net) return;
+    setMember(myId, { ...me, host: isHost });
+    net.send({ t: "member", id: myId, u: members.get(myId) });
+  }
+  $("nick").addEventListener("change", () => { me.nick = clean($("nick").value, 16) || "Динозаврик"; pushMe(); });
+
+  const avaPick = $("avaPick");
+  function renderAvaPick() {
+    avaPick.innerHTML = "";
+    for (const a of AVAS) {
+      const b = document.createElement("button"); b.textContent = a; b.className = a === me.ava ? "on" : "";
+      b.onclick = () => { me.ava = a; me.color = COLORS[AVAS.indexOf(a) % COLORS.length]; renderAvaPick(); };
+      avaPick.append(b);
+    }
+  }
+  $("meAva").onclick = () => { renderAvaPick(); $("ovAva").hidden = false; };
+  $("avaDone").onclick = () => { $("ovAva").hidden = true; pushMe(); };
+
+  $("btnCreate").onclick = () => enter(true);
+  $("btnJoin").onclick = () => enter(false);
+  $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") enter(false); });
+  $("srvAdd").onclick = () => { if (net && !confirm("Вийти з поточного сервера?")) return; leave(); $("joinCode").focus(); };
+  $("srvHome").onclick = () => { if (!net) $("ovJoin").hidden = false; };
+  $("btnLeave").onclick = () => { if (confirm("Вийти з сервера?")) leave(); };
+  $("btnMenu").onclick = () => $("app").classList.toggle("drawer");
+  $("msgs").addEventListener("click", () => $("app").classList.remove("drawer"));
+
+  const themes = ["auto", "dark", "light"];
+  let theme = store.get("theme", "auto");
+  const applyTheme = () => { if (theme === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme; };
+  $("btnTheme").onclick = () => { theme = themes[(themes.indexOf(theme) + 1) % 3]; store.set("theme", theme); applyTheme(); };
+  applyTheme();
+
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) document.title = "ДіноКорд"; });
+  window.addEventListener("pagehide", () => { if (net) net.send({ t: "leave", id: myId }); });
+  setInterval(renderTyping, 1000);
+
+  const hashCode = (location.hash.match(/\d{4,6}/) || [])[0];
+  $("joinCode").value = hashCode || store.get("lastCode", "");
+  renderMe(); renderAll();
+})();
+</script>
+</body>
+</html>
