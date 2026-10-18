@@ -42,6 +42,8 @@ input { font: inherit; color: var(--ink); }
 .srv:hover, .srv.on { border-radius: 16px; background: var(--accent); color: #fff; }
 .srv.on::before { content: ""; position: absolute; left: -12px; width: 4px; height: 36px; border-radius: 0 4px 4px 0; background: var(--head); }
 .srv.add { color: var(--ok); font-size: 26px; }
+.srv.busy { opacity: .5; }
+.rail { scrollbar-width: none; }
 .srv.add:hover { background: var(--ok); color: #fff; }
 .rail hr { width: 32px; border: 0; border-top: 2px solid var(--side); margin: 2px 0; }
 
@@ -285,6 +287,7 @@ input { font: inherit; color: var(--ink); }
       <button class="btn" id="btnCreate">Створити сервер</button>
     </div>
     <div class="status" id="joinStatus"></div>
+    <button class="btn sec" id="btnJoinCancel" style="width:100%;margin-top:8px" hidden>Повернутися до сервера</button>
   </div>
 </div>
 
@@ -576,18 +579,48 @@ input { font: inherit; color: var(--ink); }
     $("nick").value = me.nick;
   }
 
+  // every server you've been on stays in the rail; one tap switches to it
+  const savedServers = () => { const v = store.get("servers", []); return Array.isArray(v) ? v.filter(x => x && /^\d{4,6}$/.test(x.code)).slice(0, 30) : []; };
+  function rememberServer(c, name) {
+    const list = savedServers(), i = list.findIndex(x => x.code === c);
+    if (i < 0) list.push({ code: c, name: name || "" });
+    else if (name && list[i].name !== name) list[i].name = name;
+    else return;
+    store.set("servers", list);
+  }
+  function forgetServer(c) { store.set("servers", savedServers().filter(x => x.code !== c)); }
+  const initials = (name, c) => {
+    const w = String(name || "").trim().split(/\s+/).filter(Boolean);
+    return w.length ? (w.length > 1 ? w[0][0] + w[1][0] : [...w[0]].slice(0, 2).join("")).toUpperCase() : c.slice(0, 2);
+  };
+  let switching = false;
+  async function switchServer(c) {
+    if (switching || c === code) return;
+    switching = true;
+    if (net) leave();
+    $("joinCode").value = c;
+    await enter(false, true);
+    switching = false;
+    renderRail();
+  }
+
   function renderRail() {
     const list = $("srvList"); list.innerHTML = "";
-    if (code) {
-      const b = document.createElement("button"); b.className = "srv on"; b.title = "Сервер " + code;
-      b.textContent = code.slice(0, 2); list.append(b);
-      $("srvHome").classList.remove("on");
-    } else $("srvHome").classList.add("on");
+    if (code && net) rememberServer(code, adm.name);
+    for (const sv of savedServers()) {
+      const b = document.createElement("button");
+      b.className = "srv" + (sv.code === code ? " on" : "") + (switching && sv.code === $("joinCode").value ? " busy" : "");
+      b.title = (sv.name || "Сервер " + sv.code) + " (#" + sv.code + ")";
+      b.textContent = initials(sv.name, sv.code);
+      b.onclick = () => switchServer(sv.code);
+      list.append(b);
+    }
+    $("srvHome").classList.toggle("on", !code);
     $("srvName").textContent = code ? (adm.name || "Сервер " + code) : "ДіноКорд";
     $("btnAdmin").hidden = !net || !iOwn();
     $("btnInvite").hidden = !net;
     $("btnClear").hidden = !net || !iOwn();
-    $("srvCode").textContent = code ? "#" + code : "";
+    $("srvCode").textContent = code && adm.name ? "#" + code : "";
     $("btnLeave").hidden = !net;
   }
 
@@ -1101,7 +1134,7 @@ input { font: inherit; color: var(--ink); }
   const hasHist = c => { const h = store.get("hist-" + c, null); return !!h && CHANNELS.some(x => Array.isArray(h[x.id]) && h[x.id].length); };
 
   async function enter(create, auto) {
-    if (net) return;
+    if (net) { if (switching) return; leave(); }
     let c = $("joinCode").value.replace(/\D/g, "").slice(0, 6);
     if (create) c = String(1000 + Math.floor(Math.random() * 9000));
     if (c.length < 4) { setStatus("Введи код сервера: щонайменше 4 цифри.", true); $("joinCode").focus(); return; }
@@ -1132,6 +1165,7 @@ input { font: inherit; color: var(--ink); }
     else setMeta(null);
     saveHist();
     store.set("lastCode", code);
+    rememberServer(code, adm.name);
     members.clear();
     setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
     if (isHost) sysMsg(hasHist(c) && history.general.length > 1 ? me.nick + " повернув сервер онлайн 🦖" : "Сервер створено! Код для друзів: " + code);
@@ -1537,9 +1571,15 @@ input { font: inherit; color: var(--ink); }
   $("btnCreate").onclick = () => enter(true);
   $("btnJoin").onclick = () => enter(false);
   $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") enter(false); });
-  $("srvAdd").onclick = () => { if (net && !confirm("Вийти з поточного сервера?")) return; leave(); $("joinCode").focus(); };
-  $("srvHome").onclick = () => { if (!net) $("ovJoin").hidden = false; };
-  $("btnLeave").onclick = () => { if (confirm("Вийти з сервера?")) leave(); };
+  const openJoin = () => {
+    $("btnJoinCancel").hidden = !net; setStatus("");
+    if (net) $("joinCode").value = "";
+    $("ovJoin").hidden = false; $("joinCode").focus();
+  };
+  $("srvAdd").onclick = openJoin;
+  $("srvHome").onclick = openJoin;
+  $("btnJoinCancel").onclick = () => { if (net) $("ovJoin").hidden = true; };
+  $("btnLeave").onclick = () => { if (confirm("Вийти з сервера і прибрати його зі списку?")) { forgetServer(code); leave(); } };
   $("btnMenu").onclick = () => $("app").classList.toggle("drawer");
   $("btnAdmin").onclick = serverSettings;
   $("btnClear").onclick = () => { const c = CHANNELS.find(c => c.id === chan); if (confirm("Видалити всі повідомлення в #" + c.name + " для всіх?")) doAdmin({ a: "clear", chan }); };
