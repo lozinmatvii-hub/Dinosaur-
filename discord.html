@@ -724,7 +724,7 @@ input { font: inherit; color: var(--ink); }
     "-LIlJrp0NuxdU2IzYvJWEGkrGY0ahtdnuAnqvq8lNP0.XRTmpGiR9vlHjsrEIcxiYl2a2ubE2xD8hWPDIRn2aiE",
   ];
   // Passkeys from the Passwords app ("pk:<id>:<x>:<y>" from the profile). They work on every device the Passwords app syncs to.
-  const SITE_PASSKEYS = [];
+  const SITE_PASSKEYS = ["pk:pplNrZdaYQtUW0oGg4nF4A9cHNI:ltxKX1UJMdHMz555l3Ye1RZTUnaBsvgakrmFT7K9cME:44In2iRUbACzUuSyQNztv1ucRR5CnidjBHBjwrHA8l4"];
   const NEWS = "news";
   const parsePk = v => { const [t, id, x, y] = String(v).split(":"); return t === "pk" && id && x && y ? { id, x, y } : null; };
   const b64u = buf => b64(buf).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
