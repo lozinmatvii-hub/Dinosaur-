@@ -344,7 +344,7 @@ input { font: inherit; color: var(--ink); }
   <div class="dm-wrap" id="dmWrap">
     <div class="dm-list" id="dmList"></div>
     <div class="dm-main">
-      <div class="dm-head"><button class="icon-btn dm-back" id="dmBack" aria-label="До списку">←</button><span id="dmTitle">Особисті</span><span class="sp"></span><button class="icon-btn" id="dmClose" aria-label="Закрити">✕</button></div>
+      <div class="dm-head"><button class="icon-btn dm-back" id="dmBack" aria-label="До списку">←</button><span id="dmTitle">Особисті</span><span class="sp"></span><button class="icon-btn" id="dmDelete" title="Видалити розмову" hidden>🗑</button><button class="icon-btn" id="dmClose" aria-label="Закрити">✕</button></div>
       <div class="dm-msgs" id="dmMsgs"></div>
       <form class="dm-form" id="dmForm" autocomplete="off"><input id="dmText" maxlength="500" placeholder="Особисте повідомлення"><button class="btn" style="flex:none" type="submit">➤</button></form>
     </div>
@@ -1689,6 +1689,7 @@ input { font: inherit; color: var(--ink); }
     $("dmTitle").innerHTML = t ? "<span></span> <small></small>" : "Особисті";
     if (t) { $("dmTitle").firstChild.textContent = t.nick; $("dmTitle").lastChild.textContent = online ? "🟢 в мережі" : "не в мережі"; }
     $("dmText").disabled = !online;
+    $("dmDelete").hidden = !t;
     $("dmText").placeholder = !t ? "Вибери розмову ліворуч" : online ? "Написати " + t.nick : t.nick + " зараз не в мережі на цьому сервері";
     if (!t) { box.innerHTML = '<div class="dm-empty">Вибери, кому написати. Особисті повідомлення йдуть напряму людині й не проходять через сервер.</div>'; return; }
     if (!t.msgs.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = "Почни розмову з " + t.nick + " 👋"; box.append(e); }
@@ -1713,6 +1714,11 @@ input { font: inherit; color: var(--ink); }
   });
   $("btnDms").onclick = () => openDm(dmOpen && dms[dmOpen] ? dmOpen : "");
   $("dmClose").onclick = () => { $("ovDm").hidden = true; };
+  $("dmDelete").onclick = () => {
+    // removes the conversation from this device only; the other person keeps their copy
+    if (!dms[dmOpen] || !confirm("Видалити розмову з " + dms[dmOpen].nick + "? Вона зникне тільки в тебе.")) return;
+    delete dms[dmOpen]; dmOpen = ""; saveDms(); renderDms(); renderDmBadge();
+  };
   $("dmBack").onclick = () => { dmOpen = ""; renderDms(); };
   $("ovDm").addEventListener("click", e => { if (e.target === $("ovDm")) $("ovDm").hidden = true; });
 
