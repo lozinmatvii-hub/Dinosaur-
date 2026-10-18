@@ -1270,7 +1270,14 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   }
 
   function setMember(id, u) {
-    const was = members.has(id), since = members.get(id)?.since || Date.now();
+    let was = members.has(id), since = members.get(id)?.since || Date.now();
+    if (validPub(u.pub)) for (const [oid, ou] of [...members]) {
+      if (oid === id || ou.pub !== u.pub || oid === myId) continue;
+      // same person on a newer connection (woke up, reconnected): keep one row, drop the stale one quietly
+      was = true; since = Math.min(since, ou.since || since);
+      members.delete(oid); typing.delete(oid); dropVoice(oid); dropLive(oid);
+      if (isHost) { for (const c of hostConns) if (c.peer === oid) c.close(); relay({ t: "leave", id: oid, quiet: true }, null, hostConns); }
+    }
     members.set(id, { nick: clean(u.nick, 16) || "Динозаврик", ava: clean(u.ava, 4) || "🦖",
       color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888", host: !!u.host, pub: validPub(u.pub) ? u.pub : "",
       st: ["on", "away", "dnd"].includes(u.st) ? u.st : "on", stx: clean(u.stx, 40), photo: validPhoto(u.photo) ? u.photo : "",
@@ -1280,11 +1287,19 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     return !was;
   }
 
+  const leftSoon = new Map();   // key -> timer for a "left" note that a quick return cancels
   function dropMember(id) {
     const u = members.get(id);
     if (!u) return;
     members.delete(id); typing.delete(id); dropVoice(id); dropLive(id);
-    if (isHost) sysMsg(u.nick + " пішов із сервера.");
+    if (isHost && ![...members.values()].some(o => u.pub && o.pub === u.pub)) {
+      const k = u.pub || id;
+      clearTimeout(leftSoon.get(k));
+      leftSoon.set(k, setTimeout(() => {
+        leftSoon.delete(k);
+        if (net && isHost && ![...members.values()].some(o => u.pub && o.pub === u.pub)) sysMsg(u.nick + " пішов із сервера.");
+      }, 30000));
+    }
     renderMembers(); renderTyping();
   }
 
@@ -1332,7 +1347,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   function welcome(msg, fromConn, conns, pub) {
       setMeta(msg.meta);
       mergeHist(msg.hist);
-      const fresh = setMember(fromConn.peer, { ...(msg.u || {}), pub });
+      const back = pub && leftSoon.has(pub);
+      if (back) { clearTimeout(leftSoon.get(pub)); leftSoon.delete(pub); }
+      const fresh = setMember(fromConn.peer, { ...(msg.u || {}), pub }) && !back;
       fromConn.send({ t: "sync", meta, history, members: [...members.entries()], voice: [...voice.entries()], live: [...live.entries()] });
       relay({ t: "member", id: fromConn.peer, u: members.get(fromConn.peer) }, fromConn, conns);
       if (fresh) sysMsg(members.get(fromConn.peer).nick + " приєднався до сервера! 🦖");
@@ -1408,7 +1425,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const conns = new Set();
     hostConns = hostConn ? new Set() : conns;
     const wire = c => {
-      c.on("data", d => handle(d, hostConn ? null : c, conns));
+      c.lastSeen = Date.now();
+      c.on("data", d => { c.lastSeen = Date.now(); if (d?.t !== "ping") handle(d, hostConn ? null : c, conns); });
       c.on("close", () => {
         conns.delete(c);
         if (hostConn) { migrate(); return; }
@@ -1439,9 +1457,21 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       call.answer(localStream);
       wireCall(call);
     });
+    // a tab in the background or a sleeping iPad never says goodbye: ping every 5 s, give up after 25 s of silence
+    const beat = setInterval(() => {
+      const now = Date.now();
+      for (const c of [...conns]) {
+        if (c.open) c.send({ t: "ping" });
+        if (now - (c.lastSeen || now) > 25000) {
+          if (hostConn) { clearInterval(beat); migrate(); return; }
+          conns.delete(c); try { c.close(); } catch {}
+          dropMember(c.peer); relay({ t: "leave", id: c.peer }, null, conns);
+        }
+      }
+    }, 5000);
     return {
       send: msg => { for (const c of conns) if (c.open) c.send(msg); },
-      close: () => setTimeout(() => peer.destroy(), 150),
+      close: () => { clearInterval(beat); setTimeout(() => peer.destroy(), 150); },
     };
   }
 
