@@ -191,6 +191,35 @@ input { font: inherit; color: var(--ink); }
 .adm-row button { flex: none; padding: 4px 10px; border-radius: 4px; background: var(--sel); font-size: 13px; }
 .adm h3 { margin: 12px 0 2px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
 .member.can { cursor: pointer; }
+.ava.photo { background-size: cover !important; background-position: center !important; color: transparent; }
+.srv .badge-n { position: absolute; right: -4px; bottom: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--danger); color: #fff; font: 700 12px/20px var(--body); border: 3px solid var(--rail); }
+.dm-wrap { display: grid; grid-template-columns: 200px minmax(0, 1fr); height: min(560px, calc(100dvh - 48px)); width: min(760px, 100%); background: var(--chat); border-radius: 10px; overflow: hidden; box-shadow: 0 8px 32px #0006; }
+.dm-list { background: var(--side); overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.dm-list h3 { margin: 6px 8px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+.dm-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; text-align: left; min-width: 0; }
+.dm-item:hover { background: var(--hover); }
+.dm-item.on { background: var(--sel); }
+.dm-item .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dm-item .n { background: var(--danger); color: #fff; border-radius: 8px; padding: 0 6px; font-size: 11px; font-weight: 700; }
+.dm-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.dm-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); font-weight: 600; color: var(--head); }
+.dm-head .sp { flex: 1; }
+.dm-head small { color: var(--muted); font-weight: 400; }
+.dm-msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.dm-bubble { max-width: 78%; padding: 7px 11px; border-radius: 14px; background: var(--input); white-space: pre-wrap; overflow-wrap: anywhere; align-self: flex-start; }
+.dm-bubble.me { align-self: flex-end; background: var(--accent); color: #fff; }
+.dm-bubble small { display: block; font-size: 11px; opacity: .7; margin-top: 2px; }
+.dm-empty { color: var(--muted); text-align: center; margin: auto; padding: 16px; }
+.dm-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+.dm-form input { flex: 1; min-width: 0; background: var(--input); border: 0; border-radius: 8px; padding: 10px; color: var(--ink); outline: none; }
+.dm-back { display: none; }
+@media (max-width: 700px) {
+  .dm-wrap { grid-template-columns: minmax(0, 1fr); }
+  .dm-wrap.chat .dm-list { display: none; }
+  .dm-wrap:not(.chat) .dm-main { display: none; }
+  .dm-back { display: grid; }
+}
+.toggle-row { display: flex; flex-direction: column; gap: 6px; }
 .side-head .gear { margin-left: auto; font-size: 16px; }
 #srvName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .status { min-height: 20px; margin-top: 12px; font-size: 13px; color: var(--muted); }
@@ -233,6 +262,7 @@ input { font: inherit; color: var(--ink); }
 <div class="app" id="app">
   <nav class="rail" id="rail" aria-label="Сервери">
     <button class="srv on" id="srvHome" title="ДіноКорд">🦖</button>
+    <button class="srv" id="btnDms" title="Особисті повідомлення">💬</button>
     <hr>
     <div id="srvList" style="display:contents"></div>
     <button class="srv add" id="srvAdd" title="Створити або приєднатися">+</button>
@@ -310,6 +340,17 @@ input { font: inherit; color: var(--ink); }
 
 <div class="emoji-pop" id="emojiPop" hidden><div class="emoji-tabs" id="emojiTabs"></div><div class="emoji-grid" id="emojiGrid"></div></div>
 
+<div class="ov" id="ovDm" hidden>
+  <div class="dm-wrap" id="dmWrap">
+    <div class="dm-list" id="dmList"></div>
+    <div class="dm-main">
+      <div class="dm-head"><button class="icon-btn dm-back" id="dmBack" aria-label="До списку">←</button><span id="dmTitle">Особисті</span><span class="sp"></span><button class="icon-btn" id="dmClose" aria-label="Закрити">✕</button></div>
+      <div class="dm-msgs" id="dmMsgs"></div>
+      <form class="dm-form" id="dmForm" autocomplete="off"><input id="dmText" maxlength="500" placeholder="Особисте повідомлення"><button class="btn" style="flex:none" type="submit">➤</button></form>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="ovLook" hidden>
   <div class="dlg" style="text-align:left">
     <h2 style="text-align:center">Оформлення</h2>
@@ -347,6 +388,13 @@ input { font: inherit; color: var(--ink); }
     </div>
     <label for="stText">Що ти зараз робиш?</label>
     <input id="stText" maxlength="40" placeholder="Наприклад: граю в Динозаврика">
+    <div style="display:flex;gap:6px;margin-top:10px"><button class="btn sec" type="button" id="photoPick">📷 Фото замість звіра</button><button class="btn sec" type="button" id="photoDel" hidden>Прибрати фото</button></div>
+    <input type="file" id="photoInput" accept="image/*" hidden>
+    <label>Сповіщення</label>
+    <div class="toggle-row">
+      <button class="btn sec" type="button" id="ntSound"></button>
+      <button class="btn sec" type="button" id="ntPopup"></button>
+    </div>
     <label for="myKey">Мій ключ</label>
     <div style="display:flex;gap:6px"><input id="myKey" readonly style="font-size:11px"><button class="btn sec" id="copyKey" type="button" style="flex:none;padding:8px 12px">📋</button></div>
     <div id="pkBox" hidden>
@@ -401,7 +449,18 @@ input { font: inherit; color: var(--ink); }
     color: store.get("color", pick(COLORS)),
     st: ["on", "away", "dnd"].includes(store.get("st", "on")) ? store.get("st", "on") : "on",
     stx: store.get("stx", ""),
+    photo: store.get("photo", ""),
   };
+  const validPhoto = v => typeof v === "string" && v.length <= 16000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(v);
+  if (!validPhoto(me.photo)) me.photo = "";
+  // photos of people we've seen, by their key, so old messages show them too
+  const photoCache = (() => { const v = store.get("photos", {}); return v && typeof v === "object" ? v : {}; })();
+  function rememberPhoto(pub, photo) {
+    if (!pub || photoCache[pub] === photo) return;
+    if (photo) photoCache[pub] = photo; else delete photoCache[pub];
+    const keys = Object.keys(photoCache); if (keys.length > 60) delete photoCache[keys[0]];
+    store.set("photos", photoCache);
+  }
   let autoAway = false;
   const myStatus = () => me.st === "on" && autoAway ? "away" : me.st;
   store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
@@ -481,10 +540,15 @@ input { font: inherit; color: var(--ink); }
     a.className = "ava " + cls;
     a.style.background = u.color || "#888";
     a.textContent = u.ava || "🦖";
+    const ph = u.photo || (u.pub && (u.pub === myPub ? me.photo : photoCache[u.pub]));
+    if (ph) { a.classList.add("photo"); a.style.backgroundImage = 'url("' + ph + '")'; }
     return a;
   }
 
   const fmtTime = t => new Date(t).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
+
+  // someone wrote @ and the start of my nick
+  const mentionsMe = text => (String(text).match(/@[^\s@]+/g) || []).some(m => m.length > 2 && me.nick.toLowerCase().startsWith(m.slice(1).toLowerCase()));
 
   function textNodes(el, text) {
     // links become clickable, @mentions of my nick are highlighted, everything else is plain text
@@ -617,7 +681,7 @@ input { font: inherit; color: var(--ink); }
       if (u.host) tags.push("🖥️ тримає сервер");
       if (u.pub && isMuted(u.pub)) tags.push("🔇 заглушений");
       if (tags.length) { const t = document.createElement("div"); t.className = "tag"; t.textContent = tags.join(" · "); n.append(t); }
-      if (canManage(u) && id !== myId) { r.classList.add("can"); r.title = "Керувати учасником"; r.onclick = () => memberMenu(id); }
+      if (id !== myId) { r.classList.add("can"); r.title = "Написати або керувати"; r.onclick = () => memberMenu(id); }
       r.append(a, n); box.append(r);
     }
   }
@@ -630,6 +694,7 @@ input { font: inherit; color: var(--ink); }
 
   function renderMe() {
     const a = $("meAva"); a.textContent = me.ava; a.style.background = me.color;
+    a.classList.toggle("photo", !!me.photo); if (me.photo) a.style.backgroundImage = 'url("' + me.photo + '")';
     const d = document.createElement("span"); d.className = "dot " + myStatus(); a.append(d);
     $("nick").value = me.nick;
   }
@@ -709,7 +774,10 @@ input { font: inherit; color: var(--ink); }
     saveHist();
     typing.delete(msg.from);
     if (m.chan !== chan) unread[m.chan]++;
-    else if (document.hidden && myStatus() !== "dnd") document.title = "(•) ДіноКорд";
+    if (!merging && !msg.sys && msg.from !== myId) {
+      const where = CHANNELS.find(c => c.id === msg.chan)?.name || "";
+      notify(msg.nick + " у #" + where, msg.image ? "🖼 Фото" : msg.audio ? "🎤 Голосове повідомлення" : msg.text, mentionsMe(msg.text) || msg.chan === NEWS);
+    }
     renderChans(); renderMsgs(); renderTyping();
   }
 
@@ -978,9 +1046,10 @@ input { font: inherit; color: var(--ink); }
 
   function memberMenu(id) {
     const u = members.get(id); if (!u) return;
-    const pub = u.pub;
-    if (!canManage(u)) return;
-    openAdmin(u.nick, pub ? "Що зробити з цим учасником?" : "Цей учасник зайшов зі старої версії, тому його можна тільки вигнати.", body => {
+    const pub = u.pub, staff = canManage(u);
+    openAdmin(u.nick, u.stx || (staff ? "Що зробити з цим учасником?" : ""), body => {
+      admBtn(body, "💬 Написати особисто", "", () => openDm(dmKeyOf(id), id));
+      if (!staff) return;
       if (pub && iOwn()) {
         const rl = adm.roles.get(pub)?.role;
         if (rl !== "mod") admBtn(body, "🛡️ Зробити модератором", "", () => { doAdmin({ a: "role", pub, nick: u.nick, role: "mod" }); sysMsg(u.nick + " тепер модератор 🛡️"); });
@@ -1060,9 +1129,14 @@ input { font: inherit; color: var(--ink); }
     for (const m of im.slice(KEEP_IMAGES)) { delete m.image; m.imageGone = true; }
   }
 
+  let merging = 0;
   function mergeHist(h) {
     // add messages we don't have, union reactions, keep time order
     if (!h || typeof h !== "object") return;
+    merging++;
+    try { mergeHistInner(h); } finally { merging--; }
+  }
+  function mergeHistInner(h) {
     const keepUnread = { ...unread };
     for (const c of CHANNELS) {
       const arr = Array.isArray(h[c.id]) ? h[c.id].slice(-MAX_HIST) : [];
@@ -1091,7 +1165,8 @@ input { font: inherit; color: var(--ink); }
     const was = members.has(id);
     members.set(id, { nick: clean(u.nick, 16) || "Динозаврик", ava: clean(u.ava, 4) || "🦖",
       color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888", host: !!u.host, pub: validPub(u.pub) ? u.pub : "",
-      st: ["on", "away", "dnd"].includes(u.st) ? u.st : "on", stx: clean(u.stx, 40) });
+      st: ["on", "away", "dnd"].includes(u.st) ? u.st : "on", stx: clean(u.stx, 40), photo: validPhoto(u.photo) ? u.photo : "" });
+    if (validPub(u.pub)) rememberPhoto(u.pub, validPhoto(u.photo) ? u.photo : "");
     renderMembers();
     return !was;
   }
@@ -1233,7 +1308,12 @@ input { font: inherit; color: var(--ink); }
       });
     };
     if (hostConn) { conns.add(hostConn); wire(hostConn); }
-    else peer.on("connection", c => { conns.add(c); wire(c); });
+    peer.on("connection", c => {
+      // private messages come over their own direct connection; everything else only to the host
+      if (c.metadata?.kind === "dm") { wireDm(c); return; }
+      if (hostConn) { c.close(); return; }
+      conns.add(c); wire(c);
+    });
     peerObj = peer;
     peer.on("call", call => {
       if (call.metadata?.kind === "live") {
@@ -1270,7 +1350,7 @@ input { font: inherit; color: var(--ink); }
           conn.on("open", () => {
             clearTimeout(timer); peer.off("error", fail); peer.on("error", () => {});
             const n = makeNet(peer, conn);
-            helloProof(id).then(proof => { conn.send({ t: "hello", u: { ...me, st: myStatus() }, hist: history, meta, pub: myPub, proof }); res(n); });
+            helloProof(id).then(proof => { conn.send({ t: "hello", u: { ...me, st: myStatus(), photo: me.photo }, hist: history, meta, pub: myPub, proof }); res(n); });
           });
         });
       });
@@ -1526,6 +1606,155 @@ input { font: inherit; color: var(--ink); }
     (v.requestFullscreen?.() || v.webkitEnterFullscreen?.() || Promise.resolve())?.catch?.(() => {});
   };
 
+  // ---------- private messages: straight from one person to the other, never through the server ----------
+  const dms = (() => { const v = store.get("dms", {}); return v && typeof v === "object" ? v : {}; })();
+  const dmConns = new Map();
+  let dmOpen = "";
+  const dmKeyOf = id => { const u = members.get(id); return u?.pub || "peer:" + id; };
+  const peerOfKey = key => key.startsWith("peer:") ? (members.has(key.slice(5)) ? key.slice(5) : "") : ([...members.entries()].find(([id, u]) => u.pub === key && id !== myId)?.[0] || "");
+  function saveDms() {
+    for (const k in dms) dms[k].msgs = dms[k].msgs.slice(-200);
+    try { localStorage.setItem("dinocord-dms", JSON.stringify(dms)); } catch {}
+  }
+  function dmThread(key, peerId) {
+    const u = peerId ? members.get(peerId) : null;
+    const t = dms[key] || (dms[key] = { nick: "Динозаврик", ava: "🦖", color: "#888888", msgs: [], unread: 0 });
+    if (u) { t.nick = u.nick; t.ava = u.ava; t.color = u.color; t.pub = u.pub || ""; }
+    return t;
+  }
+  function wireDm(c) {
+    dmConns.set(c.peer, c);
+    c.on("data", d => onDm(c.peer, d));
+    c.on("close", () => { if (dmConns.get(c.peer) === c) dmConns.delete(c.peer); });
+  }
+  function dmConn(peerId) {
+    const c = dmConns.get(peerId);
+    if (c && c.open) return Promise.resolve(c);
+    return new Promise((res, rej) => {
+      if (!peerObj) return rej(new Error("offline"));
+      const n = peerObj.connect(peerId, { reliable: true, metadata: { kind: "dm" } });
+      const timer = setTimeout(() => rej(new Error("timeout")), 8000);
+      n.on("open", () => { clearTimeout(timer); wireDm(n); res(n); });
+      n.on("error", () => { clearTimeout(timer); rej(new Error("error")); });
+    });
+  }
+  function onDm(peerId, d) {
+    if (!d || d.t !== "dm" || !d.m) return;
+    const text = clean(d.m.text, 500); if (!text) return;
+    const key = dmKeyOf(peerId), t = dmThread(key, peerId);
+    if (t.msgs.some(x => x.id === d.m.id)) return;
+    t.msgs.push({ id: String(d.m.id).slice(0, 40), me: false, text, t: Date.now() });
+    if (!(dmOpen === key && !$("ovDm").hidden)) t.unread = (t.unread || 0) + 1;
+    saveDms(); renderDmBadge();
+    if (!$("ovDm").hidden) renderDms();
+    notify("💬 " + t.nick, text, true);
+  }
+  function renderDmBadge() {
+    const n = Object.values(dms).reduce((a, t) => a + (t.unread || 0), 0);
+    const b = $("btnDms"); b.querySelector(".badge-n")?.remove();
+    if (n) { const s = document.createElement("span"); s.className = "badge-n"; s.textContent = n > 99 ? "99+" : n; b.append(s); }
+  }
+  function openDm(key, peerId) {
+    if (key) { dmThread(key, peerId); dmOpen = key; dms[key].unread = 0; saveDms(); }
+    $("ovDm").hidden = false; renderDms(); renderDmBadge();
+    if (key) $("dmText").focus();
+  }
+  function renderDms() {
+    const list = $("dmList"); list.innerHTML = "<h3>Розмови</h3>";
+    const keys = Object.keys(dms).sort((a, b) => (dms[b].msgs.at(-1)?.t || 0) - (dms[a].msgs.at(-1)?.t || 0));
+    for (const k of keys) {
+      const t = dms[k], online = !!peerOfKey(k);
+      const b = document.createElement("button"); b.className = "dm-item" + (k === dmOpen ? " on" : "");
+      const a = avaEl({ ...t, pub: t.pub }, "sm"); if (online) { const d = document.createElement("span"); d.className = "dot"; a.append(d); }
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = t.nick;
+      b.append(a, nm);
+      if (t.unread) { const n = document.createElement("span"); n.className = "n"; n.textContent = t.unread; b.append(n); }
+      b.onclick = () => openDm(k);
+      list.append(b);
+    }
+    const others = [...members.entries()].filter(([id]) => id !== myId && !dms[dmKeyOf(id)]);
+    if (others.length) {
+      const h = document.createElement("h3"); h.textContent = "Написати комусь"; list.append(h);
+      for (const [id, u] of others) {
+        const b = document.createElement("button"); b.className = "dm-item";
+        const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = u.nick;
+        b.append(avaEl(u, "sm"), nm); b.onclick = () => openDm(dmKeyOf(id), id);
+        list.append(b);
+      }
+    }
+    if (!keys.length && !others.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = "Тут поки порожньо. Зайди на сервер, і зможеш написати будь-кому особисто."; list.append(e); }
+    $("dmWrap").classList.toggle("chat", !!dmOpen);
+    const t = dms[dmOpen], box = $("dmMsgs"); box.innerHTML = "";
+    const online = dmOpen && !!peerOfKey(dmOpen);
+    $("dmTitle").innerHTML = t ? "<span></span> <small></small>" : "Особисті";
+    if (t) { $("dmTitle").firstChild.textContent = t.nick; $("dmTitle").lastChild.textContent = online ? "🟢 в мережі" : "не в мережі"; }
+    $("dmText").disabled = !online;
+    $("dmText").placeholder = !t ? "Вибери розмову ліворуч" : online ? "Написати " + t.nick : t.nick + " зараз не в мережі на цьому сервері";
+    if (!t) { box.innerHTML = '<div class="dm-empty">Вибери, кому написати. Особисті повідомлення йдуть напряму людині й не проходять через сервер.</div>'; return; }
+    if (!t.msgs.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = "Почни розмову з " + t.nick + " 👋"; box.append(e); }
+    for (const m of t.msgs) {
+      const b = document.createElement("div"); b.className = "dm-bubble" + (m.me ? " me" : "");
+      const tx = document.createElement("div"); textNodes(tx, m.text);
+      const tm = document.createElement("small"); tm.textContent = fmtTime(m.t);
+      b.append(tx, tm); box.append(b);
+    }
+    box.scrollTop = box.scrollHeight;
+  }
+  $("dmForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const text = clean($("dmText").value, 500), key = dmOpen, peerId = key && peerOfKey(key);
+    if (!text || !peerId) return;
+    $("dmText").value = "";
+    const m = { id: newId(), text };
+    try { (await dmConn(peerId)).send({ t: "dm", m }); }
+    catch { $("dmText").value = text; sysLocal("Не вдалося надіслати особисте повідомлення. Спробуй ще раз."); return; }
+    dmThread(key, peerId).msgs.push({ id: m.id, me: true, text, t: Date.now() });
+    saveDms(); renderDms();
+  });
+  $("btnDms").onclick = () => openDm(dmOpen && dms[dmOpen] ? dmOpen : "");
+  $("dmClose").onclick = () => { $("ovDm").hidden = true; };
+  $("dmBack").onclick = () => { dmOpen = ""; renderDms(); };
+  $("ovDm").addEventListener("click", e => { if (e.target === $("ovDm")) $("ovDm").hidden = true; });
+
+  // ---------- notifications: sound, a counter in the tab, and system alerts where allowed ----------
+  const nt = Object.assign({ sound: true, popup: false }, store.get("notify", {}));
+  let unseen = 0, actx2 = null;
+  document.addEventListener("pointerdown", () => { if (!actx2) try { actx2 = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }, { once: true });
+  function beep() {
+    if (!actx2) return;
+    try {
+      actx2.resume?.();
+      const t0 = actx2.currentTime;
+      for (const [f, at] of [[880, 0], [1320, 0.09]]) {
+        const o = actx2.createOscillator(), g = actx2.createGain();
+        o.frequency.value = f; o.type = "sine";
+        g.gain.setValueAtTime(0.0001, t0 + at); g.gain.exponentialRampToValueAtTime(0.18, t0 + at + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + 0.16);
+        o.connect(g).connect(actx2.destination); o.start(t0 + at); o.stop(t0 + at + 0.18);
+      }
+    } catch {}
+  }
+  function notify(title, body, important) {
+    if (myStatus() === "dnd") return;
+    const away = document.hidden;
+    if (away) { unseen++; document.title = "(" + unseen + ") ДіноКорд"; }
+    if (nt.sound && (away || important)) beep();
+    if (nt.popup && away && window.Notification?.permission === "granted") {
+      try { new Notification(title, { body: String(body).slice(0, 120), tag: "dinocord" }); } catch {}
+    }
+  }
+  function renderNt() {
+    $("ntSound").textContent = nt.sound ? "🔔 Звук: увімкнено" : "🔕 Звук: вимкнено";
+    const can = !!window.Notification;
+    $("ntPopup").hidden = !can;
+    if (can) $("ntPopup").textContent = nt.popup && Notification.permission === "granted" ? "📲 Сповіщення на екрані: увімкнено" : "📲 Увімкнути сповіщення на екрані";
+  }
+  $("ntSound").onclick = () => { nt.sound = !nt.sound; store.set("notify", nt); renderNt(); if (nt.sound) beep(); };
+  $("ntPopup").onclick = async () => {
+    if (nt.popup && Notification.permission === "granted") nt.popup = false;
+    else { try { nt.popup = (await Notification.requestPermission()) === "granted"; } catch { nt.popup = false; } }
+    store.set("notify", nt); renderNt();
+  };
+
   function sysLocal(text) {
     addMsg({ id: newId(), chan: chan === OWN ? "general" : chan, from: "sys", nick: "ДіноБот", ava: "📢", color: "#888888", text, t: Date.now(), sys: true });
   }
@@ -1603,7 +1832,7 @@ input { font: inherit; color: var(--ink); }
 
   function pushMe() {
     store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
-    store.set("st", me.st); store.set("stx", me.stx);
+    store.set("st", me.st); store.set("stx", me.stx); store.set("photo", me.photo);
     renderMe();
     if (!net) return;
     setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
@@ -1622,7 +1851,23 @@ input { font: inherit; color: var(--ink); }
   }
   function renderStPick() { for (const b of $("stPick").children) b.classList.toggle("on", b.dataset.st === me.st); }
   for (const b of $("stPick").children) b.onclick = () => { me.st = b.dataset.st; renderStPick(); };
-  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); $("stText").value = me.stx; $("myKey").value = myPub || "Ключ недоступний у цьому браузері"; pkSay(""); renderPk(); $("ovAva").hidden = false; };
+  $("photoPick").onclick = () => $("photoInput").click();
+  $("photoDel").onclick = () => { me.photo = ""; renderPhotoBtns(); };
+  function renderPhotoBtns() { $("photoDel").hidden = !me.photo; $("photoPick").textContent = me.photo ? "📷 Інше фото" : "📷 Фото замість звіра"; }
+  $("photoInput").onchange = async () => {
+    const f = $("photoInput").files[0]; $("photoInput").value = "";
+    if (!f) return;
+    try {
+      const url = URL.createObjectURL(f), im = await loadImg(url); URL.revokeObjectURL(url);
+      // a small square from the middle of the photo
+      const side = Math.min(im.naturalWidth, im.naturalHeight), cv = document.createElement("canvas"); cv.width = cv.height = 128;
+      cv.getContext("2d").drawImage(im, (im.naturalWidth - side) / 2, (im.naturalHeight - side) / 2, side, side, 0, 0, 128, 128);
+      let q = 0.8, data;
+      do { data = cv.toDataURL("image/jpeg", q); q -= 0.1; } while (data.length > 16000 && q > 0.3);
+      if (validPhoto(data)) { me.photo = data; renderPhotoBtns(); }
+    } catch {}
+  };
+  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); renderPhotoBtns(); renderNt(); $("stText").value = me.stx; $("myKey").value = myPub || "Ключ недоступний у цьому браузері"; pkSay(""); renderPk(); $("ovAva").hidden = false; };
   function renderPk() {
     const ok = !!window.PublicKeyCredential;
     $("pkBox").hidden = !ok;
@@ -1878,7 +2123,7 @@ input { font: inherit; color: var(--ink); }
   $("btnTheme").onclick = () => { renderLook(); $("ovLook").hidden = false; };
   applyTheme(); applyLook();
 
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) document.title = "ДіноКорд"; });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { unseen = 0; document.title = "ДіноКорд"; } });
   window.addEventListener("pagehide", () => {
     if (code) { clearTimeout(saveTimer); writeHist(code); }
     if (net) net.send({ t: "leave", id: myId });
