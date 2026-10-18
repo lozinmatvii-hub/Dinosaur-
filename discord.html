@@ -708,7 +708,7 @@ input { font: inherit; color: var(--ink); }
 
   // ---------- DinoCord news: one channel on every server, only the site's author posts there ----------
   // Public keys of the author (the "Мій ключ" value from their profile). Only a public key goes here, never a secret.
-  const SITE_KEYS = [];
+  const SITE_KEYS = ["PhV8FacVp4BSS2IEE-ScKGoX01LvRgQQDq73zzX7Q5c.PR0Nkf-YMehOrnw-_4JSLXpRjus41nrLcZJ5BiE-OZ4"];
   const NEWS = "news";
   const iSite = () => !!myPub && SITE_KEYS.includes(myPub);
   function saveNews() {
