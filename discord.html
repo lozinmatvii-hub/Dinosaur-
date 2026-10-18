@@ -160,7 +160,7 @@ input { font: inherit; color: var(--ink); }
 /* dialog */
 .ov { position: fixed; inset: 0; background: #000a; display: grid; place-items: center; padding: 16px; z-index: 10; }
 .ov[hidden] { display: none; }
-.dlg { background: var(--chat); border-radius: 8px; width: min(440px, 100%); padding: 24px; text-align: center; box-shadow: 0 8px 32px #0006; }
+.dlg { background: var(--chat); border-radius: 8px; width: min(440px, 100%); max-height: calc(100% - 8px); overflow-y: auto; padding: 24px; text-align: center; box-shadow: 0 8px 32px #0006; }
 .dlg h2 { margin: 0 0 6px; color: var(--head); font-family: var(--display); font-size: 26px; }
 .dlg p { margin: 0 0 16px; color: var(--muted); }
 .dlg label { display: block; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin: 12px 0 6px; }
@@ -318,6 +318,15 @@ input { font: inherit; color: var(--ink); }
     <input id="stText" maxlength="40" placeholder="Наприклад: граю в Динозаврика">
     <label for="myKey">Мій ключ</label>
     <div style="display:flex;gap:6px"><input id="myKey" readonly style="font-size:11px"><button class="btn sec" id="copyKey" type="button" style="flex:none;padding:8px 12px">📋</button></div>
+    <div id="pkBox" hidden>
+      <label>Ключ у Паролях (Passkey)</label>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn sec" id="pkCreate" type="button">🔑 Створити ключ у Паролях</button>
+        <button class="btn sec" id="pkUse" type="button" hidden>🔑 Увійти ключем із Паролів</button>
+        <div id="pkRow" style="display:flex;gap:6px" hidden><input id="pkVal" readonly style="font-size:11px"><button class="btn sec" id="pkCopy" type="button" style="flex:none;padding:8px 12px">📋</button></div>
+        <div class="status" id="pkStatus"></div>
+      </div>
+    </div>
     <div class="row"><button class="btn" id="avaDone">Готово</button></div>
   </div>
 </div>
@@ -641,6 +650,8 @@ input { font: inherit; color: var(--ink); }
       ava: clean(m.ava, 4) || "🦖", color: /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#888",
       text: clean(m.text, 500), t: Number(m.t) || Date.now(), sys: !!m.sys, reacts: sanitizeReacts(m.reacts) };
     if (typeof m.sig === "string") msg.sig = m.sig.slice(0, 200);
+    if (m.pk && typeof m.pk === "object" && ["id", "a", "c", "s"].every(k => typeof m.pk[k] === "string" && m.pk[k].length < 2000))
+      msg.pk = { id: m.pk.id, a: m.pk.a, c: m.pk.c, s: m.pk.s };
     if (validPub(m.pub)) msg.pub = m.pub;
     if (m.reply && typeof m.reply.id === "string") msg.reply = { id: m.reply.id.slice(0, 40), nick: clean(m.reply.nick, 16) || "Динозаврик", text: clean(m.reply.text, 80) };
     if (typeof m.audio === "string" && /^data:audio\/[\w.+-]+(;[\w=.+-]+)*;base64,[A-Za-z0-9+/=]+$/.test(m.audio) && m.audio.length <= MAX_AUDIO) { msg.audio = m.audio; msg.dur = Math.min(120, Number(m.dur) || 0); }
@@ -712,13 +723,70 @@ input { font: inherit; color: var(--ink); }
     "PhV8FacVp4BSS2IEE-ScKGoX01LvRgQQDq73zzX7Q5c.PR0Nkf-YMehOrnw-_4JSLXpRjus41nrLcZJ5BiE-OZ4",
     "-LIlJrp0NuxdU2IzYvJWEGkrGY0ahtdnuAnqvq8lNP0.XRTmpGiR9vlHjsrEIcxiYl2a2ubE2xD8hWPDIRn2aiE",
   ];
+  // Passkeys from the Passwords app ("pk:<id>:<x>:<y>" from the profile). They work on every device the Passwords app syncs to.
+  const SITE_PASSKEYS = [];
   const NEWS = "news";
-  const iSite = () => !!myPub && SITE_KEYS.includes(myPub);
+  const parsePk = v => { const [t, id, x, y] = String(v).split(":"); return t === "pk" && id && x && y ? { id, x, y } : null; };
+  const b64u = buf => b64(buf).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = v => unb64(v.replace(/-/g, "+").replace(/_/g, "/"));
+  let myPasskey = store.get("passkey", "");
+  const iPasskey = () => !!myPasskey && SITE_PASSKEYS.some(v => parsePk(v)?.id === myPasskey);
+  const iSite = () => (!!myPub && SITE_KEYS.includes(myPub)) || iPasskey();
+
+  // a passkey signs with Face ID / Touch ID; the challenge is the hash of the post, so the signature covers it
+  function derToRaw(der) {
+    let i = 2; const out = new Uint8Array(64);
+    for (let n = 0; n < 2; n++) {
+      i++; let len = der[i++]; let v = der.slice(i, i + len); i += len;
+      while (v.length > 32 && v[0] === 0) v = v.slice(1);
+      out.set(v, n * 32 + 32 - v.length);
+    }
+    return out;
+  }
+  async function passkeySign(m) {
+    const challenge = new Uint8Array(await crypto.subtle.digest("SHA-256", signed(m)));
+    const a = await navigator.credentials.get({ publicKey: { challenge, allowCredentials: [{ type: "public-key", id: unb64u(myPasskey) }], userVerification: "preferred", timeout: 60000 } });
+    return { id: b64u(a.rawId), a: b64(a.response.authenticatorData), c: b64(a.response.clientDataJSON), s: b64(derToRaw(new Uint8Array(a.response.signature))) };
+  }
+  async function verifyPasskey(m) {
+    const e = SITE_PASSKEYS.map(parsePk).find(v => v && v.id === m.pk.id);
+    if (!e) return false;
+    const cd = JSON.parse(new TextDecoder().decode(unb64(m.pk.c)));
+    if (cd.type !== "webauthn.get" || cd.challenge !== b64u(await crypto.subtle.digest("SHA-256", signed(m)))) return false;
+    const auth = unb64(m.pk.a), hash = new Uint8Array(await crypto.subtle.digest("SHA-256", unb64(m.pk.c)));
+    const data = new Uint8Array(auth.length + 32); data.set(auth); data.set(hash, auth.length);
+    return crypto.subtle.verify(SIG, await pubKey(e.x + "." + e.y), unb64(m.pk.s), data);
+  }
+  async function createPasskey() {
+    const cred = await navigator.credentials.create({ publicKey: {
+      rp: { name: "ДіноКорд" },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: me.nick || "ДіноКорд", displayName: me.nick || "ДіноКорд" },
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+      authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
+      attestation: "none", timeout: 60000,
+    } });
+    const spki = cred.response.getPublicKey?.();
+    if (!spki) throw new Error("no-key");
+    const j = await crypto.subtle.exportKey("jwk", await crypto.subtle.importKey("spki", spki, ALG, true, ["verify"]));
+    myPasskey = b64u(cred.rawId); store.set("passkey", myPasskey);
+    const full = "pk:" + myPasskey + ":" + j.x + ":" + j.y;
+    store.set("passkeyFull", full);
+    return full;
+  }
+  async function usePasskey() {
+    // on another device: let the Passwords app pick the author's passkey, then remember it here
+    const ids = SITE_PASSKEYS.map(parsePk).filter(Boolean).map(e => ({ type: "public-key", id: unb64u(e.id) }));
+    const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), allowCredentials: ids, userVerification: "preferred", timeout: 60000 } });
+    myPasskey = b64u(a.rawId); store.set("passkey", myPasskey);
+    return iPasskey();
+  }
   function saveNews() {
     // news follow you from server to server, so they live outside any one server's history
     try { localStorage.setItem("dinocord-news", JSON.stringify(history[NEWS].slice(-100))); } catch {}
   }
   async function verifyNews(m) {
+    if (m.pk) { try { return await verifyPasskey(m); } catch { return false; } }
     for (const k of SITE_KEYS) {
       try { if (await crypto.subtle.verify(SIG, await pubKey(k), unb64(m.sig), signed(m))) return true; } catch {}
     }
@@ -727,7 +795,7 @@ input { font: inherit; color: var(--ink); }
 
   async function addChecked(m) {
     if (m?.chan === NEWS) {
-      if (typeof m.sig === "string" && await verifyNews(m)) { addMsg(m, true); saveNews(); }
+      if ((typeof m.sig === "string" || m.pk) && await verifyNews(m)) { addMsg(m, true); saveNews(); }
       return;
     }
     if (!m || m.chan !== OWN) { addMsg(m); return; }
@@ -1433,6 +1501,10 @@ input { font: inherit; color: var(--ink); }
     if (replyTo && replyTo.chan === chan) m.reply = { id: replyTo.id, nick: replyTo.nick, text: replyTo.text };
     cancelReply();
     if (chan !== OWN && chan !== NEWS) { addMsg(m); net.send({ t: "msg", m }); }
+    else if (chan === NEWS && !(myPub && SITE_KEYS.includes(myPub))) {
+      passkeySign(m).then(pk => { m.pk = pk; addMsg(m, true); saveNews(); net?.send({ t: "msg", m }); })
+        .catch(() => { $("text").value = text; sysLocal("Новину не надіслано: ключ із Паролів не підтверджено."); });
+    }
     else crypto.subtle.sign(SIG, myKeys.privateKey, signed(m)).then(sig => { m.sig = b64(sig); addMsg(m, true); if (chan === NEWS) saveNews(); net?.send({ t: "msg", m }); });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   });
@@ -1508,7 +1580,30 @@ input { font: inherit; color: var(--ink); }
   }
   function renderStPick() { for (const b of $("stPick").children) b.classList.toggle("on", b.dataset.st === me.st); }
   for (const b of $("stPick").children) b.onclick = () => { me.st = b.dataset.st; renderStPick(); };
-  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); $("stText").value = me.stx; $("myKey").value = myPub || "Ключ недоступний у цьому браузері"; $("ovAva").hidden = false; };
+  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); $("stText").value = me.stx; $("myKey").value = myPub || "Ключ недоступний у цьому браузері"; pkSay(""); renderPk(); $("ovAva").hidden = false; };
+  function renderPk() {
+    const ok = !!window.PublicKeyCredential;
+    $("pkBox").hidden = !ok;
+    const full = store.get("passkeyFull", "");
+    $("pkRow").hidden = !full; $("pkVal").value = full;
+    $("pkCreate").hidden = !!full;
+    $("pkUse").hidden = !!full || iPasskey() || !SITE_PASSKEYS.length;
+    if (iPasskey()) $("pkStatus").textContent = "✅ Цей пристрій може писати новини ключем із Паролів.";
+  }
+  const pkSay = (t, bad) => { $("pkStatus").textContent = t; $("pkStatus").className = "status" + (bad ? " bad" : ""); };
+  $("pkCreate").onclick = async () => {
+    try { await createPasskey(); renderPk(); pkSay("Ключ створено і збережено в Паролях. Скопіюй його 📋 і надішли розробнику."); }
+    catch { pkSay("Не вдалося створити ключ. Перевір, що в Параметрах увімкнено iCloud Keychain (Паролі).", true); }
+  };
+  $("pkUse").onclick = async () => {
+    try { pkSay(await usePasskey() ? "✅ Готово, з цього пристрою можна писати новини." : "Цей ключ не підходить для новин.", !iPasskey()); renderChans(); renderPk(); }
+    catch { pkSay("Не вдалося знайти ключ у Паролях.", true); }
+  };
+  $("pkCopy").onclick = async () => {
+    try { await navigator.clipboard.writeText($("pkVal").value); $("pkCopy").textContent = "✓"; } catch { $("pkVal").select(); }
+    setTimeout(() => { $("pkCopy").textContent = "📋"; }, 1500);
+  };
+
   $("copyKey").onclick = async () => {
     try { await navigator.clipboard.writeText(myPub); $("copyKey").textContent = "✓"; }
     catch { $("myKey").select(); }
