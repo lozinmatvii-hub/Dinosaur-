@@ -74,6 +74,9 @@ input { font: inherit; color: var(--ink); }
 .member .sub { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge { font-size: 12px; margin-right: 4px; }
 .img-msg { display: block; margin-top: 4px; padding: 0; border-radius: 8px; overflow: hidden; max-width: min(360px, 100%); background: var(--input); }
+.vid-msg { display: block; margin-top: 4px; max-width: min(360px, 100%); border-radius: 8px; overflow: hidden; background: #000; }
+.vid-msg video { display: block; width: 100%; max-height: 360px; background: #000; }
+.vid-busy { margin-top: 4px; font-size: 13px; color: var(--muted); }
 .img-msg img { display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain; }
 .lightbox { position: fixed; inset: 0; z-index: 20; background: #000e; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); }
 .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
@@ -191,6 +194,22 @@ input { font: inherit; color: var(--ink); }
 .adm-row button { flex: none; padding: 4px 10px; border-radius: 4px; background: var(--sel); font-size: 13px; }
 .adm h3 { margin: 12px 0 2px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
 .member.can { cursor: pointer; }
+.card { position: relative; width: min(380px, 100%); max-height: calc(100% - 8px); overflow-y: auto; background: var(--side); border-radius: 12px; box-shadow: 0 8px 32px #0008; text-align: left; }
+.card-banner { height: 92px; border-radius: 12px 12px 0 0; }
+.card-ava { position: absolute; left: 18px; top: 44px; width: 88px; height: 88px; font-size: 46px; border: 6px solid var(--side); box-sizing: content-box; }
+.card-ava .dot { width: 20px; height: 20px; right: 0; bottom: 0; border-width: 5px; }
+.card-close { position: absolute; right: 10px; top: 10px; background: #0006; color: #fff; border-radius: 50%; width: 32px; height: 32px; }
+.card-body { margin: 56px 14px 14px; background: var(--chat); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.card-name { font-size: 22px; font-weight: 700; color: var(--head); overflow-wrap: anywhere; }
+.card-status { color: var(--ink); font-size: 14px; }
+.card h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
+.card-bio { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; background: var(--input); font-size: 12px; font-weight: 600; }
+.card-actions { display: flex; flex-direction: column; gap: 6px; }
+.card-actions .btn { flex: none; width: 100%; }
+.banner-row .swatch { width: 30px; height: 30px; }
+textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(--input); border: 0; border-radius: 4px; padding: 10px; color: var(--ink); font: inherit; outline: none; }
 .ava.photo { background-size: cover !important; background-position: center !important; color: transparent; }
 .srv .badge-n { position: absolute; right: -4px; bottom: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--danger); color: #fff; font: 700 12px/20px var(--body); border: 3px solid var(--rail); }
 .dm-wrap { display: grid; grid-template-columns: 200px minmax(0, 1fr); height: min(560px, calc(100dvh - 48px)); width: min(760px, 100%); background: var(--chat); border-radius: 10px; overflow: hidden; box-shadow: 0 8px 32px #0006; }
@@ -255,6 +274,8 @@ input { font: inherit; color: var(--ink); }
   .app.drawer .rail, .app.drawer .side { transform: none; }
   .menu-btn { display: grid; }
   .main-head .topic { display: none; }
+  .live-btn .lbl { display: none; }
+  .live-btn { padding: 5px 8px; }
 }
 </style>
 </head>
@@ -291,10 +312,10 @@ input { font: inherit; color: var(--ink); }
       <span class="hash">#</span><span id="chanName">загальний</span>
       <span class="topic" id="chanTopic"></span>
       <span class="sp"></span>
-      <button class="live-btn" id="btnScreen" hidden title="Показати свій екран">🖥️ Екран</button>
-      <button class="live-btn" id="btnCam" hidden title="Транслювати камеру">📷 Камера</button>
-      <button class="live-btn on" id="btnStopLive" hidden>⏹ Зупинити</button>
-      <button class="live-btn" id="btnClear" hidden title="Видалити всі повідомлення в цьому каналі">🧹 Очистити</button>
+      <button class="live-btn" id="btnScreen" hidden title="Показати свій екран">🖥️<span class="lbl"> Екран</span></button>
+      <button class="live-btn" id="btnCam" hidden title="Транслювати камеру">📷<span class="lbl"> Камера</span></button>
+      <button class="live-btn on" id="btnStopLive" hidden title="Зупинити трансляцію">⏹<span class="lbl"> Зупинити</span></button>
+      <button class="live-btn" id="btnClear" hidden title="Видалити всі повідомлення в цьому каналі">🧹<span class="lbl"> Очистити</span></button>
     </div>
     <div class="stage" id="stage" hidden>
       <video id="stageVideo" autoplay playsinline></video>
@@ -308,8 +329,8 @@ input { font: inherit; color: var(--ink); }
       <div class="reply-bar" id="replyBar" hidden><span id="replyText"></span><button class="icon-btn" type="button" id="replyCancel" title="Скасувати відповідь">✕</button></div>
       <form id="form" autocomplete="off">
         <input id="text" maxlength="500" placeholder="Спершу створи сервер або приєднайся" disabled>
-        <button class="icon-btn" type="button" id="btnPic" title="Надіслати фото">🖼</button>
-        <input type="file" id="picInput" accept="image/*" hidden>
+        <button class="icon-btn" type="button" id="btnPic" title="Надіслати фото або відео">🖼</button>
+        <input type="file" id="picInput" accept="image/*,video/*" hidden>
         <button class="icon-btn" type="button" id="btnRecCancel" title="Скасувати запис" hidden>✕</button>
         <button class="icon-btn" type="button" id="btnRec" title="Записати голосове повідомлення">🎙</button>
         <button class="icon-btn" type="button" id="btnEmoji" title="Смайлики">😀</button>
@@ -370,6 +391,8 @@ input { font: inherit; color: var(--ink); }
   </div>
 </div>
 
+<div class="ov" id="ovCard" hidden><div class="card" id="card"></div></div>
+
 <div class="ov" id="ovAdmin" hidden>
   <div class="dlg">
     <h2 id="admTitle">Адмін</h2>
@@ -392,6 +415,10 @@ input { font: inherit; color: var(--ink); }
     </div>
     <label for="stText">Що ти зараз робиш?</label>
     <input id="stText" maxlength="40" placeholder="Наприклад: граю в Динозаврика">
+    <label for="bioText">Про мене</label>
+    <textarea id="bioText" class="bio" maxlength="160" placeholder="Кілька слів про себе: улюблені ігри, рекорд у Динозаврику…"></textarea>
+    <label>Колір шапки профілю</label>
+    <div class="look-row banner-row" id="bannerPick"></div>
     <div style="display:flex;gap:6px;margin-top:10px"><button class="btn sec" type="button" id="photoPick">📷 Фото замість звіра</button><button class="btn sec" type="button" id="photoDel" hidden>Прибрати фото</button></div>
     <input type="file" id="photoInput" accept="image/*" hidden>
     <label>Сповіщення</label>
@@ -453,6 +480,8 @@ input { font: inherit; color: var(--ink); }
     color: store.get("color", pick(COLORS)),
     st: ["on", "away", "dnd"].includes(store.get("st", "on")) ? store.get("st", "on") : "on",
     stx: store.get("stx", ""),
+    bio: store.get("bio", ""),
+    banner: store.get("banner", ""),
     photo: store.get("photo", ""),
   };
   const validPhoto = v => typeof v === "string" && v.length <= 16000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(v);
@@ -578,6 +607,8 @@ input { font: inherit; color: var(--ink); }
   function renderMsgs() {
     const box = $("msgs");
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    // videos being watched survive the re-render: same element, play again once it's back
+    const playing = [...box.querySelectorAll("video")].filter(v => !v.paused);
     box.innerHTML = "";
     const c = CHANNELS.find(c => c.id === chan);
     const w = document.createElement("div"); w.className = "welcome";
@@ -591,7 +622,9 @@ input { font: inherit; color: var(--ink); }
       const row = document.createElement("div");
       row.className = "msg" + (cont && !m.reply ? " cont" : "") + (m.sys ? " sys" : "");
       row.dataset.id = m.id;
-      row.append(avaEl(m.sys ? { ava: "📢", color: "var(--sel)" } : m));
+      const rowAva = avaEl(m.sys ? { ava: "📢", color: "var(--sel)" } : m);
+      if (!m.sys) { rowAva.style.cursor = "pointer"; rowAva.title = "Профіль"; rowAva.onclick = () => profileFromMsg(m); }
+      row.append(rowAva);
       const body = document.createElement("div"); body.className = "body";
       if (m.reply) {
         const q = document.createElement("button"); q.className = "quote"; q.title = "Перейти до повідомлення";
@@ -603,13 +636,16 @@ input { font: inherit; color: var(--ink); }
       if (!cont || m.reply) {
         const h = document.createElement("div");
         const who = document.createElement("span"); who.className = "who"; who.style.color = m.sys ? "var(--muted)" : m.color; who.textContent = m.sys ? "ДіноБот" : m.nick;
+        if (!m.sys) { who.style.cursor = "pointer"; who.onclick = () => profileFromMsg(m); }
         const tm = document.createElement("span"); tm.className = "time"; tm.textContent = fmtTime(m.t);
         h.append(who);
         const bg = m.sys ? "" : badgeFor(m.pub);
         if (bg) { const sp = document.createElement("span"); sp.className = "badge"; sp.textContent = bg; h.append(sp); }
         h.append(tm); body.append(h);
       }
-      if (m.image) {
+      if (m.video) {
+        body.append(videoEl(m));
+      } else if (m.image) {
         const bt = document.createElement("button"); bt.className = "img-msg"; bt.title = "Відкрити фото";
         const im = document.createElement("img"); im.src = m.image; im.alt = "Фото від " + m.nick; im.loading = "lazy";
         if (m.iw && m.ih) { im.width = m.iw; im.height = m.ih; }
@@ -661,6 +697,7 @@ input { font: inherit; color: var(--ink); }
       box.append(row);
       prev = m;
     }
+    playing.forEach(v => { if (v.isConnected) v.play().catch(() => {}); });
     if (atBottom || box.dataset.chan !== chan) box.scrollTop = box.scrollHeight;
     else if (box.dataset.chan === chan) $("toBottom").hidden = false;
     box.dataset.chan = chan;
@@ -685,7 +722,7 @@ input { font: inherit; color: var(--ink); }
       if (u.host) tags.push("🖥️ тримає сервер");
       if (u.pub && isMuted(u.pub)) tags.push("🔇 заглушений");
       if (tags.length) { const t = document.createElement("div"); t.className = "tag"; t.textContent = tags.join(" · "); n.append(t); }
-      if (id !== myId) { r.classList.add("can"); r.title = "Написати або керувати"; r.onclick = () => memberMenu(id); }
+      r.classList.add("can"); r.title = "Профіль"; r.onclick = () => memberMenu(id);
       r.append(a, n); box.append(r);
     }
   }
@@ -782,6 +819,11 @@ input { font: inherit; color: var(--ink); }
     if (typeof m.image === "string" && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(m.image) && m.image.length <= MAX_MEDIA) {
       msg.image = m.image; msg.iw = Math.min(4000, Number(m.iw) || 0); msg.ih = Math.min(4000, Number(m.ih) || 0);
     } else if (m.imageGone) msg.imageGone = true;
+    if (m.video === true && typeof m.id === "string") {
+      msg.video = true; msg.vw = Math.min(4000, Number(m.vw) || 0); msg.vh = Math.min(4000, Number(m.vh) || 0); msg.dur = Math.min(120, Number(m.dur) || 0);
+      if (typeof m.poster === "string" && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(m.poster) && m.poster.length <= 40000) msg.poster = m.poster;
+      if (typeof m.videoData === "string" && m.videoData.length <= MAX_VIDEO && /^data:video\/(mp4|webm|quicktime)[^,]*;base64,/.test(m.videoData)) putVideo(msg.id, m.videoData);
+    }
     if (!msg.text) return;
     history[m.chan].push(msg);
     if (history[m.chan].length > 1 && history[m.chan].at(-2).t > msg.t) history[m.chan].sort((a, b) => a.t - b.t);
@@ -1060,11 +1102,61 @@ input { font: inherit; color: var(--ink); }
   }
   const admBtn = (body, text, cls, fn) => { const b = document.createElement("button"); b.className = "btn " + cls; b.textContent = text; b.onclick = () => { $("ovAdmin").hidden = true; fn(); }; body.append(b); };
 
+  // ---------- profile card: who someone is, their roles, and what you can do with them ----------
+  function profileFromMsg(m) {
+    const id = members.has(m.from) ? m.from : [...members.entries()].find(([, u]) => m.pub && u.pub === m.pub)?.[0];
+    if (id) { memberMenu(id); return; }
+    showCard({ nick: m.nick, ava: m.ava, color: m.color, pub: m.pub || "", st: "", stx: "", bio: "", banner: "" }, null, false);
+  }
   function memberMenu(id) {
     const u = members.get(id); if (!u) return;
+    showCard(u, id, true);
+  }
+  function showCard(u, id, online) {
+    const mine = id === myId, card = $("card"); card.innerHTML = "";
+    const banner = document.createElement("div"); banner.className = "card-banner";
+    banner.style.background = u.banner || "linear-gradient(135deg, " + (u.color || "#888") + ", color-mix(in srgb, " + (u.color || "#888") + " 45%, #000))";
+    const close = document.createElement("button"); close.className = "card-close"; close.textContent = "✕"; close.setAttribute("aria-label", "Закрити");
+    close.onclick = () => { $("ovCard").hidden = true; };
+    const ava = avaEl(u, "card-ava");
+    if (online) { const d = document.createElement("span"); d.className = "dot " + (u.st || "on"); ava.append(d); }
+    const body = document.createElement("div"); body.className = "card-body";
+    const nm = document.createElement("div"); nm.className = "card-name"; nm.textContent = u.nick + (mine ? " (ти)" : ""); body.append(nm);
+    const stLine = !online ? "Не в мережі" : (u.st === "dnd" ? "⛔ Не турбувати" : u.st === "away" ? "🌙 Відійшов" : "🟢 В мережі") + (u.stx ? " · " + u.stx : "");
+    const st = document.createElement("div"); st.className = "card-status"; st.textContent = stLine; body.append(st);
+    const roles = [];
+    if (u.pub && u.pub === meta.owner) roles.push("👑 Адмін сервера");
+    const rl = u.pub && adm.roles.get(u.pub)?.role;
+    if (rl === "mod") roles.push("🛡️ Модератор"); else if (rl === "vip") roles.push("⭐ VIP");
+    if (u.host) roles.push("🖥️ Тримає сервер");
+    if (u.pub && (SITE_KEYS.includes(u.pub))) roles.push("📣 Автор ДіноКорду");
+    if (u.pub && isMuted(u.pub)) roles.push("🔇 Заглушений");
+    if (roles.length) {
+      const sec = document.createElement("div"); sec.innerHTML = "<h4>Ролі</h4>";
+      const chips = document.createElement("div"); chips.className = "chips";
+      for (const r of roles) { const c = document.createElement("span"); c.className = "chip"; c.textContent = r; chips.append(c); }
+      sec.append(chips); body.append(sec);
+    }
+    const bioSec = document.createElement("div"); bioSec.innerHTML = "<h4>Про мене</h4>";
+    const bio = document.createElement("div"); bio.className = "card-bio"; bio.textContent = u.bio || (mine ? "Ще нічого. Напиши кілька слів про себе в профілі." : "Ще нічого не написав про себе.");
+    if (!u.bio) bio.style.color = "var(--muted)";
+    bioSec.append(bio); body.append(bioSec);
+    if (online && u.since) { const sec = document.createElement("div"); sec.innerHTML = "<h4>На сервері</h4>"; const t = document.createElement("div"); t.className = "card-bio"; t.textContent = "з " + fmtTime(u.since); sec.append(t); body.append(sec); }
+    const acts = document.createElement("div"); acts.className = "card-actions";
+    const act = (text, cls, fn) => { const b = document.createElement("button"); b.className = "btn " + cls; b.textContent = text; b.onclick = () => { $("ovCard").hidden = true; fn(); }; acts.append(b); };
+    if (mine) act("✏️ Редагувати профіль", "", () => $("meAva").click());
+    else if (id) {
+      act("💬 Написати особисто", "", () => openDm(dmKeyOf(id), id));
+      if (canManage(u)) act("⚙️ Керувати учасником", "sec", () => manageMember(id));
+    }
+    if (acts.children.length) body.append(acts);
+    card.append(banner, close, ava, body);
+    $("ovCard").hidden = false;
+  }
+  function manageMember(id) {
+    const u = members.get(id); if (!u) return;
     const pub = u.pub, staff = canManage(u);
-    openAdmin(u.nick, u.stx || (staff ? "Що зробити з цим учасником?" : ""), body => {
-      admBtn(body, "💬 Написати особисто", "", () => openDm(dmKeyOf(id), id));
+    openAdmin(u.nick, "Що зробити з цим учасником?", body => {
       if (!staff) return;
       if (pub && iOwn()) {
         const rl = adm.roles.get(pub)?.role;
@@ -1178,10 +1270,11 @@ input { font: inherit; color: var(--ink); }
   }
 
   function setMember(id, u) {
-    const was = members.has(id);
+    const was = members.has(id), since = members.get(id)?.since || Date.now();
     members.set(id, { nick: clean(u.nick, 16) || "Динозаврик", ava: clean(u.ava, 4) || "🦖",
       color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888", host: !!u.host, pub: validPub(u.pub) ? u.pub : "",
-      st: ["on", "away", "dnd"].includes(u.st) ? u.st : "on", stx: clean(u.stx, 40), photo: validPhoto(u.photo) ? u.photo : "" });
+      st: ["on", "away", "dnd"].includes(u.st) ? u.st : "on", stx: clean(u.stx, 40), photo: validPhoto(u.photo) ? u.photo : "",
+      bio: String(u.bio ?? "").replace(/[\u0000-\u0009\u000b-\u001f]/g, "").trim().slice(0, 160), banner: /^#[0-9a-f]{6}$/i.test(u.banner) ? u.banner : "", since });
     if (validPub(u.pub)) rememberPhoto(u.pub, validPhoto(u.photo) ? u.photo : "");
     renderMembers();
     return !was;
@@ -1731,6 +1824,7 @@ input { font: inherit; color: var(--ink); }
   });
   $("btnDms").onclick = () => openDm(dmOpen && dms[dmOpen] ? dmOpen : "");
   $("dmClose").onclick = () => { $("ovDm").hidden = true; };
+  $("ovCard").addEventListener("click", e => { if (e.target === $("ovCard")) $("ovCard").hidden = true; });
   $("dmDelete").onclick = () => {
     // removes the conversation from this device only; the other person keeps their copy
     if (!dms[dmOpen] || !confirm("Видалити розмову з " + dms[dmOpen].nick + "? Вона зникне тільки в тебе.")) return;
@@ -1855,7 +1949,7 @@ input { font: inherit; color: var(--ink); }
 
   function pushMe() {
     store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
-    store.set("st", me.st); store.set("stx", me.stx); store.set("photo", me.photo);
+    store.set("st", me.st); store.set("stx", me.stx); store.set("photo", me.photo); store.set("bio", me.bio); store.set("banner", me.banner);
     renderMe();
     if (!net) return;
     setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
@@ -1890,7 +1984,7 @@ input { font: inherit; color: var(--ink); }
       if (validPhoto(data)) { me.photo = data; renderPhotoBtns(); }
     } catch {}
   };
-  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); renderPhotoBtns(); renderNt(); $("stText").value = me.stx; $("myKey").value = myPub || "Ключ недоступний у цьому браузері"; pkSay(""); renderPk(); $("ovAva").hidden = false; };
+  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); renderPhotoBtns(); renderNt(); renderBannerPick(); $("bioText").value = me.bio || ""; $("stText").value = me.stx; $("myKey").value = myPub || "Ключ недоступний у цьому браузері"; pkSay(""); renderPk(); $("ovAva").hidden = false; };
   function renderPk() {
     const ok = !!window.PublicKeyCredential;
     $("pkBox").hidden = !ok;
@@ -1919,7 +2013,21 @@ input { font: inherit; color: var(--ink); }
     catch { $("myKey").select(); }
     setTimeout(() => { $("copyKey").textContent = "📋"; }, 1500);
   };
-  $("avaDone").onclick = () => { $("ovAva").hidden = true; me.stx = clean($("stText").value, 40); pushMe(); };
+  const BANNERS = ["", "#5865f2", "#23a55a", "#e67e22", "#e84393", "#8e44ad", "#e03e3e", "#00a8a8", "#2c2f33"];
+  function renderBannerPick() {
+    const box = $("bannerPick"); box.innerHTML = "";
+    BANNERS.forEach(c => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "swatch" + ((me.banner || "") === c ? " on" : "");
+      b.style.background = c || "linear-gradient(135deg, " + me.color + ", #000)"; b.title = c ? "Колір" : "Як аватарка";
+      b.onclick = () => { me.banner = c; renderBannerPick(); };
+      box.append(b);
+    });
+  }
+  $("avaDone").onclick = () => {
+    $("ovAva").hidden = true; me.stx = clean($("stText").value, 40);
+    me.bio = $("bioText").value.replace(/[\u0000-\u0009\u000b-\u001f]/g, "").trim().slice(0, 160);
+    pushMe();
+  };
 
   // away by itself after 5 minutes in another tab or app
   let awayTimer = 0;
@@ -2000,8 +2108,131 @@ input { font: inherit; color: var(--ink); }
     $("msgs").scrollTop = $("msgs").scrollHeight;
   }
   const loadImg = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+
+  // ---------- videos: shrunk on the device, kept in this browser's video store (too big for chat history) ----------
+  const MAX_VIDEO = 9000000, MAX_VIDEO_SEC = 60;
+  let vdb = null;
+  const openVdb = () => vdb || (vdb = new Promise((res, rej) => {
+    const r = indexedDB.open("dinocord-video", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("v");
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const vurls = new Map(), vEls = new Map();
+  async function putVideo(id, dataUrl) {
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const db = await openVdb();
+      await new Promise((res, rej) => { const t = db.transaction("v", "readwrite"); t.objectStore("v").put(blob, id); t.oncomplete = res; t.onerror = () => rej(t.error); });
+      vurls.set(id, URL.createObjectURL(blob));
+      vEls.get(id)?.refresh();
+    } catch {}
+  }
+  async function getVideoUrl(id) {
+    if (vurls.has(id)) return vurls.get(id);
+    try {
+      const db = await openVdb();
+      const blob = await new Promise((res, rej) => { const r = db.transaction("v").objectStore("v").get(id); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      if (!blob) return "";
+      const u = URL.createObjectURL(blob); vurls.set(id, u); return u;
+    } catch { return ""; }
+  }
+  function videoEl(m) {
+    // one element per message, reused across re-renders so playback isn't interrupted by new messages
+    if (vEls.has(m.id)) return vEls.get(m.id).el;
+    const el = document.createElement("div"); el.className = "vid-msg";
+    const v = document.createElement("video"); v.controls = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "metadata";
+    if (m.poster) v.poster = m.poster;
+    const note = document.createElement("div"); note.className = "text gone"; note.style.padding = "6px 8px";
+    el.append(v);
+    const refresh = async () => {
+      const u = await getVideoUrl(m.id);
+      if (u) { if (v.src !== u) v.src = u; note.remove(); }
+      else { note.textContent = "🎬 Відео недоступне на цьому пристрої"; el.append(note); }
+    };
+    vEls.set(m.id, { el, refresh }); refresh();
+    return el;
+  }
+
+  async function realDuration(v) {
+    // some recordings (e.g. made in a browser) don't say how long they are until you seek to the end
+    if (isFinite(v.duration)) return v.duration;
+    v.currentTime = 1e9;
+    await new Promise(res => { v.ontimeupdate = () => { if (isFinite(v.duration)) res(); }; setTimeout(res, 3000); });
+    v.ontimeupdate = null; const d = v.duration; v.currentTime = 0;
+    return isFinite(d) ? d : 0;
+  }
+
+  async function shrinkVideo(file, onTick) {
+    // play the clip into a small canvas and record that, with its sound, at a low bitrate
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video"); v.src = url; v.playsInline = true; v.setAttribute("playsinline", ""); v.muted = false; v.preload = "auto";
+    await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error("load")); });
+    const dur = await realDuration(v);
+    if (!dur || dur > MAX_VIDEO_SEC) { URL.revokeObjectURL(url); throw new Error(dur ? "long" : "load"); }
+    const k = Math.min(1, 640 / Math.max(v.videoWidth, v.videoHeight)), w = Math.round(v.videoWidth * k / 2) * 2, h = Math.round(v.videoHeight * k / 2) * 2;
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h; const x = cv.getContext("2d");
+    const stream = cv.captureStream(24);
+    let ac = null;
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ac.createMediaElementSource(v), dst = ac.createMediaStreamDestination(); src.connect(dst);
+      dst.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+    } catch {}
+    const type = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp8,opus", "video/webm"].find(t => MediaRecorder.isTypeSupported?.(t)) || "";
+    const rec = new MediaRecorder(stream, { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: 700000, audioBitsPerSecond: 64000 });
+    const chunks = []; rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    const done = new Promise(res => { rec.onstop = res; });
+    let raf = 0; const draw = () => { x.drawImage(v, 0, 0, w, h); onTick?.(v.currentTime, dur); raf = requestAnimationFrame(draw); };
+    rec.start(500); await v.play(); draw();
+    await new Promise(res => { v.onended = res; });
+    cancelAnimationFrame(raf); rec.stop(); await done;
+    stream.getTracks().forEach(t => t.stop()); ac?.close?.(); URL.revokeObjectURL(url);
+    x.drawImage(v, 0, 0, w, h);
+    return { blob: new Blob(chunks, { type: (rec.mimeType || type || "video/webm").split(";")[0] }), w, h, dur };
+  }
+  async function posterOf(file) {
+    const url = URL.createObjectURL(file), v = document.createElement("video");
+    v.src = url; v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto";
+    try {
+      await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = rej; setTimeout(rej, 8000); });
+      v.currentTime = Math.min(0.5, (v.duration || 1) / 2);
+      await new Promise(res => { v.onseeked = res; setTimeout(res, 2000); });
+      const k = Math.min(1, 320 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement("canvas");
+      cv.width = Math.round(v.videoWidth * k); cv.height = Math.round(v.videoHeight * k);
+      cv.getContext("2d").drawImage(v, 0, 0, cv.width, cv.height);
+      return cv.toDataURL("image/jpeg", 0.6);
+    } catch { return ""; } finally { URL.revokeObjectURL(url); }
+  }
+  const toDataUrl = blob => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result)); fr.onerror = rej; fr.readAsDataURL(blob); });
+
+  async function sendVideo(file) {
+    if (!net || !file || chan === OWN || chan === NEWS || $("btnPic").disabled) return;
+    const busy = document.createElement("div"); busy.className = "vid-busy"; busy.textContent = "🎬 Готую відео…";
+    document.querySelector(".composer").prepend(busy);
+    try {
+      const poster = await posterOf(file);
+      let blob = file, w = 0, h = 0, dur = 0;
+      if (file.size > 6000000 || !/^video\/(mp4|webm)$/.test(file.type)) {
+        ({ blob, w, h, dur } = await shrinkVideo(file, (t, d) => { busy.textContent = "🎬 Стискаю відео… " + Math.round(t) + " з " + Math.round(d) + " с"; }));
+      } else {
+        const v = document.createElement("video"); v.src = URL.createObjectURL(file);
+        await new Promise(res => { v.onloadedmetadata = res; v.onerror = res; });
+        w = v.videoWidth; h = v.videoHeight; dur = await realDuration(v); URL.revokeObjectURL(v.src);
+        if (dur > MAX_VIDEO_SEC) throw new Error("long");
+      }
+      const data = (await toDataUrl(blob)).replace(/^data:([^;,]+)[^,]*,/, "data:$1;base64,");
+      if (data.length > MAX_VIDEO) throw new Error("big");
+      const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text: "🎬 Відео", video: true, videoData: data, poster, vw: w, vh: h, dur: Math.round(dur), t: Date.now(), pub: myPub };
+      busy.remove();
+      addMsg(m); net?.send({ t: "msg", m });
+      $("msgs").scrollTop = $("msgs").scrollHeight;
+    } catch (e) {
+      busy.remove();
+      sysLocal(e?.message === "long" ? "Відео задовге. Можна до " + MAX_VIDEO_SEC + " секунд." : e?.message === "big" ? "Відео завелике навіть після стискання. Спробуй коротше." : "Не вдалося надіслати це відео. Спробуй інше.");
+    }
+  }
   $("btnPic").onclick = () => $("picInput").click();
-  $("picInput").onchange = () => { const f = $("picInput").files[0]; $("picInput").value = ""; sendImage(f); };
+  $("picInput").onchange = () => { const f = $("picInput").files[0]; $("picInput").value = ""; if (f?.type.startsWith("video/")) sendVideo(f); else sendImage(f); };
   // paste a screenshot or drop a file onto the chat
   document.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith("image/")); if (f) { e.preventDefault(); sendImage(f); } });
   $("msgs").addEventListener("dragover", e => { if (net) { e.preventDefault(); $("msgs").classList.add("drop"); } });
