@@ -131,6 +131,18 @@ input { font: inherit; color: var(--ink); }
 .msg .tools button:hover { background: var(--hover); }
 .typing { height: 22px; padding: 0 16px; font-size: 13px; color: var(--muted); }
 .composer { padding: 0 16px 20px; }
+.reply-bar { display: flex; align-items: center; gap: 8px; background: var(--side); border-radius: 8px 8px 0 0; padding: 6px 10px; font-size: 13px; color: var(--muted); }
+.reply-bar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reply-bar b { color: var(--ink); }
+.reply-bar + form { border-top-left-radius: 0; border-top-right-radius: 0; }
+.quote { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); margin-bottom: 2px; cursor: pointer; min-width: 0; padding: 0; text-align: left; max-width: 100%; }
+.quote::before { content: ""; width: 18px; height: 9px; border: 2px solid var(--sel); border-right: 0; border-bottom: 0; border-radius: 6px 0 0 0; margin-top: 6px; flex: none; }
+.quote b { color: var(--ink); font-weight: 600; flex: none; }
+.quote span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.msg.flash { animation: flash 1.6s ease; }
+@keyframes flash { 0%, 40% { background: color-mix(in srgb, var(--accent) 25%, transparent); } }
+.msg .text a { color: var(--accent); text-decoration: underline; word-break: break-all; }
+.invite { width: 100%; background: var(--input); border: 0; border-radius: 4px; padding: 10px; color: var(--ink); font: 13px var(--body); }
 .composer form { display: flex; align-items: center; gap: 8px; background: var(--input); border-radius: 8px; padding: 0 8px 0 12px; }
 .composer input { flex: 1; min-width: 0; background: none; border: 0; outline: none; padding: 11px 0; }
 .composer input:disabled { opacity: .5; }
@@ -164,6 +176,7 @@ input { font: inherit; color: var(--ink); }
 .adm h3 { margin: 12px 0 2px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
 .member.can { cursor: pointer; }
 .side-head .gear { margin-left: auto; font-size: 16px; }
+#srvName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .status { min-height: 20px; margin-top: 12px; font-size: 13px; color: var(--muted); }
 .status.bad { color: var(--danger); }
 .emojis { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
@@ -210,7 +223,7 @@ input { font: inherit; color: var(--ink); }
   </nav>
 
   <aside class="side">
-    <div class="side-head"><span id="srvName">ДіноКорд</span><span class="code" id="srvCode"></span><button class="icon-btn gear" id="btnAdmin" title="Налаштування сервера" hidden>⚙️</button></div>
+    <div class="side-head"><span id="srvName">ДіноКорд</span><span class="code" id="srvCode"></span><button class="icon-btn gear" id="btnInvite" title="Запросити друзів" hidden>🔗</button><button class="icon-btn" id="btnAdmin" title="Налаштування сервера" hidden>⚙️</button></div>
     <div class="chans" id="chans"></div>
     <div class="vbar" id="vbar" hidden>
       <div class="st"><b>Голос підключено</b><span id="vbarName">🔊 Балачка</span></div>
@@ -246,6 +259,7 @@ input { font: inherit; color: var(--ink); }
     <button class="to-bottom" id="toBottom" hidden>⬇ До нових повідомлень</button>
     <div class="typing" id="typing"></div>
     <div class="composer">
+      <div class="reply-bar" id="replyBar" hidden><span id="replyText"></span><button class="icon-btn" type="button" id="replyCancel" title="Скасувати відповідь">✕</button></div>
       <form id="form" autocomplete="off">
         <input id="text" maxlength="500" placeholder="Спершу створи сервер або приєднайся" disabled>
         <button class="icon-btn" type="button" id="btnPic" title="Надіслати фото">🖼</button>
@@ -418,9 +432,16 @@ input { font: inherit; color: var(--ink); }
   const fmtTime = t => new Date(t).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
 
   function textNodes(el, text) {
-    // highlight @mentions of my nick, otherwise plain text
-    const re = /@[^\s@]+(?:\s[^\s@]+)?/g; let last = 0, m;
+    // links become clickable, @mentions of my nick are highlighted, everything else is plain text
+    const re = /(https?:\/\/[^\s<>"]+)|(@[^\s@]+(?:\s[^\s@]+)?)/g; let last = 0, m;
     while ((m = re.exec(text))) {
+      if (m[1]) {
+        const url = m[1].replace(/[.,!?)»]+$/, "");
+        el.append(text.slice(last, m.index));
+        const a = document.createElement("a"); a.href = url; a.textContent = url; a.target = "_blank"; a.rel = "noopener noreferrer"; el.append(a);
+        last = m.index + url.length; re.lastIndex = last;
+        continue;
+      }
       const tag = m[0].slice(1);
       const hit = me.nick.toLowerCase().startsWith(tag.toLowerCase()) && tag.length >= 2;
       if (!hit) continue;
@@ -445,10 +466,18 @@ input { font: inherit; color: var(--ink); }
     for (const m of history[chan]) {
       const cont = prev && !m.sys && !prev.sys && prev.from === m.from && m.t - prev.t < 5 * 60e3;
       const row = document.createElement("div");
-      row.className = "msg" + (cont ? " cont" : "") + (m.sys ? " sys" : "");
+      row.className = "msg" + (cont && !m.reply ? " cont" : "") + (m.sys ? " sys" : "");
+      row.dataset.id = m.id;
       row.append(avaEl(m.sys ? { ava: "📢", color: "var(--sel)" } : m));
       const body = document.createElement("div"); body.className = "body";
-      if (!cont) {
+      if (m.reply) {
+        const q = document.createElement("button"); q.className = "quote"; q.title = "Перейти до повідомлення";
+        const qn = document.createElement("b"); qn.textContent = "@" + m.reply.nick;
+        const qt = document.createElement("span"); qt.textContent = m.reply.text;
+        q.append(qn, qt); q.onclick = () => jumpTo(m.reply.id);
+        body.append(q);
+      }
+      if (!cont || m.reply) {
         const h = document.createElement("div");
         const who = document.createElement("span"); who.className = "who"; who.style.color = m.sys ? "var(--muted)" : m.color; who.textContent = m.sys ? "ДіноБот" : m.nick;
         const tm = document.createElement("span"); tm.className = "time"; tm.textContent = fmtTime(m.t);
@@ -487,6 +516,10 @@ input { font: inherit; color: var(--ink); }
       row.append(body);
       if (!m.sys && net) {
         const tools = document.createElement("div"); tools.className = "tools";
+        if (!$("text").disabled) {
+          const rb = document.createElement("button"); rb.textContent = "↩"; rb.title = "Відповісти";
+          rb.onclick = () => startReply(m); tools.append(rb);
+        }
         for (const e of REACTS) {
           const b = document.createElement("button"); b.textContent = e; b.title = "Реакція";
           b.onclick = () => toggleReact(m, e);
@@ -552,6 +585,7 @@ input { font: inherit; color: var(--ink); }
     } else $("srvHome").classList.add("on");
     $("srvName").textContent = code ? (adm.name || "Сервер " + code) : "ДіноКорд";
     $("btnAdmin").hidden = !net || !iOwn();
+    $("btnInvite").hidden = !net;
     $("btnClear").hidden = !net || !iOwn();
     $("srvCode").textContent = code ? "#" + code : "";
     $("btnLeave").hidden = !net;
@@ -570,6 +604,7 @@ input { font: inherit; color: var(--ink); }
       text: clean(m.text, 500), t: Number(m.t) || Date.now(), sys: !!m.sys, reacts: sanitizeReacts(m.reacts) };
     if (typeof m.sig === "string") msg.sig = m.sig.slice(0, 200);
     if (validPub(m.pub)) msg.pub = m.pub;
+    if (m.reply && typeof m.reply.id === "string") msg.reply = { id: m.reply.id.slice(0, 40), nick: clean(m.reply.nick, 16) || "Динозаврик", text: clean(m.reply.text, 80) };
     if (typeof m.audio === "string" && /^data:audio\/[\w.+-]+(;[\w=.+-]+)*;base64,[A-Za-z0-9+/=]+$/.test(m.audio) && m.audio.length <= MAX_AUDIO) { msg.audio = m.audio; msg.dur = Math.min(120, Number(m.dur) || 0); }
     else if (m.audioGone) msg.audioGone = true;
     if (typeof m.image === "string" && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(m.image) && m.image.length <= MAX_MEDIA) {
@@ -1325,10 +1360,50 @@ input { font: inherit; color: var(--ink); }
     if (chan === OWN && !iOwn()) return;
     $("text").value = "";
     const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text, t: Date.now(), pub: myPub };
+    if (replyTo && replyTo.chan === chan) m.reply = { id: replyTo.id, nick: replyTo.nick, text: replyTo.text };
+    cancelReply();
     if (chan !== OWN) { addMsg(m); net.send({ t: "msg", m }); }
     else crypto.subtle.sign(SIG, myKeys.privateKey, signed(m)).then(sig => { m.sig = b64(sig); addMsg(m, true); net?.send({ t: "msg", m }); });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   });
+  // ---------- replies ----------
+  let replyTo = null;
+  function startReply(m) {
+    const snippet = m.image ? "🖼 Фото" : m.audio || m.audioGone ? "🎤 Голосове повідомлення" : clean(m.text, 80);
+    replyTo = { id: m.id, chan: m.chan, nick: m.nick, text: snippet };
+    $("replyText").innerHTML = "Відповідь для <b></b>: <i></i>";
+    $("replyText").querySelector("b").textContent = m.nick;
+    $("replyText").querySelector("i").textContent = snippet;
+    $("replyBar").hidden = false;
+    $("text").focus();
+  }
+  function cancelReply() { replyTo = null; $("replyBar").hidden = true; }
+  $("replyCancel").onclick = cancelReply;
+  function jumpTo(id) {
+    const row = [...$("msgs").querySelectorAll(".msg")].find(r => r.dataset.id === id);
+    if (!row) { sysLocal("Це повідомлення вже видалене або надто старе."); return; }
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+    row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
+  }
+
+  // ---------- invite link: opens the page straight on this server ----------
+  $("btnInvite").onclick = () => {
+    const url = location.origin + location.pathname + "#" + code;
+    openAdmin("Запросити друзів", "Скинь це посилання. Друг відкриє його і одразу потрапить на сервер.", body => {
+      const inp = document.createElement("input"); inp.className = "invite"; inp.readOnly = true; inp.value = url;
+      inp.onclick = () => inp.select();
+      body.append(inp);
+      const done = t => { $("admSub").textContent = t; };
+      admBtnKeep(body, "📋 Скопіювати посилання", "", async () => {
+        try { await navigator.clipboard.writeText(url); done("Скопійовано! Встав його в повідомлення другові."); }
+        catch { inp.select(); done("Виділи посилання і скопіюй його."); }
+      });
+      if (navigator.share) admBtnKeep(body, "📤 Поділитися…", "sec", () => navigator.share({ title: "ДіноКорд", text: "Заходь на мій сервер у ДіноКорді!", url }).catch(() => {}));
+      const c = document.createElement("div"); c.className = "adm-row"; c.innerHTML = "<span></span>"; c.firstChild.textContent = "Або код сервера: " + code; body.append(c);
+    });
+  };
+  const admBtnKeep = (body, text, cls, fn) => { const b = document.createElement("button"); b.className = "btn " + cls; b.textContent = text; b.onclick = fn; body.append(b); };
+
   let lastTyping = 0;
   $("text").addEventListener("input", () => {
     if (!net || Date.now() - lastTyping < 2500) return;
@@ -1502,6 +1577,12 @@ input { font: inherit; color: var(--ink); }
   $("toBottom").onclick = () => { const box = $("msgs"); box.scrollTo({ top: box.scrollHeight, behavior: "smooth" }); $("toBottom").hidden = true; };
 
   const hashCode = (location.hash.match(/\d{4,6}/) || [])[0];
+  window.addEventListener("hashchange", () => {
+    const c = (location.hash.match(/\d{4,6}/) || [])[0];
+    if (!c || c === code) return;
+    if (net) leave();
+    $("joinCode").value = c; enter(false, true);
+  });
   $("joinCode").value = hashCode || store.get("lastCode", "");
   renderMe(); renderAll();
   loadKeys().then(() => { if ($("joinCode").value.length >= 4 && (hashCode || hasHist($("joinCode").value))) enter(false, true); });
