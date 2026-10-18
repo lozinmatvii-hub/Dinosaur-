@@ -316,6 +316,8 @@ input { font: inherit; color: var(--ink); }
     </div>
     <label for="stText">Що ти зараз робиш?</label>
     <input id="stText" maxlength="40" placeholder="Наприклад: граю в Динозаврика">
+    <label for="myKey">Мій ключ</label>
+    <div style="display:flex;gap:6px"><input id="myKey" readonly style="font-size:11px"><button class="btn sec" id="copyKey" type="button" style="flex:none;padding:8px 12px">📋</button></div>
     <div class="row"><button class="btn" id="avaDone">Готово</button></div>
   </div>
 </div>
@@ -329,6 +331,7 @@ input { font: inherit; color: var(--ink); }
   };
 
   const CHANNELS = [
+    { id: "news", name: "новини-дінокорду", topic: "Новини від автора ДіноКорду. Читай і став реакції 🦖", news: true },
     { id: "general", name: "загальний", topic: "Балачки про все" },
     { id: "games", name: "ігри", topic: "Рекорди в Динозаврику, кличте на перегони" },
     { id: "own", name: "канал-власника", topic: "Тут пише тільки творець сервера 👑", own: true },
@@ -376,7 +379,7 @@ input { font: inherit; color: var(--ink); }
     for (const c of CHANNELS) {
       const b = document.createElement("button");
       b.className = "chan" + (c.id === chan ? " on" : "");
-      b.innerHTML = '<span class="hash' + (c.own ? ' ic">📢' : '">#') + '</span><span></span>' + (unread[c.id] ? '<span class="unread">' + Math.min(99, unread[c.id]) + "</span>" : "");
+      b.innerHTML = '<span class="hash' + (c.news ? ' ic">📣' : c.own ? ' ic">📢' : '">#') + '</span><span></span>' + (unread[c.id] ? '<span class="unread">' + Math.min(99, unread[c.id]) + "</span>" : "");
       b.children[1].textContent = c.name;
       b.onclick = () => { chan = c.id; unread[c.id] = 0; $("app").classList.remove("drawer"); renderAll(); $("text").focus(); };
       box.append(b);
@@ -416,12 +419,12 @@ input { font: inherit; color: var(--ink); }
     }
     const c = CHANNELS.find(c => c.id === chan);
     $("chanName").textContent = c.name; $("chanTopic").textContent = c.topic;
-    const ownLock = !!c.own && !iOwn(), mute = myPub && isMuted(myPub) ? adm.mutes.get(myPub).until : 0;
+    const ownLock = (!!c.own && !iOwn()) || (!!c.news && !iSite()), mute = myPub && isMuted(myPub) ? adm.mutes.get(myPub).until : 0;
     if (net) {
       $("text").disabled = $("btnRoar").disabled = $("btnRec").disabled = $("btnPic").disabled = ownLock || !!mute;
-      $("btnPic").hidden = !!c.own;
-      $("btnRec").hidden = !!c.own || !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia;
-      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? "Тут пише тільки творець сервера 👑" : "Написати в #" + c.name;
+      $("btnPic").hidden = !!c.own || !!c.news;
+      $("btnRec").hidden = !!c.own || !!c.news || !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia;
+      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? (c.news ? "Тут пише тільки автор ДіноКорду 📣" : "Тут пише тільки творець сервера 👑") : "Написати в #" + c.name;
     }
   }
 
@@ -529,7 +532,7 @@ input { font: inherit; color: var(--ink); }
           b.onclick = () => toggleReact(m, e);
           tools.append(b);
         }
-        if (iOwn() || (iMod() && m.pub !== meta.owner)) {
+        if (m.chan !== NEWS && (iOwn() || (iMod() && m.pub !== meta.owner))) {
           const d = document.createElement("button"); d.textContent = "🗑"; d.title = "Видалити повідомлення";
           d.onclick = () => { if (confirm("Видалити це повідомлення для всіх?")) doAdmin({ a: "del", id: m.id, chan: m.chan }); };
           tools.append(d);
@@ -631,8 +634,8 @@ input { font: inherit; color: var(--ink); }
   // ---------- state changes (same on every peer; host relays) ----------
   function addMsg(m, verified) {
     if (!m || !history[m.chan] || typeof m.id !== "string") return;
-    if (m.chan === OWN && !verified) return;
-    if (adm.deleted.has(m.id) || Number(m.t) <= (adm.cleared[m.chan] || 0)) return;
+    if ((m.chan === OWN || m.chan === NEWS) && !verified) return;
+    if (m.chan !== NEWS && (adm.deleted.has(m.id) || Number(m.t) <= (adm.cleared[m.chan] || 0))) return;
     if (history[m.chan].some(x => x.id === m.id)) return;
     const msg = { id: m.id.slice(0, 40), chan: m.chan, from: String(m.from || ""), nick: clean(m.nick, 16) || "Динозаврик",
       ava: clean(m.ava, 4) || "🦖", color: /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#888",
@@ -665,6 +668,7 @@ input { font: inherit; color: var(--ink); }
     if (r.on && i < 0) ids.push(r.who);
     if (!r.on && i >= 0) ids.splice(i, 1);
     saveHist();
+    if (r.chan === NEWS) saveNews();
     if (r.chan === chan) renderMsgs();
   }
 
@@ -702,7 +706,27 @@ input { font: inherit; color: var(--ink); }
     return key;
   }
 
+  // ---------- DinoCord news: one channel on every server, only the site's author posts there ----------
+  // Public keys of the author (the "Мій ключ" value from their profile). Only a public key goes here, never a secret.
+  const SITE_KEYS = [];
+  const NEWS = "news";
+  const iSite = () => !!myPub && SITE_KEYS.includes(myPub);
+  function saveNews() {
+    // news follow you from server to server, so they live outside any one server's history
+    try { localStorage.setItem("dinocord-news", JSON.stringify(history[NEWS].slice(-100))); } catch {}
+  }
+  async function verifyNews(m) {
+    for (const k of SITE_KEYS) {
+      try { if (await crypto.subtle.verify(SIG, await pubKey(k), unb64(m.sig), signed(m))) return true; } catch {}
+    }
+    return false;
+  }
+
   async function addChecked(m) {
+    if (m?.chan === NEWS) {
+      if (typeof m.sig === "string" && await verifyNews(m)) { addMsg(m, true); saveNews(); }
+      return;
+    }
     if (!m || m.chan !== OWN) { addMsg(m); return; }
     try {
       const key = await ownerKey();
@@ -788,7 +812,7 @@ input { font: inherit; color: var(--ink); }
     }
     for (const c of CHANNELS) {
       const cut = adm.cleared[c.id] || 0;
-      history[c.id] = history[c.id].filter(m => !adm.deleted.has(m.id) && m.t > cut);
+      if (c.id !== NEWS) history[c.id] = history[c.id].filter(m => !adm.deleted.has(m.id) && m.t > cut);
     }
     meta.acts = acts.map(({ p, s, by }) => by ? { p, s, by } : { p, s });
     if (code) store.set("meta-" + code, meta);
@@ -931,7 +955,13 @@ input { font: inherit; color: var(--ink); }
       const arr = Array.isArray(h[c.id]) ? h[c.id].slice(-MAX_HIST) : [];
       for (const m of arr) {
         if (!m || m.chan !== c.id) continue;
-        if (c.id === OWN) { if (!history[OWN].some(x => x.id === m.id)) addChecked(m); continue; }
+        if (c.id === OWN || c.id === NEWS) {
+          const have = history[c.id].find(x => x.id === m.id);
+          if (!have) { addChecked(m); continue; }
+          const theirs = sanitizeReacts(m.reacts);
+          for (const e in theirs) have.reacts[e] = [...new Set([...(have.reacts[e] || []), ...theirs[e]])];
+          continue;
+        }
         addMsg(m);
         const mine = history[c.id].find(x => x.id === m.id);
         const theirs = sanitizeReacts(m.reacts);
@@ -1145,7 +1175,8 @@ input { font: inherit; color: var(--ink); }
     // start from what this browser remembers about the server
     CHANNELS.forEach(x => { history[x.id] = []; unread[x.id] = 0; });
     meta = {}; ownerKeyCache = null; resetAdmin();
-    code = c; setMeta(store.get("meta-" + c, null)); mergeHist(store.get("hist-" + c, null)); code = "";
+    code = c; setMeta(store.get("meta-" + c, null)); mergeHist(store.get("hist-" + c, null));
+    mergeHist({ [NEWS]: store.get("news", []) }); code = "";
     try {
       try { net = await connect(c, create); }
       catch (e) {
@@ -1393,13 +1424,13 @@ input { font: inherit; color: var(--ink); }
     e.preventDefault();
     const text = clean($("text").value, 500);
     if (!text || !net) return;
-    if (chan === OWN && !iOwn()) return;
+    if ((chan === OWN && !iOwn()) || (chan === NEWS && !iSite())) return;
     $("text").value = "";
     const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text, t: Date.now(), pub: myPub };
     if (replyTo && replyTo.chan === chan) m.reply = { id: replyTo.id, nick: replyTo.nick, text: replyTo.text };
     cancelReply();
-    if (chan !== OWN) { addMsg(m); net.send({ t: "msg", m }); }
-    else crypto.subtle.sign(SIG, myKeys.privateKey, signed(m)).then(sig => { m.sig = b64(sig); addMsg(m, true); net?.send({ t: "msg", m }); });
+    if (chan !== OWN && chan !== NEWS) { addMsg(m); net.send({ t: "msg", m }); }
+    else crypto.subtle.sign(SIG, myKeys.privateKey, signed(m)).then(sig => { m.sig = b64(sig); addMsg(m, true); if (chan === NEWS) saveNews(); net?.send({ t: "msg", m }); });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   });
   // ---------- replies ----------
@@ -1474,7 +1505,12 @@ input { font: inherit; color: var(--ink); }
   }
   function renderStPick() { for (const b of $("stPick").children) b.classList.toggle("on", b.dataset.st === me.st); }
   for (const b of $("stPick").children) b.onclick = () => { me.st = b.dataset.st; renderStPick(); };
-  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); $("stText").value = me.stx; $("ovAva").hidden = false; };
+  $("meAva").onclick = () => { renderAvaPick(); renderStPick(); $("stText").value = me.stx; $("myKey").value = myPub || "Ключ недоступний у цьому браузері"; $("ovAva").hidden = false; };
+  $("copyKey").onclick = async () => {
+    try { await navigator.clipboard.writeText(myPub); $("copyKey").textContent = "✓"; }
+    catch { $("myKey").select(); }
+    setTimeout(() => { $("copyKey").textContent = "📋"; }, 1500);
+  };
   $("avaDone").onclick = () => { $("ovAva").hidden = true; me.stx = clean($("stText").value, 40); pushMe(); };
 
   // away by itself after 5 minutes in another tab or app
@@ -1517,7 +1553,7 @@ input { font: inherit; color: var(--ink); }
     b.textContent = rec ? "⏹ " + fmtDur((Date.now() - recStart) / 1000) : "🎙";
     b.title = rec ? "Надіслати" : "Записати голосове повідомлення";
     $("btnRecCancel").hidden = !rec;
-    $("text").hidden = !!rec; $("btnRoar").hidden = !!rec; $("btnPic").hidden = !!rec || chan === OWN;
+    $("text").hidden = !!rec; $("btnRoar").hidden = !!rec; $("btnPic").hidden = !!rec || chan === OWN || chan === NEWS;
   }
   function sendVoice(audio, dur) {
     if (!net) return;
@@ -1529,7 +1565,7 @@ input { font: inherit; color: var(--ink); }
   }
   // ---------- photos: shrink on this device, then send as a message ----------
   async function sendImage(file) {
-    if (!net || !file || !file.type.startsWith("image/") || chan === OWN || $("btnPic").disabled) return;
+    if (!net || !file || !file.type.startsWith("image/") || chan === OWN || chan === NEWS || $("btnPic").disabled) return;
     let data, w = 0, h = 0;
     try {
       if (file.type === "image/gif" && file.size <= 450000) {
