@@ -110,6 +110,19 @@ input { font: inherit; color: var(--ink); }
 .lv .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
 .lv .tag { background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; flex: none; }
 .menu-btn { display: none; }
+.emoji-pop { position: fixed; z-index: 15; width: min(340px, calc(100vw - 24px)); max-height: min(360px, 60vh); display: flex; flex-direction: column; background: var(--side); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 28px #0006; }
+.emoji-tabs { display: flex; gap: 2px; padding: 6px; border-bottom: 1px solid var(--line); flex: none; }
+.emoji-tabs button { flex: 1; padding: 6px 0; border-radius: 6px; font-size: 18px; }
+.emoji-tabs button.on { background: var(--sel); }
+.emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 6px; overflow-y: auto; }
+.emoji-grid button { font-size: 22px; aspect-ratio: 1; border-radius: 6px; }
+.emoji-grid button:hover, .emoji-grid button:focus-visible { background: var(--hover); }
+.look-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.look-row button { padding: 8px 10px; border-radius: 8px; background: var(--input); font-size: 13px; }
+.look-row button.on { outline: 2px solid var(--accent); }
+.swatch { width: 38px; height: 38px; padding: 0 !important; border-radius: 50% !important; }
+.bgtile { width: 64px; height: 44px; padding: 0 !important; border-radius: 8px !important; background-size: cover !important; display: grid; place-items: center; color: #fff; font-size: 11px; text-shadow: 0 1px 2px #000; }
+.msgs.has-bg { background: var(--bg-tint), var(--bg-img) center / cover no-repeat fixed; }
 .msgs { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px 0 8px; }
 .welcome { padding: 16px; }
 .welcome .big { width: 68px; height: 68px; border-radius: 50%; background: var(--sel); display: grid; place-items: center; font-size: 38px; margin-bottom: 8px; }
@@ -237,7 +250,7 @@ input { font: inherit; color: var(--ink); }
     <div class="me-bar">
       <button class="ava sm" id="meAva" title="Змінити аватар"></button>
       <input id="nick" maxlength="16" aria-label="Нік">
-      <button class="icon-btn" id="btnTheme" title="Тема">◐</button>
+      <button class="icon-btn" id="btnTheme" title="Оформлення">🎨</button>
       <button class="icon-btn" id="btnLeave" title="Вийти з сервера" hidden>⎋</button>
     </div>
   </aside>
@@ -269,6 +282,7 @@ input { font: inherit; color: var(--ink); }
         <input type="file" id="picInput" accept="image/*" hidden>
         <button class="icon-btn" type="button" id="btnRecCancel" title="Скасувати запис" hidden>✕</button>
         <button class="icon-btn" type="button" id="btnRec" title="Записати голосове повідомлення">🎙</button>
+        <button class="icon-btn" type="button" id="btnEmoji" title="Смайлики">😀</button>
         <button class="icon-btn" type="button" id="btnRoar" title="Гаркнути">🦖</button>
       </form>
     </div>
@@ -293,6 +307,23 @@ input { font: inherit; color: var(--ink); }
 </div>
 
 <div class="lightbox" id="lightbox" hidden><img id="lightImg" alt=""><button id="lightClose" aria-label="Закрити">✕</button></div>
+
+<div class="emoji-pop" id="emojiPop" hidden><div class="emoji-tabs" id="emojiTabs"></div><div class="emoji-grid" id="emojiGrid"></div></div>
+
+<div class="ov" id="ovLook" hidden>
+  <div class="dlg" style="text-align:left">
+    <h2 style="text-align:center">Оформлення</h2>
+    <p style="text-align:center">Це бачиш тільки ти, на цьому пристрої.</p>
+    <label>Тема</label>
+    <div class="look-row" id="lookTheme"></div>
+    <label>Колір</label>
+    <div class="look-row" id="lookAccent"></div>
+    <label>Фон чату</label>
+    <div class="look-row" id="lookBg"></div>
+    <input type="file" id="bgInput" accept="image/*" hidden>
+    <div class="row"><button class="btn" id="lookDone">Готово</button></div>
+  </div>
+</div>
 
 <div class="ov" id="ovAdmin" hidden>
   <div class="dlg">
@@ -349,7 +380,15 @@ input { font: inherit; color: var(--ink); }
   ];
   const AVAS = ["🦖", "🦕", "🐊", "🐢", "🦎", "🐉", "🐲", "🥚", "🐸", "🦤", "🐍", "🦩"];
   const COLORS = ["#f47b67", "#ffbf3a", "#4fd27a", "#5ec8f2", "#a98bff", "#f28bd2", "#f2a35e", "#7ce0c3"];
-  const REACTS = ["👍", "😂", "🔥", "🦖", "❤️"];
+  const REACTS = ["👍", "😂", "🔥", "🦖", "❤️"];   // quick reactions on every message; the picker offers the rest
+  const EMOJI = {
+    "😀": "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 😐 😑 😶 😏 😒 🙄 😬 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🥵 🥶 🥴 😵 🤯 🤠 🥳 😎 🤓 🧐 😕 😟 🙁 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 👿 💀 💩 🤡 👻 👽 🤖",
+    "👍": "👍 👎 👌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐️ 🖖 👋 👏 🙌 👐 🤲 🤝 🙏 💪 🦾 👀 🧠 ❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 💯 💢 💥 💫 💦 💨 🕳️ 💬 💭 💤",
+    "🦖": "🦖 🦕 🐊 🐢 🦎 🐍 🐉 🐲 🥚 🐸 🦤 🦩 🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐵 🐔 🐧 🐦 🦆 🦅 🦉 🐺 🐗 🐴 🦄 🐝 🐛 🦋 🐌 🐞 🐜 🕷️ 🦂 🐙 🦑 🦀 🐡 🐠 🐟 🐬 🐳 🦈 🌵 🌴 🌲 🌳 🍀 🍁 🍄 🌸 🌻 🌙 ⭐ 🌟 ☀️ 🌈 ⚡ 🔥 ❄️ 🌊",
+    "🎮": "🎮 🕹️ 🎲 🧩 🏆 🥇 🥈 🥉 🏅 🎯 🎳 ⚽ 🏀 🏈 ⚾ 🎾 🏐 🏓 🥊 🛹 🚀 🛸 🚗 🏎️ 🚲 ✈️ 🎉 🎊 🎈 🎁 🎂 🍕 🍔 🍟 🌭 🍿 🍩 🍪 🍫 🍬 🍭 🍦 🍉 🍓 🍌 🍎 🥤 🧃 🎵 🎶 🎤 🎧 🎸 🥁 📱 💻 📷 💡 💎 🔑 🗡️ 🛡️ 🏰",
+  };
+  const ALL_EMOJI = new Set(Object.values(EMOJI).join(" ").split(" ").filter(Boolean));
+  const okReact = e => REACTS.includes(e) || ALL_EMOJI.has(e);
   const PREFIX = "dinocord-";
   const MAX_HIST = 200;
 
@@ -541,6 +580,9 @@ input { font: inherit; color: var(--ink); }
           b.onclick = () => toggleReact(m, e);
           tools.append(b);
         }
+        const more = document.createElement("button"); more.textContent = "＋"; more.title = "Інша реакція";
+        more.onclick = ev => { ev.stopPropagation(); openEmoji(more, e => { const cur = history[m.chan]?.find(x => x.id === m.id); if (cur && !(cur.reacts[e] || []).includes(myId)) toggleReact(cur, e); }); };
+        tools.append(more);
         if (m.chan !== NEWS && (iOwn() || (iMod() && m.pub !== meta.owner))) {
           const d = document.createElement("button"); d.textContent = "🗑"; d.title = "Видалити повідомлення";
           d.onclick = () => { if (confirm("Видалити це повідомлення для всіх?")) doAdmin({ a: "del", id: m.id, chan: m.chan }); };
@@ -673,7 +715,7 @@ input { font: inherit; color: var(--ink); }
 
   function applyReact(r) {
     const m = history[r.chan]?.find(x => x.id === r.msg);
-    if (!m || !REACTS.includes(r.e)) return;
+    if (!m || !okReact(r.e)) return;
     const ids = m.reacts[r.e] || (m.reacts[r.e] = []);
     const i = ids.indexOf(r.who);
     if (r.on && i < 0) ids.push(r.who);
@@ -1172,7 +1214,7 @@ input { font: inherit; color: var(--ink); }
 
   function sanitizeReacts(r) {
     const out = {};
-    if (r && typeof r === "object") for (const e of REACTS) if (Array.isArray(r[e])) out[e] = r[e].filter(x => typeof x === "string").slice(0, 100);
+    if (r && typeof r === "object") for (const e of Object.keys(r).slice(0, 40)) if (okReact(e) && Array.isArray(r[e])) out[e] = r[e].filter(x => typeof x === "string").slice(0, 100);
     return out;
   }
 
@@ -1699,7 +1741,114 @@ input { font: inherit; color: var(--ink); }
   $("msgs").addEventListener("drop", e => { e.preventDefault(); $("msgs").classList.remove("drop"); sendImage([...e.dataTransfer.files].find(f => f.type.startsWith("image/"))); });
   $("lightClose").onclick = () => { $("lightbox").hidden = true; };
   $("lightbox").addEventListener("click", e => { if (e.target === $("lightbox")) $("lightbox").hidden = true; });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") $("lightbox").hidden = true; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") { $("lightbox").hidden = true; $("emojiPop").hidden = true; } });
+
+  // ---------- emoji picker: for the message box and for reactions ----------
+  let emojiCb = null, emojiTab = Object.keys(EMOJI)[0];
+  const recentEmoji = () => { const v = store.get("recentEmoji", []); return Array.isArray(v) ? v.filter(e => ALL_EMOJI.has(e)).slice(0, 16) : []; };
+  function renderEmoji() {
+    const tabs = $("emojiTabs"); tabs.innerHTML = "";
+    const keys = (recentEmoji().length ? ["🕘"] : []).concat(Object.keys(EMOJI));
+    if (!keys.includes(emojiTab)) emojiTab = keys[0];
+    for (const k of keys) {
+      const b = document.createElement("button"); b.textContent = k; b.className = k === emojiTab ? "on" : "";
+      b.title = k === "🕘" ? "Нещодавні" : "";
+      b.onclick = ev => { ev.stopPropagation(); emojiTab = k; renderEmoji(); };
+      tabs.append(b);
+    }
+    const grid = $("emojiGrid"); grid.innerHTML = "";
+    for (const e of emojiTab === "🕘" ? recentEmoji() : EMOJI[emojiTab].split(" ")) {
+      const b = document.createElement("button"); b.textContent = e;
+      b.onclick = ev => {
+        ev.stopPropagation();
+        store.set("recentEmoji", [e, ...recentEmoji().filter(x => x !== e)].slice(0, 16));
+        const cb = emojiCb; $("emojiPop").hidden = true; cb?.(e);
+      };
+      grid.append(b);
+    }
+  }
+  function openEmoji(anchor, cb) {
+    emojiCb = cb; renderEmoji();
+    const pop = $("emojiPop"); pop.hidden = false;
+    const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    pop.style.left = Math.max(12, Math.min(innerWidth - w - 12, r.right - w)) + "px";
+    pop.style.top = (r.top - h - 8 > 12 ? r.top - h - 8 : Math.min(innerHeight - h - 12, r.bottom + 8)) + "px";
+  }
+  document.addEventListener("click", e => { if (!$("emojiPop").hidden && !$("emojiPop").contains(e.target)) $("emojiPop").hidden = true; });
+  $("btnEmoji").onclick = ev => {
+    ev.stopPropagation();
+    if (!$("emojiPop").hidden) { $("emojiPop").hidden = true; return; }
+    openEmoji($("btnEmoji"), e => {
+      const t = $("text"), a = t.selectionStart ?? t.value.length, z = t.selectionEnd ?? a;
+      t.value = (t.value.slice(0, a) + e + t.value.slice(z)).slice(0, 500);
+      t.focus(); t.setSelectionRange(a + e.length, a + e.length);
+    });
+  };
+
+  // ---------- looks: accent colour and chat background, kept on this device ----------
+  const ACCENTS = [
+    ["Синій", "#5865f2", "#4752c4"], ["Зелений", "#23a55a", "#1a8048"], ["Помаранчевий", "#e67e22", "#c4661a"],
+    ["Рожевий", "#e84393", "#c42f7a"], ["Фіолетовий", "#8e44ad", "#723690"], ["Червоний", "#e03e3e", "#bb2f2f"], ["Бірюзовий", "#00a8a8", "#008585"],
+  ];
+  const BGS = [
+    ["Без фону", ""],
+    ["Джунглі", "radial-gradient(circle at 20% 20%, #3f9b4c 0, transparent 45%), radial-gradient(circle at 80% 70%, #1f6b3a 0, transparent 50%), linear-gradient(160deg, #183d24, #0e2616)"],
+    ["Нічне небо", "radial-gradient(1px 1px at 20% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 40% 70%, #fff, transparent), radial-gradient(1px 1px at 85% 60%, #fff, transparent), linear-gradient(180deg, #0b1033, #2a1b5c)"],
+    ["Пустеля", "linear-gradient(180deg, #f6c177 0%, #e8915a 55%, #b5653a 100%)"],
+    ["Вулкан", "radial-gradient(circle at 50% 110%, #ff6a00 0, #a3220f 35%, transparent 60%), linear-gradient(180deg, #2a0f0f, #1a0606)"],
+    ["Океан", "linear-gradient(180deg, #4fc3f7 0%, #0277bd 60%, #01386b 100%)"],
+  ];
+  let look = Object.assign({ accent: 0, bg: 0, photo: "" }, store.get("look", {}));
+  function applyLook() {
+    const ac = ACCENTS[look.accent] || ACCENTS[0], root = document.documentElement.style;
+    root.setProperty("--accent", ac[1]); root.setProperty("--accent-2", ac[2]);
+    const img = look.bg === -1 && look.photo ? 'url("' + look.photo + '")' : (BGS[look.bg] || BGS[0])[1];
+    const msgs = $("msgs");
+    msgs.classList.toggle("has-bg", !!img);
+    if (img) {
+      msgs.style.setProperty("--bg-img", img);
+      msgs.style.setProperty("--bg-tint", "linear-gradient(color-mix(in srgb, var(--chat) 55%, transparent), color-mix(in srgb, var(--chat) 55%, transparent))");
+    }
+  }
+  function renderLook() {
+    const th = $("lookTheme"); th.innerHTML = "";
+    for (const [k, label] of [["auto", "🌓 Як на пристрої"], ["dark", "🌙 Темна"], ["light", "☀️ Світла"]]) {
+      const b = document.createElement("button"); b.textContent = label; b.className = theme === k ? "on" : "";
+      b.onclick = () => { theme = k; store.set("theme", theme); applyTheme(); renderLook(); };
+      th.append(b);
+    }
+    const ac = $("lookAccent"); ac.innerHTML = "";
+    ACCENTS.forEach(([name, c], i) => {
+      const b = document.createElement("button"); b.className = "swatch" + (look.accent === i ? " on" : ""); b.title = name; b.setAttribute("aria-label", name);
+      b.style.background = c; b.onclick = () => { look.accent = i; store.set("look", look); applyLook(); renderLook(); };
+      ac.append(b);
+    });
+    const bg = $("lookBg"); bg.innerHTML = "";
+    BGS.forEach(([name, css], i) => {
+      const b = document.createElement("button"); b.className = "bgtile" + (look.bg === i ? " on" : ""); b.textContent = name;
+      b.style.background = css || "var(--chat)"; if (!css) b.style.color = "var(--ink)";
+      b.onclick = () => { look.bg = i; store.set("look", look); applyLook(); renderLook(); };
+      bg.append(b);
+    });
+    const ph = document.createElement("button"); ph.className = "bgtile" + (look.bg === -1 ? " on" : ""); ph.textContent = "📷 Своє фото";
+    ph.style.background = look.photo ? 'url("' + look.photo + '") center / cover' : "var(--sel)";
+    ph.onclick = () => $("bgInput").click();
+    bg.append(ph);
+  }
+  $("bgInput").onchange = async () => {
+    const f = $("bgInput").files[0]; $("bgInput").value = "";
+    if (!f) return;
+    try {
+      const url = URL.createObjectURL(f), im = await loadImg(url); URL.revokeObjectURL(url);
+      const k = Math.min(1, 1400 / Math.max(im.naturalWidth, im.naturalHeight));
+      const cv = document.createElement("canvas"); cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+      cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+      look.photo = cv.toDataURL("image/jpeg", 0.7); look.bg = -1;
+      store.set("look", look); applyLook(); renderLook();
+    } catch {}
+  };
+  $("lookDone").onclick = () => { $("ovLook").hidden = true; };
+  $("ovLook").addEventListener("click", e => { if (e.target === $("ovLook")) $("ovLook").hidden = true; });
 
   $("btnRec").onclick = () => { if (rec) rec.stop(); else startRec(); };
   $("btnRecCancel").onclick = () => { recCancelled = true; rec?.stop(); };
@@ -1726,8 +1875,8 @@ input { font: inherit; color: var(--ink); }
   const themes = ["auto", "dark", "light"];
   let theme = store.get("theme", "auto");
   const applyTheme = () => { if (theme === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme; };
-  $("btnTheme").onclick = () => { theme = themes[(themes.indexOf(theme) + 1) % 3]; store.set("theme", theme); applyTheme(); };
-  applyTheme();
+  $("btnTheme").onclick = () => { renderLook(); $("ovLook").hidden = false; };
+  applyTheme(); applyLook();
 
   document.addEventListener("visibilitychange", () => { if (!document.hidden) document.title = "ДіноКорд"; });
   window.addEventListener("pagehide", () => {
