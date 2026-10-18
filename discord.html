@@ -332,6 +332,10 @@ input { font: inherit; color: var(--ink); }
       <button class="btn" id="btnCreate">Створити сервер</button>
     </div>
     <div class="status" id="joinStatus"></div>
+    <div id="joinSaved" hidden>
+      <label>Твої сервери</label>
+      <div class="look-row" id="joinSavedList"></div>
+    </div>
     <button class="btn sec" id="btnJoinCancel" style="width:100%;margin-top:8px" hidden>Повернутися до сервера</button>
   </div>
 </div>
@@ -724,9 +728,21 @@ input { font: inherit; color: var(--ink); }
     renderRail();
   }
 
+  function renderJoinSaved() {
+    const list = savedServers().filter(sv => sv.code !== code || !net), box = $("joinSavedList");
+    $("joinSaved").hidden = !list.length; box.innerHTML = "";
+    for (const sv of list) {
+      const b = document.createElement("button"); b.type = "button";
+      b.textContent = (sv.name ? sv.name + " · " : "Сервер ") + sv.code;
+      b.onclick = () => switchServer(sv.code);
+      box.append(b);
+    }
+  }
+
   function renderRail() {
     const list = $("srvList"); list.innerHTML = "";
     if (code && net) rememberServer(code, adm.name);
+    renderJoinSaved();
     for (const sv of savedServers()) {
       const b = document.createElement("button");
       b.className = "srv" + (sv.code === code ? " on" : "") + (switching && sv.code === $("joinCode").value ? " busy" : "");
@@ -1374,7 +1390,7 @@ input { font: inherit; color: var(--ink); }
       try { net = await connect(c, create); }
       catch (e) {
         // nobody is hosting it right now, but I have its chat: bring the server back myself
-        if (create || e?.type !== "peer-unavailable" || !hasHist(c)) throw e;
+        if (create || e?.type !== "peer-unavailable" || !(hasHist(c) || savedServers().some(x => x.code === c))) throw e;
         net = await connect(c, true); create = true;
       }
     } catch (e) {
@@ -1431,6 +1447,7 @@ input { font: inherit; color: var(--ink); }
 
   function leaveUi(reason) {
     code = ""; isHost = false; myId = "me";
+    $("btnJoinCancel").hidden = true;
     members.clear(); typing.clear(); voice.clear(); live.clear();
     CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
     $("text").disabled = true; $("text").placeholder = "Спершу створи сервер або приєднайся";
@@ -2110,6 +2127,7 @@ input { font: inherit; color: var(--ink); }
   const openJoin = () => {
     $("btnJoinCancel").hidden = !net; setStatus("");
     if (net) $("joinCode").value = "";
+    renderJoinSaved();
     $("ovJoin").hidden = false; $("joinCode").focus();
   };
   $("srvAdd").onclick = openJoin;
