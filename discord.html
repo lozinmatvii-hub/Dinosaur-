@@ -149,10 +149,20 @@ input { font: inherit; color: var(--ink); }
 .reacts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .react { background: var(--input); border: 1px solid transparent; border-radius: 8px; padding: 0 6px; font-size: 14px; }
 .react.mine { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--input)); }
-.msg .tools { position: absolute; right: 16px; top: -14px; display: none; background: var(--chat); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 2px 8px #0003; }
-.msg:hover .tools, .msg:focus-within .tools { display: flex; }
-.msg .tools button { padding: 4px 6px; font-size: 16px; }
-.msg .tools button:hover { background: var(--hover); }
+.msg .more { position: absolute; right: 16px; top: -12px; display: none; width: 30px; height: 26px; border-radius: 6px; background: var(--chat); border: 1px solid var(--line); box-shadow: 0 2px 8px #0003; font-weight: 700; color: var(--muted); }
+.msg:hover .more, .msg .more:focus-visible { display: block; }
+@media (hover: none) { .msg:hover .more { display: none; } }
+.msg { -webkit-touch-callout: none; }
+.msg.held { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.menu-bg { position: fixed; inset: 0; z-index: 18; background: #0005; }
+.msg-menu { position: fixed; z-index: 19; width: min(270px, calc(100vw - 24px)); background: var(--side); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 32px #0007; overflow: hidden; }
+.msg-menu .rx { display: flex; justify-content: space-between; padding: 8px; gap: 2px; border-bottom: 1px solid var(--line); }
+.msg-menu .rx button { font-size: 24px; width: 38px; height: 38px; border-radius: 50%; }
+.msg-menu .rx button:hover, .msg-menu .rx button.on { background: var(--sel); }
+.msg-menu .act { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; text-align: left; font-size: 15px; }
+.msg-menu .act:hover { background: var(--hover); }
+.msg-menu .act .ic { width: 22px; text-align: center; font-size: 17px; }
+.msg-menu .act.danger { color: var(--danger); }
 .typing { height: 22px; padding: 0 16px; font-size: 13px; color: var(--muted); }
 .composer { padding: 0 16px 20px; }
 .reply-bar { display: flex; align-items: center; gap: 8px; background: var(--side); border-radius: 8px 8px 0 0; padding: 6px 10px; font-size: 13px; color: var(--muted); }
@@ -686,33 +696,11 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       }
       row.append(body);
       if (!m.sys && net) {
-        const tools = document.createElement("div"); tools.className = "tools";
-        if (!$("text").disabled) {
-          const rb = document.createElement("button"); rb.textContent = "↩"; rb.title = "Відповісти";
-          rb.onclick = () => startReply(m); tools.append(rb);
-        }
-        if (canEditMsg(m) && !$("text").disabled) {
-          const eb = document.createElement("button"); eb.textContent = "✏️"; eb.title = "Редагувати";
-          eb.onclick = () => startEdit(m); tools.append(eb);
-        }
-        for (const e of REACTS) {
-          const b = document.createElement("button"); b.textContent = e; b.title = "Реакція";
-          b.onclick = () => toggleReact(m, e);
-          tools.append(b);
-        }
-        const more = document.createElement("button"); more.textContent = "＋"; more.title = "Інша реакція";
-        more.onclick = ev => { ev.stopPropagation(); openEmoji(more, e => { const cur = history[m.chan]?.find(x => x.id === m.id); if (cur && !(cur.reacts[e] || []).includes(myId)) toggleReact(cur, e); }); };
-        tools.append(more);
-        if (canDeleteOwn(m)) {
-          const d = document.createElement("button"); d.textContent = "🗑"; d.title = "Видалити своє повідомлення";
-          d.onclick = () => { if (confirm("Видалити своє повідомлення для всіх?")) deleteOwn(m); };
-          tools.append(d);
-        } else if (m.chan !== NEWS && (iOwn() || (iMod() && m.pub !== meta.owner))) {
-          const d = document.createElement("button"); d.textContent = "🗑"; d.title = "Видалити повідомлення";
-          d.onclick = () => { if (confirm("Видалити це повідомлення для всіх?")) doAdmin({ a: "del", id: m.id, chan: m.chan }); };
-          tools.append(d);
-        }
-        row.append(tools);
+        // hold (or right-click) a message for a Telegram-style menu; on a computer a small ⋯ appears on hover
+        const more = document.createElement("button"); more.className = "more"; more.textContent = "⋯"; more.title = "Дії з повідомленням";
+        more.onclick = ev => { ev.stopPropagation(); const r = more.getBoundingClientRect(); openMsgMenu(m, row, r.left, r.bottom); };
+        row.append(more);
+        holdToMenu(row, m);
       }
       box.append(row);
       prev = m;
@@ -1962,6 +1950,69 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     else crypto.subtle.sign(SIG, myKeys.privateKey, signed(m)).then(sig => { m.sig = b64(sig); addMsg(m, true); if (chan === NEWS) saveNews(); net?.send({ t: "msg", m }); });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   });
+  // ---------- message menu: reactions on top, actions with words below ----------
+  function holdToMenu(row, m) {
+    let timer = 0, sx = 0, sy = 0;
+    const cancel = () => { clearTimeout(timer); timer = 0; row.classList.remove("held"); };
+    row.addEventListener("pointerdown", ev => {
+      if (ev.pointerType === "mouse" || ev.target.closest("video, audio, a, button, textarea")) return;
+      sx = ev.clientX; sy = ev.clientY;
+      timer = setTimeout(() => { timer = 0; navigator.vibrate?.(12); openMsgMenu(m, row, sx, sy); }, 450);
+      row.classList.add("held");
+    });
+    row.addEventListener("pointermove", ev => { if (timer && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 10) cancel(); });
+    row.addEventListener("pointerup", () => { if (timer) cancel(); });
+    row.addEventListener("pointercancel", cancel);
+    row.addEventListener("contextmenu", ev => {
+      if (ev.target.closest("video, audio, a, textarea")) return;
+      ev.preventDefault(); cancel(); openMsgMenu(m, row, ev.clientX, ev.clientY);
+    });
+  }
+  function closeMsgMenu() {
+    $("msgMenu")?.remove(); $("menuBg")?.remove();
+    document.querySelectorAll(".msg.held").forEach(r => r.classList.remove("held"));
+  }
+  function openMsgMenu(m, row, x, y) {
+    closeMsgMenu();
+    const cur = history[m.chan]?.find(z => z.id === m.id) || m;
+    row.classList.add("held");
+    const bg = document.createElement("div"); bg.className = "menu-bg"; bg.id = "menuBg";
+    bg.onclick = closeMsgMenu; bg.oncontextmenu = ev => { ev.preventDefault(); closeMsgMenu(); };
+    const menu = document.createElement("div"); menu.className = "msg-menu"; menu.id = "msgMenu"; menu.setAttribute("role", "menu");
+    const rx = document.createElement("div"); rx.className = "rx";
+    for (const e of REACTS) {
+      const b = document.createElement("button"); b.textContent = e; b.title = "Реакція " + e;
+      if ((cur.reacts?.[e] || []).includes(myId)) b.classList.add("on");
+      b.onclick = () => { closeMsgMenu(); toggleReact(cur, e); };
+      rx.append(b);
+    }
+    const plus = document.createElement("button"); plus.textContent = "＋"; plus.title = "Інша реакція";
+    plus.onclick = ev => { ev.stopPropagation(); const r = plus.getBoundingClientRect(); closeMsgMenu();
+      openEmoji({ getBoundingClientRect: () => r }, e => { const c2 = history[m.chan]?.find(z => z.id === m.id); if (c2 && !(c2.reacts[e] || []).includes(myId)) toggleReact(c2, e); }); };
+    rx.append(plus); menu.append(rx);
+    const act = (ic, text, fn, cls) => {
+      const b = document.createElement("button"); b.className = "act" + (cls ? " " + cls : ""); b.setAttribute("role", "menuitem");
+      const i = document.createElement("span"); i.className = "ic"; i.textContent = ic;
+      b.append(i, text); b.onclick = () => { closeMsgMenu(); fn(); };
+      menu.append(b);
+    };
+    const canWrite = !$("text").disabled;
+    if (canWrite) act("↩", "Відповісти", () => startReply(cur));
+    if (canEditMsg(cur) && canWrite) act("✏️", "Редагувати", () => startEdit(cur));
+    if (cur.text && !cur.image && !cur.audio && !cur.video) act("📋", "Копіювати текст", async () => {
+      try { await navigator.clipboard.writeText(cur.text); } catch {}
+    });
+    if (members.has(cur.from) && cur.from !== myId) act("💬", "Написати особисто", () => openDm(dmKeyOf(cur.from), cur.from));
+    act("👤", "Профіль", () => profileFromMsg(cur));
+    if (canDeleteOwn(cur)) act("🗑", "Видалити", () => { if (confirm("Видалити своє повідомлення для всіх?")) deleteOwn(cur); }, "danger");
+    else if (cur.chan !== NEWS && (iOwn() || (iMod() && cur.pub !== meta.owner))) act("🗑", "Видалити (як адмін)", () => { if (confirm("Видалити це повідомлення для всіх?")) doAdmin({ a: "del", id: cur.id, chan: cur.chan }); }, "danger");
+    document.body.append(bg, menu);
+    const w = menu.offsetWidth, h = menu.offsetHeight;
+    menu.style.left = Math.max(12, Math.min(innerWidth - w - 12, x - w / 2)) + "px";
+    menu.style.top = Math.max(12, Math.min(innerHeight - h - 12, y + 8)) + "px";
+  }
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeMsgMenu(); });
+
   // ---------- editing your own messages ----------
   let editing = null;   // { id, chan, draft }
   const canEditMsg = m => !m.sys && m.chan !== OWN && m.chan !== NEWS && !m.image && !m.audio && !m.video && !m.audioGone && !m.imageGone
