@@ -228,6 +228,14 @@ input { font: inherit; color: var(--ink); }
 .pin-row .pt b { display: block; font-size: 12px; }
 @keyframes flash { 0%, 40% { background: color-mix(in srgb, var(--accent) 25%, transparent); } }
 .msg .text a { color: var(--accent); text-decoration: underline; word-break: break-all; }
+.md-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; background: var(--input); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; }
+.md-block { display: block; white-space: pre-wrap; padding: 6px 8px; margin: 2px 0; }
+#btnAnon.on { background: var(--accent); color: #fff; border-radius: 6px; }
+.msg.anon .who { font-style: italic; }
+.spoiler { background: var(--muted); color: transparent; border-radius: 4px; cursor: pointer; padding: 0 2px; transition: background .15s; }
+.spoiler * { visibility: hidden; }
+.spoiler.open { background: color-mix(in srgb, var(--muted) 22%, transparent); color: inherit; cursor: auto; }
+.spoiler.open * { visibility: visible; }
 .invite { width: 100%; background: var(--input); border: 0; border-radius: 4px; padding: 10px; color: var(--ink); font: 13px var(--body); }
 .composer form { display: flex; align-items: center; gap: 8px; background: var(--input); border-radius: 8px; padding: 0 8px 0 12px; }
 .composer input { flex: 1; min-width: 0; background: none; border: 0; outline: none; padding: 11px 0; }
@@ -295,6 +303,34 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 .dm-bubble { max-width: 78%; padding: 7px 11px; border-radius: 14px; background: var(--input); white-space: pre-wrap; overflow-wrap: anywhere; align-self: flex-start; }
 .dm-bubble.me { align-self: flex-end; background: var(--accent); color: #fff; }
 .dm-bubble small { display: block; font-size: 11px; opacity: .7; margin-top: 2px; }
+.dm-sys { align-self: center; font-size: 12px; color: var(--muted); }
+.dm-who { display: block; font-size: 12px; margin-bottom: 2px; }
+.dm-bubble.pending { opacity: .6; }
+.dm-join { flex: none; padding: 5px 10px; background: #23a55a; }
+.fr-wrap { display: flex; flex-direction: column; gap: 6px; }
+.fr-wrap h4 { margin: 10px 0 2px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+.fr-add { display: flex; gap: 6px; }
+.fr-add input { flex: 1; min-width: 0; }
+.fr-add .btn { flex: none; }
+.fr-code { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.fr-code b { color: var(--head); font-family: ui-monospace, Menlo, monospace; font-size: 15px; letter-spacing: .04em; user-select: all; }
+.fr-code .btn, .fr-row .btn { flex: none; padding: 6px 10px; width: auto; }
+.fr-row { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 8px; }
+.fr-row:hover { background: var(--hover); }
+.fr-row .nm { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fr-row .nm b, .fr-row .nm small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fr-row .nm small { color: var(--muted); font-size: 12px; }
+.pick-row { justify-content: flex-start !important; gap: 8px; cursor: pointer; }
+.call-grid { display: none; }
+.call-ov.grid .call-grid { position: absolute; inset: calc(70px + env(safe-area-inset-top, 0px)) 12px calc(110px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(240px, 42vw), 1fr)); align-content: center; z-index: 1; }
+.call-ov.grid .ci { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; align-items: flex-start; }
+.call-ov.grid .ci .ava { display: none; }
+.tile { position: relative; aspect-ratio: 4 / 3; border-radius: 12px; background: #ffffff14; overflow: hidden; display: grid; place-items: center; }
+.tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+.tile.has-vid video { display: block; }
+.tile.has-vid .ava { display: none; }
+.tile .ava { width: 72px; height: 72px; font-size: 38px; }
+.tile .tn { position: absolute; left: 8px; bottom: 8px; background: #0009; padding: 2px 8px; border-radius: 6px; font-size: 13px; }
 .dm-empty { color: var(--muted); text-align: center; margin: auto; padding: 16px; }
 .dm-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
 .dm-form input { flex: 1; min-width: 0; background: var(--input); border: 0; border-radius: 8px; padding: 10px; color: var(--ink); outline: none; }
@@ -330,6 +366,12 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 .vbar .st span { color: var(--muted); }
 .vbar .icon-btn.off { color: var(--danger); }
 .vbar .hang { color: var(--danger); }
+.vgrid { flex: none; display: flex; gap: 8px; padding: 8px 12px; overflow-x: auto; background: #0d0e14; border-bottom: 1px solid var(--line); }
+.vgrid .vt { position: relative; flex: none; height: min(30vh, 220px); aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: #000; cursor: pointer; }
+.vgrid .vt.talk { box-shadow: 0 0 0 3px var(--ok); }
+.vgrid video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vgrid .vt.me video { transform: scaleX(-1); }
+.vgrid .tn { position: absolute; left: 6px; bottom: 6px; background: #0009; color: #fff; padding: 1px 7px; border-radius: 6px; font-size: 12px; }
 @media (max-width: 1000px) { .app { grid-template-columns: 72px 220px minmax(0, 1fr); } .members { display: none; } }
 .to-bottom { position: absolute; right: 24px; bottom: 96px; z-index: 3; background: var(--accent); color: #fff; border-radius: 16px; padding: 6px 12px; font-size: 13px; font-weight: 600; box-shadow: 0 2px 8px #0004; }
 .typing, .composer { flex: none; }
@@ -362,6 +404,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     <div class="vbar" id="vbar" hidden>
       <div class="st"><b>Голос підключено</b><span id="vbarName">🔊 Балачка</span></div>
       <button class="icon-btn" id="btnMute" title="Вимкнути мікрофон">🎤</button>
+      <button class="icon-btn off" id="btnVCam" title="Увімкнути камеру">📷</button>
       <button class="icon-btn hang" id="btnHang" title="Покинути дзвінок">📞</button>
     </div>
     <div id="voiceAudio" hidden></div>
@@ -386,6 +429,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       <button class="live-btn" id="btnTop" hidden title="Рейтинг сервера: рівні учасників">🏆<span class="lbl"> Рейтинг</span></button>
       <button class="live-btn" id="btnClear" hidden title="Видалити всі повідомлення в цьому каналі">🧹<span class="lbl"> Очистити</span></button>
     </div>
+    <div class="vgrid" id="vgrid" hidden></div>
     <div class="stage" id="stage" hidden>
       <video id="stageVideo" autoplay playsinline></video>
       <div class="cap" id="stageCap"></div>
@@ -404,6 +448,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         <button class="icon-btn" type="button" id="btnRecCancel" title="Скасувати запис" hidden>✕</button>
         <button class="icon-btn" type="button" id="btnRec" title="Записати голосове повідомлення">🎙</button>
         <button class="icon-btn" type="button" id="btnEmoji" title="Смайлики">😀</button>
+        <button class="icon-btn" type="button" id="btnAnon" title="Писати анонімно">🎭</button>
         <button class="icon-btn" type="button" id="btnRoar" title="Гаркнути">🦖</button>
       </form>
     </div>
@@ -428,6 +473,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       <div class="look-row" id="joinSavedList"></div>
     </div>
     <button class="btn sec" id="btnJoinCancel" style="width:100%;margin-top:8px" hidden>Повернутися до сервера</button>
+    <button class="btn sec" id="btnJoinDms" style="width:100%;margin-top:8px">💬 Друзі та особисті</button>
   </div>
 </div>
 
@@ -439,7 +485,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   <div class="dm-wrap" id="dmWrap">
     <div class="dm-list" id="dmList"></div>
     <div class="dm-main">
-      <div class="dm-head"><button class="icon-btn dm-back" id="dmBack" aria-label="До списку">←</button><span id="dmTitle">Особисті</span><span class="sp"></span><button class="icon-btn" id="dmCallBtn" title="Подзвонити" hidden>📞</button><button class="icon-btn" id="dmVidBtn" title="Відеодзвінок" hidden>📹</button><button class="icon-btn" id="dmDelete" title="Видалити розмову" hidden>🗑</button><button class="icon-btn" id="dmClose" aria-label="Закрити">✕</button></div>
+      <div class="dm-head"><button class="icon-btn dm-back" id="dmBack" aria-label="До списку">←</button><span id="dmTitle">Особисті</span><span class="sp"></span><button class="btn dm-join" id="dmJoin" hidden>📞 Приєднатися</button><button class="icon-btn" id="dmCallBtn" title="Подзвонити" hidden>📞</button><button class="icon-btn" id="dmVidBtn" title="Відеодзвінок" hidden>📹</button><button class="icon-btn" id="dmGroup" title="Учасники групи" hidden>👥</button><button class="icon-btn" id="dmBlock" title="Заблокувати" hidden>🚫</button><button class="icon-btn" id="dmDelete" title="Видалити розмову" hidden>🗑</button><button class="icon-btn" id="dmClose" aria-label="Закрити">✕</button></div>
       <div class="dm-msgs" id="dmMsgs"></div>
       <form class="dm-form" id="dmForm" autocomplete="off"><input id="dmText" maxlength="500" placeholder="Особисте повідомлення"><button class="btn" style="flex:none" type="submit">➤</button></form>
     </div>
@@ -465,7 +511,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
 <div class="call-ov" id="ovCall" hidden>
   <video class="remote" id="callRemote" autoplay playsinline muted hidden></video>
-  <audio id="callAudio" autoplay playsinline></audio>
+  <div id="callAudios"></div>
+  <div class="call-grid" id="callGrid"></div>
   <video class="self" id="callSelf" autoplay playsinline muted hidden></video>
   <div class="ci"><div id="callAva"></div><div class="cn" id="callName"></div><div class="cs" id="callSt"></div></div>
   <button class="min" id="callMin" hidden>⤡ Згорнути</button>
@@ -637,7 +684,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         const u = members.get(id); if (!u) continue;
         const r = document.createElement("div"); r.className = "vuser" + (talking.has(id) && !v.muted ? " talk" : "");
         const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = u.nick;
-        const mic = document.createElement("span"); mic.className = "mic"; mic.textContent = v.muted ? "🔇" : "";
+        const mic = document.createElement("span"); mic.className = "mic"; mic.textContent = (v.cam ? "📷" : "") + (v.muted ? "🔇" : "");
         r.append(avaEl(u), nm, mic); vl.append(r);
       }
       box.append(vl);
@@ -648,8 +695,11 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (net) {
       $("text").disabled = $("btnRoar").disabled = $("btnRec").disabled = $("btnPic").disabled = ownLock || !!mute;
       $("btnPic").hidden = !!c.own || !!c.news;
+      $("btnAnon").hidden = !anonAllowed();
+      $("btnAnon").classList.toggle("on", anonOn && anonAllowed());
+      $("btnAnon").title = anonOn ? "Зараз ти пишеш анонімно. Натисни, щоб писати під своїм ім'ям" : "Писати анонімно";
       $("btnRec").hidden = !!c.own || !!c.news || !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia;
-      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? (c.news ? "Тут пише тільки автор ДіноКорду 📣" : "Тут пише тільки творець сервера 👑") : "Написати в #" + c.name;
+      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? (c.news ? "Тут пише тільки автор ДіноКорду 📣" : "Тут пише тільки творець сервера 👑") : anonOn && anonAllowed() ? "🎭 Анонімно в #" + c.name : "Написати в #" + c.name;
     }
   }
 
@@ -668,6 +718,28 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   // someone wrote @ and the start of my nick
   const mentionsMe = text => (String(text).match(/@[^\s@]+/g) || []).some(m => m.length > 2 && me.nick.toLowerCase().startsWith(m.slice(1).toLowerCase()));
 
+  // **жирний**, *курсив*, __підкреслений__, ~~закреслений~~, ||спойлер||, `код` and ```блок коду```
+  const MD = /```([\s\S]+?)```|`([^`]+)`|\|\|([\s\S]+?)\|\||\*\*([\s\S]+?)\*\*|__([\s\S]+?)__|~~([\s\S]+?)~~|\*([^*\s](?:[^*]*[^*\s])?)\*/g;
+  // the same text without the marks, spoilers hidden: for previews, replies and notifications
+  const plainText = t => String(t).replace(/\|\|[\s\S]+?\|\|/g, "▒▒▒").replace(/```|\*\*|__|~~|`/g, "").replace(/\*([^*\s](?:[^*]*[^*\s])?)\*/g, "$1");
+  function richText(el, text, depth = 0) {
+    let last = 0, m;
+    const re = new RegExp(MD.source, "g");
+    while ((m = re.exec(text))) {
+      if (m.index > last) textNodes(el, text.slice(last, m.index));
+      last = m.index + m[0].length;
+      if (m[1] !== undefined || m[2] !== undefined) {
+        const c = document.createElement("code"); c.className = "md-code" + (m[1] !== undefined ? " md-block" : ""); c.textContent = (m[1] ?? m[2]).replace(/^\n|\n$/g, ""); el.append(c); continue;
+      }
+      const [tag, inner] = m[3] !== undefined ? ["span", m[3]] : m[4] !== undefined ? ["b", m[4]] : m[5] !== undefined ? ["u", m[5]] : m[6] !== undefined ? ["s", m[6]] : ["i", m[7]];
+      const node = document.createElement(tag);
+      if (m[3] !== undefined) { node.className = "spoiler"; node.title = "Спойлер: натисни, щоб побачити"; node.onclick = e => { if (!node.classList.contains("open")) { e.stopPropagation(); node.classList.add("open"); } }; }
+      if (depth < 4) richText(node, inner, depth + 1); else node.textContent = inner;
+      if (m[3] !== undefined) { const w = document.createElement("span"); w.append(...node.childNodes); node.append(w); }
+      el.append(node);
+    }
+    if (last < text.length) textNodes(el, text.slice(last));
+  }
   function textNodes(el, text) {
     // links become clickable, @mentions of my nick are highlighted, everything else is plain text
     const re = /(https?:\/\/[^\s<>"]+)|(@[^\s@]+(?:\s[^\s@]+)?)/g; let last = 0, m;
@@ -704,9 +776,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     let prev = null;
     for (const m of history[chan]) {
       if (m.del) continue;
-      const cont = prev && !m.sys && !prev.sys && prev.from === m.from && m.t - prev.t < 5 * 60e3;
+      const cont = prev && !m.sys && !prev.sys && prev.from === m.from && !!prev.anon === !!m.anon && m.t - prev.t < 5 * 60e3;
       const row = document.createElement("div");
-      row.className = "msg" + (cont && !m.reply ? " cont" : "") + (m.sys ? " sys" : "");
+      row.className = "msg" + (cont && !m.reply ? " cont" : "") + (m.sys ? " sys" : "") + (m.anon ? " anon" : "");
       row.dataset.id = m.id;
       const rowAva = avaEl(m.sys ? { ava: "📢", color: "var(--sel)" } : m);
       if (!m.sys) { rowAva.style.cursor = "pointer"; rowAva.title = "Профіль"; rowAva.onclick = () => profileFromMsg(m); }
@@ -725,7 +797,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         if (!m.sys) { who.style.cursor = "pointer"; who.onclick = () => profileFromMsg(m); }
         const tm = document.createElement("span"); tm.className = "time"; tm.textContent = fmtTime(m.t);
         h.append(who);
-        const bg = m.sys ? "" : badgeFor(m.pub);
+        const bg = m.sys || m.anon ? "" : badgeFor(m.pub);
         if (bg) { const sp = document.createElement("span"); sp.className = "badge"; sp.textContent = bg; h.append(sp); }
         h.append(tm); body.append(h);
       }
@@ -750,7 +822,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       } else if (editing?.id === m.id && editing.chan === m.chan) {
         body.append(editorEl(m));
       } else {
-        const tx = document.createElement("div"); tx.className = "text"; textNodes(tx, m.text);
+        const tx = document.createElement("div"); tx.className = "text"; richText(tx, m.text);
         if (m.edited) { const e = document.createElement("span"); e.className = "edited"; e.textContent = "(змінено)"; e.title = "Змінено о " + fmtTime(m.edited); tx.append(e); }
         body.append(tx);
       }
@@ -897,6 +969,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (m.pk && typeof m.pk === "object" && ["id", "a", "c", "s"].every(k => typeof m.pk[k] === "string" && m.pk[k].length < 2000))
       msg.pk = { id: m.pk.id, a: m.pk.a, c: m.pk.c, s: m.pk.s };
     if (validPub(m.pub)) msg.pub = m.pub;
+    if (m.anon === true && !msg.sys && m.chan !== OWN && m.chan !== NEWS) { if (adm.noAnon && !merging) return; msg.anon = true; msg.nick = "Анонім"; msg.ava = "🎭"; msg.color = "#7a7f8a"; }
     if (Number(m.edited) > 0) msg.edited = Number(m.edited);
     if (Number(m.del) > 0) { msg.del = Number(m.del); msg.text = "…"; delete msg.image; delete msg.audio; msg.video = false; msg.file = false; }
     if (m.reply && typeof m.reply.id === "string") msg.reply = { id: m.reply.id.slice(0, 40), nick: clean(m.reply.nick, 16) || "Динозаврик", text: clean(m.reply.text, 80) };
@@ -927,7 +1000,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (m.chan !== chan) unread[m.chan]++;
     if (!merging && !msg.sys && msg.from !== myId) {
       const where = CHANNELS.find(c => c.id === msg.chan)?.name || "";
-      notify(msg.nick + " у #" + where, msg.image ? "🖼 Фото" : msg.audio ? "🎤 Голосове повідомлення" : msg.text, mentionsMe(msg.text) || msg.chan === NEWS);
+      notify(msg.nick + " у #" + where, msg.image ? "🖼 Фото" : msg.audio ? "🎤 Голосове повідомлення" : plainText(msg.text), mentionsMe(msg.text) || msg.chan === NEWS);
     }
     renderChans(); renderMsgs(); renderTyping();
   }
@@ -1079,10 +1152,10 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   // ---------- admin: every action is signed by the owner's key and replayed by everyone ----------
   let acts = [];
   const seenSigs = new Set();
-  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {}, roles: new Map(), pins: {} };
+  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {}, roles: new Map(), pins: {}, noAnon: false };
   const isMuted = pub => (adm.mutes.get(pub)?.until || 0) > Date.now();
   const isBanned = pub => !!pub && adm.bans.has(pub);
-  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear", "role", "pin", "unpin"];
+  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear", "role", "pin", "unpin", "anon"];
   const MOD_ACTS = ["del", "mute", "unmute", "kick", "pin", "unpin"];   // what a moderator may do; the rest is the creator's
   const iMod = () => !!myPub && adm.roles.get(myPub)?.role === "mod";
   const isStaff = pub => !!pub && (pub === meta.owner || adm.roles.get(pub)?.role === "mod");
@@ -1099,7 +1172,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   function resetAdmin() {
     acts = []; seenSigs.clear();
-    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {}; adm.roles.clear(); adm.pins = {};
+    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {}; adm.roles.clear(); adm.pins = {}; adm.noAnon = false;
   }
 
   async function addActs(list) {
@@ -1126,7 +1199,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     acts.sort((x, y) => x.d.ts - y.d.ts);
     if (acts.length > 300) acts.splice(0, acts.length - 300);
     adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {};
-    adm.roles.clear(); adm.pins = {};
+    adm.roles.clear(); adm.pins = {}; adm.noAnon = false;
     for (const rec of acts) {
       const d = rec.d;
       // replay in time order: a moderator's action counts only if they were a moderator then, and never against staff
@@ -1141,6 +1214,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       else if (d.a === "unmute") adm.mutes.delete(d.pub);
       else if (d.a === "del" && typeof d.id === "string") adm.deleted.add(d.id);
       else if (d.a === "clear" && history[d.chan]) adm.cleared[d.chan] = Math.max(adm.cleared[d.chan] || 0, d.ts);
+      else if (d.a === "anon") adm.noAnon = !!d.off;
       else if ((d.a === "pin" || d.a === "unpin") && history[d.chan] && d.chan !== NEWS && typeof d.id === "string") {
         const list = (adm.pins[d.chan] || []).filter(p => p.id !== d.id);
         if (d.a === "pin") list.push({ id: d.id.slice(0, 40), nick: clean(d.nick, 16) || "Динозаврик", text: clean(d.text, 100), mt: Number(d.mt) || d.ts });
@@ -1202,8 +1276,14 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   // ---------- profile card: who someone is, their roles, and what you can do with them ----------
   function profileFromMsg(m) {
+    if (m.anon && !(iOwn() || iMod()) && m.pub !== myPub) {
+      showCard({ nick: "Анонім", ava: "🎭", color: "#7a7f8a", pub: "", st: "", stx: "", bio: "Хтось вирішив не показувати своє ім'я.", banner: "#3a3d45" }, null, false);
+      return;
+    }
+    // the creator and moderators can always see who wrote an anonymous message
     const id = members.has(m.from) ? m.from : [...members.entries()].find(([, u]) => m.pub && u.pub === m.pub)?.[0];
     if (id) { memberMenu(id); return; }
+    if (m.anon) { showCard({ nick: (m.pub && xpBook[m.pub]?.n) || "Невідомо хто", ava: "🎭", color: "#7a7f8a", pub: m.pub || "", st: "", stx: "", bio: "Автор анонімного повідомлення. Зараз не в мережі.", banner: "" }, null, false); return; }
     showCard({ nick: m.nick, ava: m.ava, color: m.color, pub: m.pub || "", st: "", stx: "", bio: "", banner: "" }, null, false);
   }
   function memberMenu(id) {
@@ -1252,11 +1332,18 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const acts = document.createElement("div"); acts.className = "card-actions";
     const act = (text, cls, fn) => { const b = document.createElement("button"); b.className = "btn " + cls; b.textContent = text; b.onclick = () => { $("ovCard").hidden = true; fn(); }; acts.append(b); };
     if (mine) act("✏️ Редагувати профіль", "", () => $("meAva").click());
-    else if (id) {
-      act("💬 Написати особисто", "", () => openDm(dmKeyOf(id), id));
-      act("📞 Подзвонити", "sec", () => startCall(id, false));
-      act("📹 Відеодзвінок", "sec", () => startCall(id, true));
-      if (canManage(u)) act("⚙️ Керувати учасником", "sec", () => manageMember(id));
+    else {
+      if (validPub(u.pub) && !blocked.has(u.pub)) {
+        const fs = friends[u.pub];
+        act("💬 Написати особисто", "", () => openDm(u.pub));
+        if (fs === "ok") { const tag = document.createElement("div"); tag.className = "card-status"; tag.textContent = "👥 Ви друзі"; body.append(tag); }
+        else if (fs === "in") act("✓ Прийняти в друзі", "", () => setFriend(u.pub, "ok"));
+        else if (fs === "out") act("⏳ Запит у друзі надіслано", "sec", () => { if (confirm("Скасувати запит у друзі?")) setFriend(u.pub, ""); });
+        else act("➕ Додати в друзі", "sec", () => askFriend(u.pub));
+        act("📞 Подзвонити", "sec", () => startCall(u.pub, false));
+        act("📹 Відеодзвінок", "sec", () => startCall(u.pub, true));
+      }
+      if (id && canManage(u)) act("⚙️ Керувати учасником", "sec", () => manageMember(id));
     }
     if (acts.children.length) body.append(acts);
     card.append(banner, close, ava, body);
@@ -1294,6 +1381,12 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const ok = document.createElement("button"); ok.textContent = "Зберегти";
       ok.onclick = () => { $("ovAdmin").hidden = true; doAdmin({ a: "rename", name: clean(inp.value, 24) }); };
       row.append(inp, ok); body.append(row);
+      const ah = document.createElement("h3"); ah.textContent = "Анонімні повідомлення"; body.append(ah);
+      const ar = document.createElement("div"); ar.className = "adm-row";
+      const at = document.createElement("span"); at.textContent = adm.noAnon ? "Вимкнені: усі пишуть під своїм ім'ям" : "Увімкнені: можна писати як 🎭 Анонім (ти бачиш, хто це)";
+      const ab = document.createElement("button"); ab.textContent = adm.noAnon ? "Увімкнути" : "Вимкнути";
+      ab.onclick = () => { $("ovAdmin").hidden = true; doAdmin({ a: "anon", off: !adm.noAnon }); sysMsg(adm.noAnon ? "Адмін дозволив анонімні повідомлення 🎭" : "Адмін вимкнув анонімні повідомлення"); };
+      ar.append(at, ab); body.append(ar);
       const list = (title, map, empty, undo, label) => {
         const h = document.createElement("h3"); h.textContent = title; body.append(h);
         const items = [...map.entries()].filter(([, v]) => label(v) !== null);
@@ -1394,6 +1487,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       st: ["on", "away", "dnd"].includes(u.st) ? u.st : "on", stx: clean(u.stx, 40), photo: validPhoto(u.photo) ? u.photo : "",
       bio: String(u.bio ?? "").replace(/[\u0000-\u0009\u000b-\u001f]/g, "").trim().slice(0, 160), banner: /^#[0-9a-f]{6}$/i.test(u.banner) ? u.banner : "", since });
     if (validPub(u.pub)) rememberPhoto(u.pub, validPhoto(u.photo) ? u.photo : "");
+    seeMember(members.get(id));
     renderMembers();
     return !was;
   }
@@ -1403,7 +1497,6 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const u = members.get(id);
     if (!u) return;
     members.delete(id); typing.delete(id); dropVoice(id); dropLive(id);
-    if (dmCall?.peer === id) endCall("Зв'язок обірвався");
     if (isHost && ![...members.values()].some(o => u.pub && o.pub === u.pub)) {
       const k = u.pub || id;
       clearTimeout(leftSoon.get(k));
@@ -1479,7 +1572,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       live.clear();
       for (const [id, l] of Array.isArray(msg.live) ? msg.live : []) if (typeof id === "string") live.set(id, { kind: l?.kind === "cam" ? "cam" : "screen" });
       voice.clear();
-      for (const [id, v] of Array.isArray(msg.voice) ? msg.voice : []) if (typeof id === "string") voice.set(id, { muted: !!v?.muted });
+      for (const [id, v] of Array.isArray(msg.voice) ? msg.voice : []) if (typeof id === "string") voice.set(id, { muted: !!v?.muted, cam: !!v?.cam });
       renderAll();
       return;
     }
@@ -1527,8 +1620,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     else if (msg.t === "voice") {
       const id = sender || msg.id; msg.id = id;
       if (typeof id !== "string" || id === myId) return;
-      if (msg.on) voice.set(id, { muted: !!msg.muted }); else dropVoice(id);
-      renderChans();
+      if (msg.on) voice.set(id, { muted: !!msg.muted, cam: !!msg.cam }); else dropVoice(id);
+      renderChans(); renderVGrid();
     }
     else if (msg.t === "leave") {
       // the host said goodbye: take over at once instead of waiting for the connection to time out
@@ -1562,8 +1655,6 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     };
     if (hostConn) { conns.add(hostConn); wire(hostConn); }
     peer.on("connection", c => {
-      // private messages come over their own direct connection; everything else only to the host
-      if (c.metadata?.kind === "dm") { wireDm(c); return; }
       if (hostConn) { c.close(); return; }
       conns.add(c); wire(c);
     });
@@ -1577,9 +1668,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         call.on("close", () => { if (watchCall === call) closeStage(); });
         return;
       }
-      if (call.metadata?.kind === "dm-call") { onCallMedia(call); return; }
       // only answer while I'm in the voice channel; if we both dialled at once, the lower id's call wins
-      if (!localStream || (calls.has(call.peer) && myId < call.peer)) { call.close(); return; }
+      if (!localStream || (calls.has(call.peer) && myId < call.peer && !call.metadata?.re)) { call.close(); return; }
       calls.get(call.peer)?.close();
       call.answer(localStream);
       wireCall(call);
@@ -1708,7 +1798,6 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   function leave(reason) {
     if (!net) return;
-    if (dmCall) { callSig("call-end"); endCall("Дзвінок завершено"); }
     leaveVoice(); stopLive(); closeStage(); live.clear();
     net.send({ t: "leave", id: myId }); net.close(); net = null; peerObj = null;
     clearTimeout(saveTimer); writeHist(code);
@@ -1724,8 +1813,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       if (!a) { a = document.createElement("audio"); a.id = "va-" + call.peer; a.autoplay = true; a.setAttribute("playsinline", ""); $("voiceAudio").append(a); }
       a.srcObject = stream; a.play().catch(() => {});
       watchLevel(call.peer, stream);
+      voiceStreams.set(call.peer, stream); renderVGrid();
     });
-    const end = () => { if (calls.get(call.peer) === call) { calls.delete(call.peer); document.getElementById("va-" + call.peer)?.remove(); stopLevel(call.peer); } };
+    const end = () => { if (calls.get(call.peer) === call) { calls.delete(call.peer); voiceStreams.delete(call.peer); document.getElementById("va-" + call.peer)?.remove(); stopLevel(call.peer); renderVGrid(); } };
     call.on("close", end); call.on("error", end);
   }
 
@@ -1739,6 +1829,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     voice.delete(id); talking.delete(id);
     calls.get(id)?.close(); calls.delete(id);
     document.getElementById("va-" + id)?.remove(); stopLevel(id);
+    voiceStreams.delete(id); renderVGrid();
   }
 
   let actx = null;
@@ -1754,7 +1845,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         an.getByteTimeDomainData(buf);
         let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v - 128));
         const on = peak > 10, was = talking.has(id);
-        if (on !== was) { on ? talking.add(id) : talking.delete(id); renderChans(); }
+        if (on !== was) { on ? talking.add(id) : talking.delete(id); renderChans(); renderVGrid(); }
       }, 150);
       meters.set(id, { timer, src });
     } catch {}
@@ -1767,12 +1858,12 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     try { localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false }); }
     catch { sysLocal("Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера."); return; }
     actx?.resume?.();
-    muted = false;
+    muted = false; vcam = false;
     voice.set(myId, { muted });
     watchLevel(myId, localStream);
     net.send({ t: "voice", id: myId, on: true, muted });
     for (const id of voice.keys()) if (id !== myId) wireCall(peerObj.call(id, localStream));
-    $("vbar").hidden = false; renderMute(); renderChans();
+    $("vbar").hidden = false; renderMute(); renderVCam(); renderChans();
   }
 
   function leaveVoice() {
@@ -1781,9 +1872,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     for (const call of calls.values()) call.close();
     calls.clear(); $("voiceAudio").innerHTML = "";
     for (const id of [...meters.keys()]) stopLevel(id);
-    voice.delete(myId);
+    voice.delete(myId); vcam = false; voiceStreams.clear();
     net?.send({ t: "voice", id: myId, on: false });
-    $("vbar").hidden = true; renderChans();
+    $("vbar").hidden = true; renderChans(); renderVGrid();
   }
 
   function renderMute() {
@@ -1795,11 +1886,53 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (!localStream) return;
     muted = !muted;
     localStream.getAudioTracks().forEach(t => t.enabled = !muted);
-    voice.set(myId, { muted });
-    net?.send({ t: "voice", id: myId, on: true, muted });
+    voice.set(myId, { muted, cam: vcam });
+    net?.send({ t: "voice", id: myId, on: true, muted, cam: vcam });
     renderMute(); renderChans();
   };
   $("btnHang").onclick = leaveVoice;
+
+  // ---------- camera in the voice channel: everyone with the camera on shows up above the chat ----------
+  let vcam = false;
+  const voiceStreams = new Map();
+  $("btnVCam").onclick = async () => {
+    if (!localStream || !peerObj) return;
+    let v = localStream.getVideoTracks()[0];
+    if (!v) {
+      try { v = (await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } })).getVideoTracks()[0]; }
+      catch { sysLocal("Немає доступу до камери. Дозволь її в налаштуваннях браузера."); return; }
+      if (!localStream) { v.stop(); return; }
+      localStream.addTrack(v);
+      // a call can't get a new track on the go, so ring everyone again with the camera in it
+      for (const id of voice.keys()) if (id !== myId) { const old = calls.get(id); wireCall(peerObj.call(id, localStream, { metadata: { kind: "voice", re: true } })); try { old?.close(); } catch {} }
+      vcam = true;
+    } else { vcam = !vcam; v.enabled = vcam; }
+    voice.set(myId, { muted, cam: vcam });
+    net?.send({ t: "voice", id: myId, on: true, muted, cam: vcam });
+    renderVCam(); renderVGrid(); renderChans();
+  };
+  function renderVCam() { $("btnVCam").classList.toggle("off", !vcam); $("btnVCam").title = vcam ? "Вимкнути камеру" : "Увімкнути камеру"; }
+  const vtiles = new Map();
+  function renderVGrid() {
+    const g = $("vgrid");
+    const show = localStream ? [...voice.entries()].filter(([id, v]) => v.cam && (id === myId || voiceStreams.get(id)?.getVideoTracks().length)) : [];
+    for (const [id, el] of vtiles) if (!show.some(([i]) => i === id)) { el.remove(); vtiles.delete(id); }
+    for (const [id] of show) {
+      let el = vtiles.get(id);
+      if (!el) {
+        el = document.createElement("div"); el.className = "vt" + (id === myId ? " me" : "");
+        const vid = document.createElement("video"); vid.autoplay = true; vid.muted = true; vid.playsInline = true; vid.setAttribute("playsinline", "");
+        const n = document.createElement("span"); n.className = "tn";
+        el.append(vid, n); g.append(el); vtiles.set(id, el);
+        el.onclick = () => { const s = id === myId ? localStream : voiceStreams.get(id); if (s) showStage(s, (members.get(id)?.nick || "Хтось") + " · камера", id === myId); };
+      }
+      const vid = el.querySelector("video"), s = id === myId ? localStream : voiceStreams.get(id);
+      if (s && vid.srcObject !== s) { vid.srcObject = s; vid.play().catch(() => {}); }
+      el.querySelector(".tn").textContent = (members.get(id)?.nick || "Хтось") + (id === myId ? " (ти)" : "") + (voice.get(id)?.muted ? " 🔇" : "");
+      el.classList.toggle("talk", talking.has(id) && !voice.get(id)?.muted);
+    }
+    g.hidden = !show.length;
+  }
 
   // ---------- streaming: screen or camera, sent only to people who press "watch" ----------
   async function goLive(kind) {
@@ -1874,126 +2007,511 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     (v.requestFullscreen?.() || v.webkitEnterFullscreen?.() || Promise.resolve())?.catch?.(() => {});
   };
 
-  // ---------- private messages: straight from one person to the other, never through the server ----------
-  const dms = (() => { const v = store.get("dms", {}); return v && typeof v === "object" ? v : {}; })();
-  const dmConns = new Map();
+  // ---------- home address: one fixed address per person, so friends, private chats and calls work from any server ----------
+  let home = null, homeReady = false;
+  const homeConns = new Map();         // pub -> verified open connection
+  const allHome = new Set();           // every home connection, verified or not
+  const pubOfHome = new Map();         // home address -> pub
+  const dialing = new Map();
+  const loadObj = (k, d) => { const v = store.get(k, d); return v && typeof v === "object" ? v : d; };
+  const people = loadObj("people", {});                    // pub -> what they look like, so friends show even when offline
+  const friends = loadObj("friends", {});                  // pub -> "ok" (friends) | "out" (I asked) | "in" (they asked)
+  const blocked = new Set(Array.isArray(store.get("blocked", [])) ? store.get("blocked", []) : []);
+  const leftGroups = new Set(Array.isArray(store.get("leftGroups", [])) ? store.get("leftGroups", []) : []);
+  const homeIds = new Map();
+  async function homeIdOf(pub) {
+    if (!homeIds.has(pub)) {
+      const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("dinocord-home|" + pub)));
+      homeIds.set(pub, [...h.slice(0, 6)].map(x => x.toString(16).padStart(2, "0")).join(""));
+    }
+    return PREFIX + "u-" + homeIds.get(pub);
+  }
+  let myCode = "";
+  const saveFriends = () => store.set("friends", friends);
+  let peopleTimer = 0;
+  const savePeople = () => { clearTimeout(peopleTimer); peopleTimer = setTimeout(() => store.set("people", people), 400); };
+  const myCard = () => ({ nick: me.nick, ava: me.ava, color: me.color, photo: me.photo, st: myStatus(), stx: me.stx });
+  const isOnline = pub => !!homeConns.get(pub)?.open;
+  const nickOf = pub => pub === myPub ? me.nick : people[pub]?.nick || [...members.values()].find(u => u.pub === pub)?.nick || "Динозаврик";
+  function meetPerson(pub, u) {
+    if (!validPub(pub) || !u || typeof u !== "object") return;
+    const p = { nick: clean(u.nick, 16) || "Динозаврик", ava: clean(u.ava, 4) || "🦖", color: /^#[0-9a-f]{6}$/i.test(u.color) ? u.color : "#888888",
+      st: ["on", "away", "dnd"].includes(u.st) ? u.st : "on", stx: clean(u.stx, 40) };
+    people[pub] = p;
+    rememberPhoto(pub, validPhoto(u.photo) ? u.photo : "");
+    if (dms[pub]) Object.assign(dms[pub], { nick: p.nick, ava: p.ava, color: p.color, pub });
+    const keys = Object.keys(people); if (keys.length > 300) delete people[keys[0]];
+    savePeople();
+  }
+  // everyone you meet on a server is remembered, so you can still find them in your friends and chats later
+  const seeMember = u => { if (u?.pub && u.pub !== myPub) meetPerson(u.pub, u); };
+
+  async function startHome() {
+    if (home || !myPub || !window.crypto?.subtle) return;
+    try { await loadPeerJs(); } catch { setTimeout(startHome, 30000); return; }
+    const id = await homeIdOf(myPub); myCode = id.slice((PREFIX + "u-").length);
+    const p = new Peer(id); home = p;
+    p.on("open", () => { homeReady = true; dialFriends(); renderSocial(); });
+    p.on("connection", c => { if (c.metadata?.kind === "home") wireHome(c); else c.close(); });
+    p.on("call", onHomeCall);
+    p.on("disconnected", () => { if (home === p && !p.destroyed) setTimeout(() => { try { p.reconnect(); } catch {} }, 3000); });
+    p.on("error", e => {
+      // another tab already holds my address, or the network is gone: try again a bit later
+      if (home !== p || !["unavailable-id", "network", "server-error", "socket-error", "browser-incompatible"].includes(e?.type)) return;
+      if (homeReady && e.type !== "unavailable-id") return;
+      try { p.destroy(); } catch {}
+      home = null; homeReady = false; renderSocial();
+      setTimeout(startHome, 20000);
+    });
+  }
+  function wireHome(c) {
+    allHome.add(c); c.lastSeen = Date.now();
+    let said = false;
+    const hi = async () => { if (said || !home) return; said = true; c.send({ t: "hi", pub: myPub, proof: await helloProof(home.id), u: myCard() }); };
+    c.on("open", hi); if (c.open) hi();
+    c.on("data", async d => {
+      c.lastSeen = Date.now();
+      if (!d || typeof d !== "object" || d.t === "ping") return;
+      if (d.t === "hi") {
+        const pub = await checkProof(d.pub, d.proof, c.peer);
+        if (!pub || pub === myPub || blocked.has(pub) || await homeIdOf(pub) !== c.peer) { c.close(); return; }
+        c.pub = pub; pubOfHome.set(c.peer, pub); homeConns.set(pub, c);
+        meetPerson(pub, d.u);
+        c.send({ t: "fr", st: friends[pub] || "" });
+        flushOutbox(pub); syncGroups(pub);
+        c.ready?.(pub);
+        renderSocial();
+        return;
+      }
+      if (c.pub && !blocked.has(c.pub)) onHome(c.pub, d);
+    });
+    const gone = () => {
+      if (!allHome.delete(c)) return;
+      if (c.pub && homeConns.get(c.pub) === c) {
+        const other = [...allHome].find(o => o.pub === c.pub && o.open);
+        if (other) homeConns.set(c.pub, other); else { homeConns.delete(c.pub); if (call?.peers.has(c.pub)) dropCallPeer(c.pub); }
+        renderSocial();
+      }
+    };
+    c.on("close", gone); c.on("error", gone);
+    c.gone = gone;
+  }
+  function homeConn(pub) {
+    const c = homeConns.get(pub);
+    if (c?.open) return Promise.resolve(c);
+    if (!home || !homeReady || !validPub(pub) || blocked.has(pub)) return Promise.reject(new Error("offline"));
+    if (dialing.has(pub)) return dialing.get(pub);
+    const pr = homeIdOf(pub).then(id => new Promise((res, rej) => {
+      const n = home.connect(id, { reliable: true, metadata: { kind: "home" } });
+      const timer = setTimeout(() => { rej(new Error("timeout")); try { n.close(); } catch {} n.gone?.(); }, 8000);
+      n.ready = () => { clearTimeout(timer); res(n); };
+      wireHome(n);
+    })).finally(() => dialing.delete(pub));
+    dialing.set(pub, pr);
+    return pr;
+  }
+  function dialFriends() {
+    const want = new Set(Object.keys(friends));
+    for (const k in dms) if (dms[k].group) dms[k].members.forEach(p => want.add(p));
+    for (const p of want) if (p !== myPub && !isOnline(p)) homeConn(p).catch(() => {});
+  }
+  setInterval(() => {
+    // a phone that went to sleep never says goodbye: ping, and give up after 40 s of silence
+    const now = Date.now();
+    for (const c of [...allHome]) {
+      if (c.open) try { c.send({ t: "ping" }); } catch {}
+      if (now - c.lastSeen > 40000) { try { c.close(); } catch {} c.gone(); }
+    }
+  }, 10000);
+  setInterval(() => { if (homeReady) dialFriends(); }, 60000);
+  const sendHome = (pub, d) => homeConn(pub).then(c => c.send(d));
+
+  function onHome(pub, d) {
+    if (typeof d.t === "string" && d.t.startsWith("call-")) { onCallSignal(pub, d); return; }
+    if (d.t === "dm") { takeDm(pub, d.m); if (typeof d.m?.id === "string") homeConns.get(pub)?.send({ t: "dm-ok", id: d.m.id }); }
+    else if (d.t === "dm-ok") { const m = dms[pub]?.msgs.find(x => x.me && x.id === d.id); if (m?.pending) { m.pending = false; saveDms(); renderSocial(); } }
+    else if (d.t === "fr") reconcileFriend(pub, d.st);
+    else if (d.t === "u") { meetPerson(pub, d.u); renderSocial(); }
+    else if (d.t === "gmsg") takeGroupMsg(pub, d.g, d.m, false);
+    else if (d.t === "ginfo") takeGroupInfo(pub, d.g);
+    else if (d.t === "gsync") { if (takeGroupInfo(pub, d.g, true) && Array.isArray(d.msgs)) d.msgs.slice(-50).forEach(m => takeGroupMsg(pub, d.g, m, true)); }
+    else if (d.t === "gleave") leaveFromGroup(pub, d.gid);
+  }
+
+  // ---------- friends ----------
+  function reconcileFriend(pub, theirs) {
+    // both sides say what they think; this settles requests made while one of you was offline
+    const mine = friends[pub] || "";
+    let next = mine;
+    if (theirs === "out") next = mine === "" ? "in" : mine === "out" ? "ok" : mine;
+    else if (theirs === "ok") next = mine === "out" || mine === "in" ? "ok" : mine;
+    else if (theirs === "" || theirs === undefined) next = mine === "ok" || mine === "in" ? "" : mine;
+    if (next === mine) return;
+    if (next) friends[pub] = next; else delete friends[pub];
+    saveFriends(); renderSocial();
+    if (next === "in") notify("👥 Запит у друзі", nickOf(pub) + " хоче з тобою дружити", true);
+    if (next === "ok" && mine === "out") notify("👥 Нові друзі", nickOf(pub) + " прийняв твій запит у друзі", true);
+  }
+  function setFriend(pub, st) {
+    if (!validPub(pub) || pub === myPub) return;
+    if (st) friends[pub] = st; else delete friends[pub];
+    saveFriends(); renderSocial();
+    sendHome(pub, { t: "fr", st: st || "" }).catch(() => {});
+  }
+  const askFriend = pub => setFriend(pub, friends[pub] === "in" ? "ok" : "out");
+  async function addByCode(code) {
+    code = String(code || "").toLowerCase().replace(/[^0-9a-f]/g, "");
+    if (code.length !== 12) return "Код друга це 12 знаків, наприклад 3fa9c01b7e42.";
+    if (code === myCode) return "Це твій власний код 🙂";
+    if (!homeReady) return "Немає зв'язку. Спробуй ще раз за хвилинку.";
+    const id = PREFIX + "u-" + code;
+    const known = Object.keys(people).find(p => homeIds.get(p) === code);
+    if (known) { askFriend(known); return ""; }
+    return await new Promise(res => {
+      const n = home.connect(id, { reliable: true, metadata: { kind: "home" } });
+      const timer = setTimeout(() => { try { n.close(); } catch {} n.gone?.(); res("Не знайшов нікого з таким кодом. Друг має бути зараз у ДіноКорді."); }, 8000);
+      n.ready = pub => { clearTimeout(timer); askFriend(pub); res(""); };
+      wireHome(n);
+    });
+  }
+  function blockPerson(pub) {
+    if (!confirm("Заблокувати " + nickOf(pub) + "? Він більше не зможе писати й дзвонити тобі.")) return;
+    blocked.add(pub); store.set("blocked", [...blocked]);
+    delete friends[pub]; saveFriends();
+    for (const c of [...allHome]) if (c.pub === pub) { try { c.close(); } catch {} c.gone(); }
+    if (dmOpen === pub) dmOpen = "@friends";
+    renderSocial();
+  }
+
+  // ---------- private chats and groups ----------
+  const dms = loadObj("dms", {});
   let dmOpen = "";
-  const dmKeyOf = id => { const u = members.get(id); return u?.pub || "peer:" + id; };
-  const peerOfKey = key => key.startsWith("peer:") ? (members.has(key.slice(5)) ? key.slice(5) : "") : ([...members.entries()].find(([id, u]) => u.pub === key && id !== myId)?.[0] || "");
+  const dmKeyOf = id => members.get(id)?.pub || "";
   function saveDms() {
     for (const k in dms) dms[k].msgs = dms[k].msgs.slice(-200);
     try { localStorage.setItem("dinocord-dms", JSON.stringify(dms)); } catch {}
   }
-  function dmThread(key, peerId) {
-    const u = peerId ? members.get(peerId) : null;
+  function dmThread(key) {
     const t = dms[key] || (dms[key] = { nick: "Динозаврик", ava: "🦖", color: "#888888", msgs: [], unread: 0 });
-    if (u) { t.nick = u.nick; t.ava = u.ava; t.color = u.color; t.pub = u.pub || ""; }
+    const p = people[key];
+    if (p && !t.group) Object.assign(t, { nick: p.nick, ava: p.ava, color: p.color, pub: key });
     return t;
   }
-  function wireDm(c) {
-    dmConns.set(c.peer, c);
-    c.on("data", d => onDm(c.peer, d));
-    c.on("close", () => { if (dmConns.get(c.peer) === c) dmConns.delete(c.peer); if (dmCall?.peer === c.peer) endCall("Зв'язок обірвався"); });
+  const seenOpen = key => dmOpen === key && !$("ovDm").hidden;
+  function takeDm(pub, m) {
+    if (!m || typeof m !== "object") return;
+    const text = clean(m.text, 500); if (!text) return;
+    const t = dmThread(pub);
+    const id = String(m.id).slice(0, 40);
+    if (t.msgs.some(x => x.id === id)) return;
+    t.msgs.push({ id, me: false, text, t: Math.min(Date.now(), Number(m.t) || Date.now()) });
+    t.msgs.sort((a, b) => a.t - b.t);
+    if (!seenOpen(pub)) t.unread = (t.unread || 0) + 1;
+    saveDms(); renderSocial();
+    notify("💬 " + t.nick, plainText(text), true);
   }
-  function dmConn(peerId) {
-    const c = dmConns.get(peerId);
-    if (c && c.open) return Promise.resolve(c);
-    return new Promise((res, rej) => {
-      if (!peerObj) return rej(new Error("offline"));
-      const n = peerObj.connect(peerId, { reliable: true, metadata: { kind: "dm" } });
-      const timer = setTimeout(() => rej(new Error("timeout")), 8000);
-      n.on("open", () => { clearTimeout(timer); wireDm(n); res(n); });
-      n.on("error", () => { clearTimeout(timer); rej(new Error("error")); });
+  function flushOutbox(pub) {
+    // messages written while they were offline go out as soon as they're back
+    const t = dms[pub]; if (!t || t.group) return;
+    const c = homeConns.get(pub); if (!c?.open) return;
+    // still marked as waiting until they say they got it; they skip copies they already have
+    for (const m of t.msgs) if (m.me && m.pending) c.send({ t: "dm", m: { id: m.id, text: m.text, t: m.t } });
+  }
+  const ginfo = t => ({ id: t.gid, name: t.name, nameT: t.nameT || 0, members: t.members, gone: t.gone || [] });
+  const groupKey = gid => "g:" + gid;
+  const signG = async (gid, m) => b64(await crypto.subtle.sign(SIG, myKeys.privateKey, new TextEncoder().encode("g|" + gid + "|" + m.id + "|" + m.t + "|" + m.text)));
+  function takeGroupInfo(from, g, quiet) {
+    if (!g || typeof g !== "object" || typeof g.id !== "string" || !/^[\w-]{4,40}$/.test(g.id) || leftGroups.has(g.id)) return false;
+    const mem = Array.isArray(g.members) ? g.members.filter(validPub).slice(0, 10) : [];
+    const gone = Array.isArray(g.gone) ? g.gone.filter(validPub).slice(0, 40) : [];
+    const key = groupKey(g.id); let t = dms[key];
+    if (!t) {
+      if (!mem.includes(myPub) || !mem.includes(from)) return false;
+      t = dms[key] = { group: true, gid: g.id, name: clean(g.name, 30) || "Група", nameT: Number(g.nameT) || 0, members: mem.filter(p => !gone.includes(p)), gone: [], nick: "", ava: "👥", color: "#5865f2", msgs: [], unread: 0 };
+      if (!quiet) notify("👥 " + t.name, nickOf(from) + " додав тебе в групу", true);
+    }
+    if (!t.members.includes(from)) return false;
+    t.gone = [...new Set([...(t.gone || []), ...gone])];
+    t.members = [...new Set([...t.members, ...mem])].filter(p => !t.gone.includes(p)).slice(0, 10);
+    if ((Number(g.nameT) || 0) > (t.nameT || 0) && clean(g.name, 30)) { t.name = clean(g.name, 30); t.nameT = Number(g.nameT); }
+    t.nick = t.name;
+    saveDms(); renderSocial();
+    for (const p of t.members) if (p !== myPub && !isOnline(p)) homeConn(p).catch(() => {});
+    return true;
+  }
+  async function takeGroupMsg(from, g, m, quiet) {
+    if (!g || !m || typeof m !== "object") return;
+    const key = groupKey(g.id);
+    if (!dms[key] && !takeGroupInfo(from, g, quiet)) return;
+    const t = dms[key]; if (!t) return;
+    const text = clean(m.text, 500), id = String(m.id || "").slice(0, 40), at = Number(m.t) || 0;
+    if (!text || !id || !t.members.includes(m.from) || t.msgs.some(x => x.id === id)) return;
+    // every group message is signed by its author, so nobody can put words in someone else's mouth
+    try { if (!await crypto.subtle.verify(SIG, await pubKey(m.from), unb64(String(m.sig)), new TextEncoder().encode("g|" + g.id + "|" + id + "|" + at + "|" + text))) return; } catch { return; }
+    if (t.msgs.some(x => x.id === id)) return;
+    t.msgs.push({ id, from: m.from, text, t: Math.min(Date.now(), at), sig: String(m.sig), me: m.from === myPub });
+    t.msgs.sort((a, b) => a.t - b.t);
+    if (m.from !== myPub && !seenOpen(key)) t.unread = (t.unread || 0) + 1;
+    saveDms(); renderSocial();
+    if (m.from !== myPub && !quiet) notify("👥 " + t.name, nickOf(m.from) + ": " + plainText(text), true);
+  }
+  function syncGroups(pub) {
+    for (const k in dms) {
+      const t = dms[k];
+      if (t.group && t.members.includes(pub)) homeConns.get(pub)?.send({ t: "gsync", g: ginfo(t), msgs: t.msgs.filter(m => m.sig).slice(-50).map(({ id, from, text, t: at, sig }) => ({ id, from, text, t: at, sig })) });
+    }
+  }
+  const toGroup = (t, d) => { for (const p of t.members) if (p !== myPub) sendHome(p, d).catch(() => {}); };
+  function createGroup(name, pubs) {
+    const gid = newId().replace(/[^\w-]/g, "").slice(-20);
+    const t = dms[groupKey(gid)] = { group: true, gid, name: clean(name, 30) || "Група", nameT: Date.now(), members: [myPub, ...pubs].slice(0, 10), gone: [], nick: "", ava: "👥", color: "#5865f2", msgs: [], unread: 0 };
+    t.nick = t.name;
+    saveDms(); toGroup(t, { t: "ginfo", g: ginfo(t) });
+    openDm(groupKey(gid));
+  }
+  function leaveGroup(t) {
+    if (!confirm("Вийти з групи «" + t.name + "»?")) return;
+    toGroup(t, { t: "gleave", gid: t.gid });
+    leftGroups.add(t.gid); store.set("leftGroups", [...leftGroups].slice(-100));
+    delete dms[groupKey(t.gid)]; dmOpen = ""; saveDms(); renderSocial();
+  }
+  function leaveFromGroup(pub, gid) {
+    const t = dms[groupKey(gid)]; if (!t || !t.members.includes(pub)) return;
+    t.members = t.members.filter(p => p !== pub); t.gone = [...new Set([...(t.gone || []), pub])];
+    t.msgs.push({ id: newId(), sys: true, text: nickOf(pub) + " вийшов з групи", t: Date.now() });
+    saveDms(); renderSocial();
+  }
+  function groupSettings(t) {
+    openAdmin("👥 " + t.name, t.members.length + " з 10 учасників", body => {
+      const h = document.createElement("h3"); h.textContent = "Назва групи"; body.append(h);
+      const row = document.createElement("div"); row.className = "adm-row";
+      const inp = document.createElement("input"); inp.maxLength = 30; inp.value = t.name; inp.style.flex = "1";
+      const ok = document.createElement("button"); ok.textContent = "Зберегти";
+      ok.onclick = () => { $("ovAdmin").hidden = true; t.name = clean(inp.value, 30) || t.name; t.nick = t.name; t.nameT = Date.now(); saveDms(); toGroup(t, { t: "ginfo", g: ginfo(t) }); renderSocial(); };
+      row.append(inp, ok); body.append(row);
+      const h2 = document.createElement("h3"); h2.textContent = "Учасники"; body.append(h2);
+      for (const p of t.members) {
+        const r = document.createElement("div"); r.className = "adm-row";
+        const sp = document.createElement("span"); sp.textContent = (isOnline(p) || p === myPub ? "🟢 " : "⚪ ") + nickOf(p) + (p === myPub ? " (ти)" : "");
+        r.append(sp); body.append(r);
+      }
+      const can = Object.keys(friends).filter(p => friends[p] === "ok" && !t.members.includes(p) && !(t.gone || []).includes(p));
+      if (can.length && t.members.length < 10) {
+        const h3 = document.createElement("h3"); h3.textContent = "Додати друзів"; body.append(h3);
+        for (const p of can) admBtn(body, "➕ " + nickOf(p), "sec", () => {
+          t.members = [...t.members, p].slice(0, 10); saveDms();
+          sendHome(p, { t: "ginfo", g: ginfo(t) }).catch(() => {}); toGroup(t, { t: "ginfo", g: ginfo(t) });
+          syncGroups(p); renderSocial();
+        });
+      }
+      admBtn(body, "🚪 Вийти з групи", "danger", () => leaveGroup(t));
     });
   }
-  function onDm(peerId, d) {
-    if (typeof d?.t === "string" && d.t.startsWith("call-")) { onCallSignal(peerId, d); return; }
-    if (!d || d.t !== "dm" || !d.m) return;
-    const text = clean(d.m.text, 500); if (!text) return;
-    const key = dmKeyOf(peerId), t = dmThread(key, peerId);
-    if (t.msgs.some(x => x.id === d.m.id)) return;
-    t.msgs.push({ id: String(d.m.id).slice(0, 40), me: false, text, t: Date.now() });
-    if (!(dmOpen === key && !$("ovDm").hidden)) t.unread = (t.unread || 0) + 1;
-    saveDms(); renderDmBadge();
-    if (!$("ovDm").hidden) renderDms();
-    notify("💬 " + t.nick, text, true);
+  function newGroupDialog() {
+    const list = Object.keys(friends).filter(p => friends[p] === "ok");
+    openAdmin("Нова група", list.length ? "Вибери до 9 друзів." : "Спершу додай когось у друзі 👥", body => {
+      if (!list.length) return;
+      const inp = document.createElement("input"); inp.maxLength = 30; inp.placeholder = "Назва групи"; inp.style.width = "100%"; body.append(inp);
+      const picked = new Set();
+      for (const p of list) {
+        const r = document.createElement("label"); r.className = "adm-row pick-row";
+        const cb = document.createElement("input"); cb.type = "checkbox";
+        cb.onchange = () => { if (cb.checked && picked.size >= 9) { cb.checked = false; return; } cb.checked ? picked.add(p) : picked.delete(p); };
+        const sp = document.createElement("span"); sp.textContent = nickOf(p);
+        r.append(cb, avaEl({ ...people[p], pub: p }, "sm"), sp); body.append(r);
+      }
+      admBtn(body, "Створити групу", "", () => {
+        if (!picked.size) { alert("Вибери хоча б одного друга."); return; }
+        createGroup(inp.value || [...picked].map(nickOf).concat(me.nick).join(", ").slice(0, 30), [...picked]);
+      });
+    });
   }
+
+  // ---------- the window with friends and private chats ----------
   function renderDmBadge() {
-    const n = Object.values(dms).reduce((a, t) => a + (t.unread || 0), 0);
+    const n = Object.values(dms).reduce((a, t) => a + (t.unread || 0), 0) + Object.values(friends).filter(s => s === "in").length;
     const b = $("btnDms"); b.querySelector(".badge-n")?.remove();
     if (n) { const s = document.createElement("span"); s.className = "badge-n"; s.textContent = n > 99 ? "99+" : n; b.append(s); }
+    $("btnJoinDms").textContent = "💬 Друзі та особисті" + (n ? " (" + n + ")" : "");
   }
-  function openDm(key, peerId) {
-    if (key) { dmThread(key, peerId); dmOpen = key; dms[key].unread = 0; saveDms(); }
-    $("ovDm").hidden = false; renderDms(); renderDmBadge();
-    if (key) $("dmText").focus();
+  function openDm(key) {
+    if (key && key !== "@friends") {
+      if (!dms[key]) { if (key.startsWith("g:") || !validPub(key) || key === myPub) return; dmThread(key); }
+      if (validPub(key)) homeConn(key).catch(() => {});
+      dms[key].unread = 0; saveDms();
+    }
+    dmOpen = key || "";
+    $("ovDm").hidden = false; renderSocial();
+    if (key && key !== "@friends" && !matchMedia("(pointer: coarse)").matches) $("dmText").focus();
+  }
+  function renderSocial() {
+    renderDmBadge();
+    if (!$("ovDm").hidden) renderDms();
+  }
+  function personRow(pub, extra) {
+    const b = document.createElement("div"); b.className = "fr-row";
+    const p = people[pub] || { nick: nickOf(pub) };
+    const a = avaEl({ ...p, pub }, "sm"); if (isOnline(pub)) { const d = document.createElement("span"); d.className = "dot " + (p.st || "on"); a.append(d); }
+    const n = document.createElement("div"); n.className = "nm";
+    const b1 = document.createElement("b"); b1.textContent = p.nick || "Динозаврик";
+    const s1 = document.createElement("small"); s1.textContent = isOnline(pub) ? (p.stx || "В мережі") : "Не в мережі";
+    n.append(b1, s1); b.append(a, n);
+    const btn = (t, title, fn, cls) => { const x = document.createElement("button"); x.className = "btn sec" + (cls ? " " + cls : ""); x.textContent = t; x.title = title; x.onclick = fn; b.append(x); };
+    extra(btn);
+    return b;
+  }
+  function renderFriends(box) {
+    const wrap = document.createElement("div"); wrap.className = "fr-wrap";
+    const sec = (title, n) => { const h = document.createElement("h4"); h.textContent = title + (n !== undefined ? " · " + n : ""); wrap.append(h); };
+    sec("Додати друга");
+    const addRow = document.createElement("form"); addRow.className = "fr-add";
+    const inp = document.createElement("input"); inp.placeholder = "Код друга, напр. 3fa9c01b7e42"; inp.maxLength = 20; inp.autocomplete = "off";
+    const go = document.createElement("button"); go.className = "btn"; go.textContent = "Додати"; go.type = "submit";
+    const st = document.createElement("div"); st.className = "status";
+    addRow.onsubmit = async e => { e.preventDefault(); go.disabled = true; st.textContent = "Шукаю…"; const err = await addByCode(inp.value); go.disabled = false; st.textContent = err || "Запит надіслано ✅"; st.className = "status" + (err ? " bad" : ""); if (!err) inp.value = ""; };
+    addRow.append(inp, go); wrap.append(addRow, st);
+    const mine = document.createElement("div"); mine.className = "fr-code";
+    mine.innerHTML = "Мій код друга: <b></b> ";
+    mine.querySelector("b").textContent = myCode || (myPub ? "…" : "немає ключа");
+    const cp = document.createElement("button"); cp.className = "btn sec"; cp.textContent = "📋"; cp.title = "Скопіювати";
+    cp.onclick = async () => { try { await navigator.clipboard.writeText(myCode); cp.textContent = "✅"; } catch {} };
+    mine.append(cp); wrap.append(mine);
+    if (!homeReady) { const w = document.createElement("div"); w.className = "status bad"; w.textContent = "Підключаюсь… друзі з'являться в мережі за хвилинку."; wrap.append(w); }
+    const all = Object.keys(friends).filter(p => !blocked.has(p));
+    const inc = all.filter(p => friends[p] === "in"), out = all.filter(p => friends[p] === "out"), ok = all.filter(p => friends[p] === "ok");
+    if (inc.length) {
+      sec("Запити в друзі", inc.length);
+      for (const p of inc) wrap.append(personRow(p, btn => { btn("✓", "Прийняти", () => setFriend(p, "ok")); btn("✕", "Відхилити", () => setFriend(p, "")); }));
+    }
+    ok.sort((a, b) => isOnline(b) - isOnline(a) || nickOf(a).localeCompare(nickOf(b), "uk"));
+    sec("Друзі", ok.filter(isOnline).length + " в мережі з " + ok.length);
+    if (!ok.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = "Поки нікого. Натисни на когось на сервері й вибери «Додати в друзі», або введи код друга вище."; wrap.append(e); }
+    for (const p of ok) wrap.append(personRow(p, btn => {
+      btn("💬", "Написати", () => openDm(p));
+      btn("📞", "Подзвонити", () => { $("ovDm").hidden = true; startCall(p, false); });
+      btn("✕", "Прибрати з друзів", () => { if (confirm("Прибрати " + nickOf(p) + " з друзів?")) setFriend(p, ""); });
+    }));
+    if (out.length) {
+      sec("Чекають відповіді", out.length);
+      for (const p of out) wrap.append(personRow(p, btn => btn("Скасувати", "Скасувати запит", () => setFriend(p, ""))));
+    }
+    if (blocked.size) {
+      sec("Заблоковані", blocked.size);
+      for (const p of blocked) wrap.append(personRow(p, btn => btn("Розблокувати", "Розблокувати", () => { blocked.delete(p); store.set("blocked", [...blocked]); renderSocial(); })));
+    }
+    box.append(wrap);
   }
   function renderDms() {
-    const list = $("dmList"); list.innerHTML = "<h3>Розмови</h3>";
-    const keys = Object.keys(dms).sort((a, b) => (dms[b].msgs.at(-1)?.t || 0) - (dms[a].msgs.at(-1)?.t || 0));
+    const list = $("dmList"); list.innerHTML = "";
+    const fb = document.createElement("button"); fb.className = "dm-item" + (dmOpen === "@friends" ? " on" : "");
+    const fa = document.createElement("span"); fa.className = "ava sm"; fa.textContent = "👥"; fa.style.background = "var(--accent)";
+    const fn = document.createElement("span"); fn.className = "nm"; fn.textContent = "Друзі";
+    fb.append(fa, fn);
+    const reqs = Object.values(friends).filter(s => s === "in").length;
+    if (reqs) { const n = document.createElement("span"); n.className = "n"; n.textContent = reqs; fb.append(n); }
+    fb.onclick = () => openDm("@friends"); list.append(fb);
+    const ng = document.createElement("button"); ng.className = "dm-item"; ng.innerHTML = '<span class="ava sm" style="background:var(--input)">➕</span><span class="nm">Нова група</span>';
+    ng.onclick = newGroupDialog; list.append(ng);
+    const h = document.createElement("h3"); h.textContent = "Розмови"; list.append(h);
+    const keys = Object.keys(dms).filter(k => !blocked.has(k)).sort((a, b) => (dms[b].msgs.at(-1)?.t || 0) - (dms[a].msgs.at(-1)?.t || 0));
     for (const k of keys) {
-      const t = dms[k], online = !!peerOfKey(k);
+      const t = dms[k], online = t.group ? t.members.some(p => p !== myPub && isOnline(p)) : isOnline(k);
       const b = document.createElement("button"); b.className = "dm-item" + (k === dmOpen ? " on" : "");
-      const a = avaEl({ ...t, pub: t.pub }, "sm"); if (online) { const d = document.createElement("span"); d.className = "dot"; a.append(d); }
-      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = t.nick;
+      const a = t.group ? Object.assign(document.createElement("span"), { className: "ava sm", textContent: "👥" }) : avaEl({ ...t, pub: k }, "sm");
+      if (t.group) a.style.background = t.color;
+      if (online) { const d = document.createElement("span"); d.className = "dot"; a.append(d); }
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = t.group ? t.name : t.nick;
       b.append(a, nm);
+      if (callsIn[k]) { const c = document.createElement("span"); c.textContent = "📞"; c.title = "Зараз іде дзвінок"; b.append(c); }
       if (t.unread) { const n = document.createElement("span"); n.className = "n"; n.textContent = t.unread; b.append(n); }
       b.onclick = () => openDm(k);
       list.append(b);
     }
-    const others = [...members.entries()].filter(([id]) => id !== myId && !dms[dmKeyOf(id)]);
+    const others = [...members.values()].filter(u => u.pub && u.pub !== myPub && !dms[u.pub] && !blocked.has(u.pub));
     if (others.length) {
-      const h = document.createElement("h3"); h.textContent = "Написати комусь"; list.append(h);
-      for (const [id, u] of others) {
+      const h2 = document.createElement("h3"); h2.textContent = "Написати комусь"; list.append(h2);
+      for (const u of others) {
         const b = document.createElement("button"); b.className = "dm-item";
         const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = u.nick;
-        b.append(avaEl(u, "sm"), nm); b.onclick = () => openDm(dmKeyOf(id), id);
+        b.append(avaEl(u, "sm"), nm); b.onclick = () => openDm(u.pub);
         list.append(b);
       }
     }
-    if (!keys.length && !others.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = "Тут поки порожньо. Зайди на сервер, і зможеш написати будь-кому особисто."; list.append(e); }
     $("dmWrap").classList.toggle("chat", !!dmOpen);
-    const t = dms[dmOpen], box = $("dmMsgs"); box.innerHTML = "";
-    const online = dmOpen && !!peerOfKey(dmOpen);
-    $("dmTitle").innerHTML = t ? "<span></span> <small></small>" : "Особисті";
-    if (t) { $("dmTitle").firstChild.textContent = t.nick; $("dmTitle").lastChild.textContent = online ? "🟢 в мережі" : "не в мережі"; }
-    $("dmText").disabled = !online;
-    $("dmDelete").hidden = !t;
-    $("dmCallBtn").hidden = $("dmVidBtn").hidden = !online;
-    $("dmText").placeholder = !t ? "Вибери розмову ліворуч" : online ? "Написати " + t.nick : t.nick + " зараз не в мережі на цьому сервері";
-    if (!t) { box.innerHTML = '<div class="dm-empty">Вибери, кому написати. Особисті повідомлення йдуть напряму людині й не проходять через сервер.</div>'; return; }
-    if (!t.msgs.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = "Почни розмову з " + t.nick + " 👋"; box.append(e); }
+    const box = $("dmMsgs"); box.innerHTML = "";
+    const t = dmOpen && dmOpen !== "@friends" ? dms[dmOpen] : null;
+    $("dmForm").hidden = !t;
+    for (const id of ["dmCallBtn", "dmVidBtn", "dmDelete", "dmBlock", "dmGroup"]) $(id).hidden = true;
+    $("dmJoin").hidden = true;
+    if (dmOpen === "@friends") { $("dmTitle").textContent = "👥 Друзі"; renderFriends(box); return; }
+    if (!t) { $("dmTitle").textContent = "Особисті"; box.innerHTML = '<div class="dm-empty">Вибери розмову або відкрий «Друзі». Особисті повідомлення йдуть напряму людині й не проходять через сервер.</div>'; return; }
+    const online = t.group ? t.members.some(p => p !== myPub && isOnline(p)) : isOnline(dmOpen);
+    $("dmTitle").innerHTML = "<span></span> <small></small>";
+    $("dmTitle").firstChild.textContent = t.group ? "👥 " + t.name : t.nick;
+    $("dmTitle").lastChild.textContent = t.group ? t.members.length + " учасн. · " + t.members.filter(p => p === myPub || isOnline(p)).length + " в мережі" : online ? "🟢 в мережі" : "не в мережі";
+    $("dmCallBtn").hidden = $("dmVidBtn").hidden = !online || !!callsIn[dmOpen];
+    $("dmJoin").hidden = !callsIn[dmOpen] || call?.key === dmOpen;
+    $("dmDelete").hidden = !!t.group; $("dmBlock").hidden = !!t.group; $("dmGroup").hidden = !t.group;
+    $("dmText").disabled = !homeReady;
+    $("dmText").placeholder = !homeReady ? "Підключаюсь…" : t.group ? "Написати в групу" : online ? "Написати " + t.nick : t.nick + " не в мережі: отримає, коли зайде";
+    if (!t.msgs.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = t.group ? "Це початок групи «" + t.name + "» 👋" : "Почни розмову з " + t.nick + " 👋"; box.append(e); }
+    let prevFrom = "";
     for (const m of t.msgs) {
-      const b = document.createElement("div"); b.className = "dm-bubble" + (m.me ? " me" : "");
-      const tx = document.createElement("div"); textNodes(tx, m.text);
-      const tm = document.createElement("small"); tm.textContent = fmtTime(m.t);
+      if (m.sys) { const s = document.createElement("div"); s.className = "dm-sys"; s.textContent = m.text + " · " + fmtTime(m.t); box.append(s); prevFrom = ""; continue; }
+      const b = document.createElement("div"); b.className = "dm-bubble" + (m.me ? " me" : "") + (m.pending ? " pending" : "");
+      if (t.group && !m.me && m.from !== prevFrom) { const w = document.createElement("b"); w.className = "dm-who"; w.textContent = nickOf(m.from); w.style.color = people[m.from]?.color || ""; b.append(w); }
+      prevFrom = m.me ? "" : m.from;
+      const tx = document.createElement("div"); richText(tx, m.text);
+      const tm = document.createElement("small"); tm.textContent = fmtTime(m.t) + (m.pending ? " · ще не доставлено" : "");
       b.append(tx, tm); box.append(b);
     }
     box.scrollTop = box.scrollHeight;
   }
   $("dmForm").addEventListener("submit", async e => {
     e.preventDefault();
-    const text = clean($("dmText").value, 500), key = dmOpen, peerId = key && peerOfKey(key);
-    if (!text || !peerId) return;
+    const text = clean($("dmText").value, 500), key = dmOpen, t = dms[key];
+    if (!text || !t || !homeReady) return;
     $("dmText").value = "";
-    const m = { id: newId(), text };
-    try { (await dmConn(peerId)).send({ t: "dm", m }); }
-    catch { $("dmText").value = text; sysLocal("Не вдалося надіслати особисте повідомлення. Спробуй ще раз."); return; }
-    dmThread(key, peerId).msgs.push({ id: m.id, me: true, text, t: Date.now() });
-    saveDms(); renderDms();
+    if (t.group) {
+      const m = { id: newId(), from: myPub, text, t: Date.now() }; m.sig = await signG(t.gid, m);
+      t.msgs.push({ ...m, me: true }); saveDms(); renderDms();
+      toGroup(t, { t: "gmsg", g: ginfo(t), m });
+      return;
+    }
+    const m = { id: newId(), me: true, text, t: Date.now(), pending: true };
+    t.msgs.push(m); saveDms(); renderDms();
+    homeConn(key).then(c => c.send({ t: "dm", m: { id: m.id, text, t: m.t } })).catch(() => {});
   });
-  // ---------- calling a friend: it rings on their side until they pick up ----------
-  // the ring, answer and hang-up go over the private connection; voice and video over a direct media call
-  let dmCall = null;
+  $("btnJoinDms").onclick = () => $("btnDms").click();
+  $("btnDms").onclick = () => openDm(dmOpen && (dms[dmOpen] || dmOpen === "@friends") ? dmOpen : "@friends");
+  $("dmClose").onclick = () => { $("ovDm").hidden = true; };
+  $("ovCard").addEventListener("click", e => { if (e.target === $("ovCard")) $("ovCard").hidden = true; });
+  $("dmDelete").onclick = () => {
+    // removes the conversation from this device only; the other person keeps their copy
+    if (!dms[dmOpen] || !confirm("Видалити розмову з " + dms[dmOpen].nick + "? Вона зникне тільки в тебе.")) return;
+    delete dms[dmOpen]; dmOpen = ""; saveDms(); renderSocial();
+  };
+  $("dmBlock").onclick = () => { if (validPub(dmOpen)) blockPerson(dmOpen); };
+  $("dmGroup").onclick = () => { const t = dms[dmOpen]; if (t?.group) groupSettings(t); };
+  $("dmBack").onclick = () => { dmOpen = ""; renderDms(); };
+  $("ovDm").addEventListener("click", e => { if (e.target === $("ovDm")) $("ovDm").hidden = true; });
+  $("dmCallBtn").onclick = () => { const k = dmOpen; if (k) { $("ovDm").hidden = true; startCall(k, false); } };
+  $("dmVidBtn").onclick = () => { const k = dmOpen; if (k) { $("ovDm").hidden = true; startCall(k, true); } };
+  $("dmJoin").onclick = () => { const k = dmOpen; if (k) { $("ovDm").hidden = true; startCall(k, false); } };
+
+  // ---------- calls: ring a friend or a whole group; everyone who picks up talks with everyone ----------
+  let call = null;
+  const callsIn = {};    // thread key -> { id, parts: Set(pub) }: calls going on in my chats
   const getCallMedia = video => navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true },
     video: video ? { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } : false });
-  const callSig = (t, extra) => { const c = dmCall; if (c) dmConn(c.peer).then(n => n.send({ t, id: c.id, ...extra })).catch(() => {}); };
+  const callTargets = c => c.gid ? (dms[c.key]?.members || []).filter(p => p !== myPub) : [c.key];
+  const callSigAll = (c, d) => { for (const p of new Set([...callTargets(c), ...c.parts])) if (p !== myPub) sendHome(p, { ...d, id: c.id }).catch(() => {}); };
   function callTone() {
     // incoming: a bright double ring; outgoing: a soft long beep
-    if (!actx2 || !dmCall || dmCall.state !== "ringing") return;
+    if (!actx2 || !call || call.state !== "ringing") return;
     try {
       actx2.resume?.();
-      const t0 = actx2.currentTime, inc = dmCall.dir === "in";
+      const t0 = actx2.currentTime, inc = call.dir === "in";
       const notes = inc ? [[660, 0, .25], [880, .3, .25], [660, .8, .25], [880, 1.1, .25]] : [[440, 0, 1]];
       for (const [f, at, len] of notes) {
         const o = actx2.createOscillator(), g = actx2.createGain(); o.frequency.value = f; o.type = "sine";
@@ -2001,152 +2519,233 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         o.connect(g).connect(actx2.destination); o.start(t0 + at); o.stop(t0 + at + len + 0.02);
       }
     } catch {}
-    if (dmCall.dir === "in") navigator.vibrate?.([300, 150, 300]);
+    if (call.dir === "in") navigator.vibrate?.([300, 150, 300]);
   }
-  async function startCall(peerId, video) {
-    const u = members.get(peerId);
-    if (!u || peerId === myId) return;
-    if (dmCall) { sysLocal("Ти вже в дзвінку."); return; }
+  function callTitle(c) {
+    const t = dms[c.key];
+    return c.gid ? { nick: t?.name || "Група", ava: "👥", color: "#5865f2" } : { ...(people[c.key] || { nick: nickOf(c.key) }), pub: c.key };
+  }
+  async function startCall(key, video) {
+    if (call) { if (call.key === key) { call.mini = false; renderCall(); } else sysLocal("Ти вже в дзвінку."); return; }
+    const group = key.startsWith("g:");
+    if (!group && (!validPub(key) || key === myPub)) return;
+    if (group && !dms[key]) return;
     if (!navigator.mediaDevices?.getUserMedia) { sysLocal("Цей браузер не підтримує дзвінки."); return; }
+    if (!homeReady) { sysLocal("Немає зв'язку для дзвінка. Спробуй за хвилинку."); return; }
     $("ovCard").hidden = true;
+    const going = callsIn[key];
+    if (going) {
+      // a group call is already on: just join it
+      call = { id: going.id, key, gid: group ? key.slice(2) : "", dir: "in", video, state: "ringing", parts: new Set(going.parts), peers: new Map(), mic: true, cam: video, joining: true };
+      acceptCall();
+      return;
+    }
     let stream;
     try { stream = await getCallMedia(video); }
     catch { sysLocal(video ? "Немає доступу до камери чи мікрофона. Дозволь їх у налаштуваннях браузера." : "Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера."); return; }
+    if (call) { stream.getTracks().forEach(t => t.stop()); return; }
     leaveVoice();
-    dmCall = { id: newId(), peer: peerId, key: dmKeyOf(peerId), u: { ...u }, dir: "out", video, state: "ringing", stream, mic: true, cam: video };
+    call = { id: newId(), key, gid: group ? key.slice(2) : "", dir: "out", video, state: "ringing", stream, parts: new Set([myPub]), peers: new Map(), mic: true, cam: video };
+    const c = call;
     renderCall();
-    try { (await dmConn(peerId)).send({ t: "call-ring", id: dmCall.id, video }); }
-    catch { endCall("Не вдалося додзвонитися"); return; }
-    const id = dmCall.id;
-    dmCall.toneTimer = setInterval(callTone, 3000); callTone();
-    dmCall.timeout = setTimeout(() => { if (dmCall?.id === id && dmCall.state === "ringing") { callSig("call-cancel"); endCall(u.nick + " не відповідає", "📞 Дзвінок без відповіді"); } }, 30000);
+    const sent = await Promise.all(callTargets(c).map(p => sendHome(p, { t: "call-ring", id: c.id, video, g: c.gid || undefined, parts: [myPub] }).then(() => true, () => false)));
+    if (call !== c) return;
+    if (!sent.some(Boolean)) { endCall(group ? "Ніхто з групи зараз не в мережі" : nickOf(key) + " зараз не в мережі", "📞 Дзвінок без відповіді"); return; }
+    c.toneTimer = setInterval(callTone, 3000); callTone();
+    c.timeout = setTimeout(() => { if (call === c && c.state === "ringing") { callSigAll(c, { t: "call-cancel" }); endCall(group ? "Ніхто не відповів" : nickOf(key) + " не відповідає", "📞 Дзвінок без відповіді"); } }, 30000);
   }
-  function onCallSignal(peerId, d) {
+  function onCallSignal(pub, d) {
     const id = typeof d.id === "string" ? d.id.slice(0, 40) : "";
     if (!id) return;
+    const gid = typeof d.g === "string" ? d.g : "";
     if (d.t === "call-ring") {
-      if (dmCall) { dmConn(peerId).then(n => n.send({ t: "call-decline", id, busy: true })).catch(() => {}); return; }
-      const u = members.get(peerId) || { ...dmThread(dmKeyOf(peerId), peerId) };
-      dmCall = { id, peer: peerId, key: dmKeyOf(peerId), u: { nick: u.nick, ava: u.ava, color: u.color, pub: u.pub || "", photo: u.photo || "" }, dir: "in", video: !!d.video, state: "ringing", mic: true, cam: !!d.video };
+      const key = gid ? groupKey(gid) : pub;
+      if (gid && !dms[key]?.members.includes(pub)) return;
+      const parts = new Set((Array.isArray(d.parts) ? d.parts : []).filter(p => validPub(p) && (!gid || dms[key].members.includes(p))));
+      parts.add(pub);
+      callsIn[key] = { id, parts };
+      renderSocial();
+      if (call) { if (call.id !== id && !gid) sendHome(pub, { t: "call-decline", id, busy: true }).catch(() => {}); return; }
+      call = { id, key, gid, dir: "in", video: !!d.video, state: "ringing", parts, peers: new Map(), mic: true, cam: !!d.video, from: pub };
       renderCall();
-      dmCall.toneTimer = setInterval(callTone, 2000); callTone();
+      call.toneTimer = setInterval(callTone, 2000); callTone();
       if (myStatus() !== "dnd" && nt.popup && "Notification" in window && Notification.permission === "granted" && document.hidden) {
-        try { new Notification("📞 " + dmCall.u.nick, { body: d.video ? "Відеодзвінок" : "Дзвонить тобі", tag: "dinocord-call" }); } catch {}
+        try { new Notification("📞 " + callTitle(call).nick, { body: gid ? "Груповий дзвінок" : d.video ? "Відеодзвінок" : "Дзвонить тобі", tag: "dinocord-call" }); } catch {}
       }
-      dmCall.timeout = setTimeout(() => { if (dmCall?.id === id && dmCall.state === "ringing") endCall("Пропущений дзвінок", "📞 Пропущений дзвінок"); }, 35000);
+      const c = call;
+      call.timeout = setTimeout(() => { if (call === c && c.state === "ringing") endCall("Пропущений дзвінок", "📞 Пропущений дзвінок"); }, 35000);
       return;
     }
-    if (!dmCall || dmCall.id !== id || dmCall.peer !== peerId) return;
-    if (d.t === "call-accept" && dmCall.dir === "out" && dmCall.state === "ringing") {
-      stopRing(); dmCall.state = "connecting"; renderCall();
-      wireCallMedia(peerObj.call(peerId, dmCall.stream, { metadata: { kind: "dm-call", id } }));
+    const key = Object.keys(callsIn).find(k => callsIn[k].id === id) || (call?.id === id ? call.key : "");
+    if (d.t === "call-join") {
+      if (callsIn[key]) callsIn[key].parts.add(pub);
+      if (call?.id === id) { call.parts.add(pub); if (call.dir === "out" && call.state === "ringing") { stopRing(); call.state = "connecting"; renderCall(); } }
     }
-    else if (d.t === "call-cancel") endCall("Пропущений дзвінок", "📞 Пропущений дзвінок");
-    else if (d.t === "call-decline") endCall(d.busy ? dmCall.u.nick + " зараз в іншому дзвінку" : dmCall.u.nick + " відхилив дзвінок", "📞 Дзвінок відхилено");
-    else if (d.t === "call-end") endCall("Дзвінок завершено");
+    else if (d.t === "call-leave" || d.t === "call-cancel" || d.t === "call-end") {
+      if (callsIn[key]) { callsIn[key].parts.delete(pub); if (!callsIn[key].parts.size || d.t === "call-cancel") delete callsIn[key]; }
+      if (call?.id === id) {
+        call.parts.delete(pub);
+        if (call.state === "ringing" && call.dir === "in" && (d.t === "call-cancel" || !call.parts.size)) endCall("Пропущений дзвінок", "📞 Пропущений дзвінок");
+        else dropCallPeer(pub);
+      }
+    }
+    else if (d.t === "call-decline" && call?.id === id && !call.gid && call.dir === "out" && call.state === "ringing")
+      endCall(d.busy ? nickOf(pub) + " зараз в іншому дзвінку" : nickOf(pub) + " відхилив дзвінок", "📞 Дзвінок відхилено");
+    renderSocial();
   }
   async function acceptCall() {
-    const c = dmCall; if (!c || c.dir !== "in" || c.state !== "ringing") return;
+    const c = call; if (!c || c.dir !== "in" || c.state !== "ringing") return;
     stopRing(); c.state = "connecting"; renderCall();
     try { c.stream = await getCallMedia(c.video); }
     catch {
       try { c.stream = await getCallMedia(false); c.video = c.cam = false; }
-      catch { callSig("call-decline"); endCall("Немає доступу до мікрофона"); return; }
+      catch { if (!c.gid) sendHome(c.key, { t: "call-decline", id: c.id }).catch(() => {}); endCall("Немає доступу до мікрофона"); return; }
     }
-    if (dmCall !== c) { c.stream.getTracks().forEach(t => t.stop()); return; }
+    if (call !== c) { c.stream.getTracks().forEach(t => t.stop()); return; }
     leaveVoice();
-    callSig("call-accept");
+    c.parts.add(myPub);
+    callSigAll(c, { t: "call-join" });
+    // the one who joins calls everyone already talking
+    for (const p of c.parts) if (p !== myPub) mediaCall(p);
+    if (!c.gid || c.parts.size > 1) c.timeout = setTimeout(() => { if (call === c && !c.peers.size) endCall("Не вдалося з'єднатися"); }, 20000);
     renderCall();
   }
-  function onCallMedia(call) {
-    if (!dmCall || dmCall.dir !== "in" || call.peer !== dmCall.peer || call.metadata?.id !== dmCall.id || !dmCall.stream) { call.close(); return; }
-    call.answer(dmCall.stream);
-    wireCallMedia(call);
+  async function mediaCall(pub) {
+    const c = call; if (!c?.stream || !home) return;
+    try { await homeConn(pub); } catch { return; }
+    if (call !== c || c.peers.has(pub)) return;
+    wireCallMedia(pub, home.call(await homeIdOf(pub), c.stream, { metadata: { kind: "call", id: c.id } }));
   }
-  function wireCallMedia(call) {
-    const c = dmCall; c.media = call;
-    call.on("stream", s => {
-      if (dmCall !== c) return;
-      $("callAudio").srcObject = s; $("callAudio").play().catch(() => {});
-      $("callRemote").srcObject = s; $("callRemote").play().catch(() => {});
-      if (c.state !== "talking") { c.state = "talking"; c.started = Date.now(); c.clock = setInterval(renderCallStatus, 1000); }
+  function onHomeCall(mc) {
+    const pub = pubOfHome.get(mc.peer);
+    if (!call || mc.metadata?.kind !== "call" || mc.metadata.id !== call.id || !pub || !call.stream || blocked.has(pub)) { try { mc.close(); } catch {} return; }
+    call.peers.get(pub)?.media.close?.();
+    mc.answer(call.stream);
+    wireCallMedia(pub, mc);
+  }
+  function wireCallMedia(pub, mc) {
+    const c = call; if (!c) return;
+    c.parts.add(pub);
+    c.peers.set(pub, { media: mc, stream: null });
+    mc.on("stream", s => {
+      if (call !== c || c.peers.get(pub)?.media !== mc) return;
+      c.peers.get(pub).stream = s;
+      let a = document.getElementById("ca-" + homeIds.get(pub));
+      if (!a) { a = document.createElement("audio"); a.id = "ca-" + homeIds.get(pub); a.autoplay = true; a.setAttribute("playsinline", ""); $("callAudios").append(a); }
+      a.srcObject = s; a.play().catch(() => {});
+      if (c.state !== "talking") { stopRing(); c.state = "talking"; c.started = Date.now(); c.clock = setInterval(renderCallStatus, 1000); }
       renderCall();
     });
-    const end = () => { if (dmCall === c) endCall("Дзвінок завершено"); };
-    call.on("close", end); call.on("error", end);
+    const end = () => { if (call === c && c.peers.get(pub)?.media === mc) dropCallPeer(pub); };
+    mc.on("close", end); mc.on("error", end);
   }
-  function stopRing() { if (!dmCall) return; clearInterval(dmCall.toneTimer); clearTimeout(dmCall.timeout); navigator.vibrate?.(0); }
+  function dropCallPeer(pub) {
+    const c = call; if (!c) return;
+    const p = c.peers.get(pub);
+    if (p) { c.peers.delete(pub); try { p.media.close(); } catch {} }
+    document.getElementById("ca-" + homeIds.get(pub))?.remove();
+    c.parts.delete(pub);
+    if (c.state === "talking" && !c.peers.size) { endCall(c.gid ? "Усі вийшли з дзвінка" : "Дзвінок завершено"); return; }
+    renderCall();
+  }
+  function stopRing() { if (!call) return; clearInterval(call.toneTimer); clearTimeout(call.timeout); navigator.vibrate?.(0); }
   const callLen = c => { const s = Math.round((Date.now() - c.started) / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  function hangUp() {
+    const c = call; if (!c) return;
+    if (c.state === "ringing" && c.dir === "in") {
+      if (!c.gid) sendHome(c.key, { t: "call-decline", id: c.id }).catch(() => {});
+      endCall("Дзвінок відхилено", c.gid ? "📞 Груповий дзвінок" : "📞 Дзвінок відхилено");
+      return;
+    }
+    callSigAll(c, { t: c.state === "ringing" ? "call-cancel" : "call-leave" });
+    endCall(c.state === "ringing" ? "Дзвінок скасовано" : "Дзвінок завершено", c.state === "ringing" ? "📞 Скасований дзвінок" : "");
+  }
   function endCall(note, logText) {
-    const c = dmCall; if (!c) return;
+    const c = call; if (!c) return;
     stopRing(); clearInterval(c.clock);
-    dmCall = null;
+    call = null;
     c.stream?.getTracks().forEach(t => t.stop());
-    try { c.media?.close(); } catch {}
-    for (const v of ["callAudio", "callRemote", "callSelf"]) $(v).srcObject = null;
-    // the call leaves a line in your private chat with that person
-    const t = dmThread(c.key, members.has(c.peer) ? c.peer : null);
-    t.msgs.push({ id: newId(), me: c.dir === "out", text: c.started ? "📞 Дзвінок · " + callLen(c) : logText || "📞 Дзвінок", t: Date.now() });
-    if (!c.started && c.dir === "in" && !(dmOpen === c.key && !$("ovDm").hidden)) t.unread = (t.unread || 0) + 1;
-    saveDms(); renderDmBadge(); if (!$("ovDm").hidden) renderDms();
+    for (const p of c.peers.values()) try { p.media.close(); } catch {}
+    $("callAudios").innerHTML = ""; $("callGrid").innerHTML = ""; gridEls.clear();
+    for (const v of ["callRemote", "callSelf"]) $(v).srcObject = null;
+    if (callsIn[c.key]) { callsIn[c.key].parts.delete(myPub); if (!c.gid || !callsIn[c.key].parts.size || !c.started) delete callsIn[c.key]; }
+    // the call leaves a line in the chat
+    const t = c.gid ? dms[c.key] : dmThread(c.key);
+    if (t) {
+      t.msgs.push({ id: newId(), me: c.dir === "out", sys: !!c.gid, text: c.started ? "📞 Дзвінок · " + callLen(c) : logText || "📞 Дзвінок", t: Date.now() });
+      if (!c.started && c.dir === "in" && !seenOpen(c.key)) t.unread = (t.unread || 0) + 1;
+      saveDms();
+    }
+    renderSocial();
     $("callPill").hidden = true;
-    $("ovCall").classList.remove("ringing", "vid");
+    $("ovCall").classList.remove("ringing", "vid", "grid");
     $("callSt").textContent = note || "Дзвінок завершено";
-    for (const b of ["callMute", "callCam", "callAccept", "callMin"]) $(b).hidden = true;
-    $("callEnd").hidden = true; $("callRemote").hidden = $("callSelf").hidden = true;
+    for (const b of ["callMute", "callCam", "callAccept", "callMin", "callEnd"]) $(b).hidden = true;
+    $("callRemote").hidden = $("callSelf").hidden = true;
     $("ovCall").hidden = false;
-    setTimeout(() => { if (!dmCall) $("ovCall").hidden = true; }, 1600);
+    setTimeout(() => { if (!call) $("ovCall").hidden = true; }, 1600);
   }
   function renderCallStatus() {
-    const c = dmCall; if (!c) return;
-    const st = c.state === "talking" ? callLen(c) : c.state === "connecting" ? "З'єднуємо…" : c.dir === "in" ? (c.video ? "📹 Відеодзвінок…" : "Дзвонить тобі…") : "Дзвоню…";
+    const c = call; if (!c) return;
+    const st = c.state === "talking" ? callLen(c) + (c.gid ? " · " + (c.peers.size + 1) + " у дзвінку" : "") : c.state === "connecting" ? "З'єднуємо…"
+      : c.dir === "in" ? (c.gid ? "👥 " + nickOf(c.from) + " кличе в груповий дзвінок" : c.video ? "📹 Відеодзвінок…" : "Дзвонить тобі…") : c.gid ? "Дзвоню групі…" : "Дзвоню…";
     $("callSt").textContent = st;
-    $("callPill").textContent = "📞 " + c.u.nick + " · " + st + " · Повернутись";
+    $("callPill").textContent = "📞 " + callTitle(c).nick + " · " + st + " · Повернутись";
+  }
+  const gridEls = new Map();
+  function renderGrid(c) {
+    // one tile per person: their video if the camera is on, otherwise their picture
+    const grid = $("callGrid");
+    for (const [pub, el] of gridEls) if (!c.peers.has(pub)) { el.remove(); gridEls.delete(pub); }
+    for (const [pub, p] of c.peers) {
+      let el = gridEls.get(pub);
+      if (!el) {
+        el = document.createElement("div"); el.className = "tile";
+        const v = document.createElement("video"); v.autoplay = true; v.muted = true; v.playsInline = true; v.setAttribute("playsinline", "");
+        const a = avaEl({ ...(people[pub] || {}), pub }, "ava");
+        const n = document.createElement("span"); n.className = "tn"; n.textContent = nickOf(pub);
+        el.append(v, a, n); grid.append(el); gridEls.set(pub, el);
+      }
+      const v = el.querySelector("video");
+      if (p.stream && v.srcObject !== p.stream) { v.srcObject = p.stream; v.play().catch(() => {}); }
+      const vid = !!p.stream?.getVideoTracks().some(t => t.readyState === "live" && t.enabled !== false && !t.muted);
+      el.classList.toggle("has-vid", vid);
+    }
+    grid.dataset.n = c.peers.size;
   }
   function renderCall() {
-    const c = dmCall; if (!c) return;
+    const c = call; if (!c) return;
     const ov = $("ovCall");
     if (!c.mini) ov.hidden = false;
     $("callPill").hidden = !c.mini;
     ov.classList.toggle("ringing", c.state === "ringing");
-    const remoteVid = c.state === "talking" && !!$("callRemote").srcObject?.getVideoTracks().length;
+    const multi = !!c.gid && c.state === "talking";
+    ov.classList.toggle("grid", multi);
+    const only = !multi && c.state === "talking" ? [...c.peers.values()][0] : null;
+    const remoteVid = !!only?.stream?.getVideoTracks().length;
     ov.classList.toggle("vid", remoteVid);
+    if (only?.stream && $("callRemote").srcObject !== only.stream) { $("callRemote").srcObject = only.stream; $("callRemote").play().catch(() => {}); }
     $("callRemote").hidden = !remoteVid;
+    if (multi) renderGrid(c); else { $("callGrid").innerHTML = ""; gridEls.clear(); }
     $("callSelf").hidden = !(c.stream && c.cam && c.stream.getVideoTracks().length);
     if (c.stream && $("callSelf").srcObject !== c.stream) { $("callSelf").srcObject = c.stream; $("callSelf").play().catch(() => {}); }
-    const a = $("callAva"); a.innerHTML = ""; a.append(avaEl(c.u, "ava"));
-    $("callName").textContent = c.u.nick;
+    const a = $("callAva"); a.innerHTML = ""; const ti = callTitle(c); const av = avaEl(ti, "ava"); a.append(av);
+    $("callName").textContent = ti.nick;
     renderCallStatus();
     const incoming = c.dir === "in" && c.state === "ringing";
-    $("callAccept").hidden = !incoming;
+    $("callAccept").hidden = !incoming; $("callAccept").title = c.gid ? "Приєднатися" : "Прийняти";
     $("callEnd").hidden = false; $("callEnd").title = incoming ? "Відхилити" : "Завершити";
     $("callMute").hidden = incoming; $("callMute").textContent = c.mic ? "🎤" : "🔇"; $("callMute").classList.toggle("off", !c.mic);
     $("callCam").hidden = incoming || !c.stream?.getVideoTracks().length; $("callCam").classList.toggle("off", !c.cam);
     $("callMin").hidden = incoming;
   }
   $("callAccept").onclick = acceptCall;
-  $("callEnd").onclick = () => {
-    const c = dmCall; if (!c) return;
-    if (c.state === "ringing") { callSig(c.dir === "in" ? "call-decline" : "call-cancel"); endCall(c.dir === "in" ? "Дзвінок відхилено" : "Дзвінок скасовано", c.dir === "in" ? "📞 Дзвінок відхилено" : "📞 Скасований дзвінок"); }
-    else { callSig("call-end"); endCall("Дзвінок завершено"); }
-  };
-  $("callMute").onclick = () => { const c = dmCall; if (!c?.stream) return; c.mic = !c.mic; c.stream.getAudioTracks().forEach(t => { t.enabled = c.mic; }); renderCall(); };
-  $("callCam").onclick = () => { const c = dmCall; if (!c?.stream) return; c.cam = !c.cam; c.stream.getVideoTracks().forEach(t => { t.enabled = c.cam; }); renderCall(); };
-  $("callMin").onclick = () => { if (!dmCall) return; dmCall.mini = true; $("ovCall").hidden = true; renderCall(); };
-  $("callPill").onclick = () => { if (!dmCall) return; dmCall.mini = false; renderCall(); };
-  $("dmCallBtn").onclick = () => { const p = dmOpen && peerOfKey(dmOpen); if (p) { $("ovDm").hidden = true; startCall(p, false); } };
-  $("dmVidBtn").onclick = () => { const p = dmOpen && peerOfKey(dmOpen); if (p) { $("ovDm").hidden = true; startCall(p, true); } };
-
-  $("btnDms").onclick = () => openDm(dmOpen && dms[dmOpen] ? dmOpen : "");
-  $("dmClose").onclick = () => { $("ovDm").hidden = true; };
-  $("ovCard").addEventListener("click", e => { if (e.target === $("ovCard")) $("ovCard").hidden = true; });
-  $("dmDelete").onclick = () => {
-    // removes the conversation from this device only; the other person keeps their copy
-    if (!dms[dmOpen] || !confirm("Видалити розмову з " + dms[dmOpen].nick + "? Вона зникне тільки в тебе.")) return;
-    delete dms[dmOpen]; dmOpen = ""; saveDms(); renderDms(); renderDmBadge();
-  };
-  $("dmBack").onclick = () => { dmOpen = ""; renderDms(); };
-  $("ovDm").addEventListener("click", e => { if (e.target === $("ovDm")) $("ovDm").hidden = true; });
+  $("callEnd").onclick = hangUp;
+  $("callMute").onclick = () => { const c = call; if (!c?.stream) return; c.mic = !c.mic; c.stream.getAudioTracks().forEach(t => { t.enabled = c.mic; }); renderCall(); };
+  $("callCam").onclick = () => { const c = call; if (!c?.stream) return; c.cam = !c.cam; c.stream.getVideoTracks().forEach(t => { t.enabled = c.cam; }); renderCall(); };
+  $("callMin").onclick = () => { if (!call) return; call.mini = true; $("ovCall").hidden = true; renderCall(); };
+  $("callPill").onclick = () => { if (!call) return; call.mini = false; renderCall(); };
+  window.addEventListener("pagehide", () => { if (call && call.state !== "ringing") callSigAll(call, { t: "call-leave" }); });
 
   // ---------- notifications: sound, a counter in the tab, and system alerts where allowed ----------
   const nt = Object.assign({ sound: true, popup: false }, store.get("notify", {}));
@@ -2193,6 +2792,12 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   const setStatus = (t, bad) => { $("joinStatus").textContent = t; $("joinStatus").className = "status" + (bad ? " bad" : ""); };
 
+  // ---------- who a new message is from: me, or 🎭 Анонім when that's switched on ----------
+  let anonOn = false;
+  const anonAllowed = () => !!net && !adm.noAnon && chan !== OWN && chan !== NEWS;
+  const author = () => anonOn && anonAllowed() ? { nick: "Анонім", ava: "🎭", color: "#7a7f8a", anon: true } : { nick: me.nick, ava: me.ava, color: me.color };
+  $("btnAnon").onclick = () => { anonOn = !anonOn; renderChans(); $("text").focus(); };
+
   // ---------- UI wiring ----------
   $("form").addEventListener("submit", e => {
     e.preventDefault();
@@ -2200,7 +2805,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (!text || !net) return;
     if ((chan === OWN && !iOwn()) || (chan === NEWS && !iSite())) return;
     $("text").value = "";
-    const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text, t: Date.now(), pub: myPub };
+    const m = { id: newId(), chan, from: myId, ...author(), text, t: Date.now(), pub: myPub };
     if (replyTo && replyTo.chan === chan) m.reply = { id: replyTo.id, nick: replyTo.nick, text: replyTo.text };
     cancelReply();
     if (chan !== OWN && chan !== NEWS) { addMsg(m); net.send({ t: "msg", m }); }
@@ -2263,9 +2868,10 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (cur.text && !cur.image && !cur.audio && !cur.video && !cur.file) act("📋", "Копіювати текст", async () => {
       try { await navigator.clipboard.writeText(cur.text); } catch {}
     });
-    if (members.has(cur.from) && cur.from !== myId) act("💬", "Написати особисто", () => openDm(dmKeyOf(cur.from), cur.from));
+    if (validPub(cur.pub) && cur.pub !== myPub && !cur.anon) act("💬", "Написати особисто", () => openDm(cur.pub));
     if (canPin() && cur.chan !== NEWS) { const on = isPinned(cur); act("📌", on ? "Відкріпити" : "Закріпити", () => pinMsg(cur, !on)); }
-    act("👤", "Профіль", () => profileFromMsg(cur));
+    if (cur.anon && (iOwn() || iMod()) && cur.pub !== myPub) act("🔍", "Хто це написав?", () => profileFromMsg(cur));
+    else act("👤", "Профіль", () => profileFromMsg(cur));
     if (canDeleteOwn(cur)) act("🗑", "Видалити", () => { if (confirm("Видалити своє повідомлення для всіх?")) deleteOwn(cur); }, "danger");
     else if (cur.chan !== NEWS && (iOwn() || (iMod() && cur.pub !== meta.owner))) act("🗑", "Видалити (як адмін)", () => { if (confirm("Видалити це повідомлення для всіх?")) doAdmin({ a: "del", id: cur.id, chan: cur.chan }); }, "danger");
     document.body.append(bg, menu);
@@ -2333,7 +2939,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   // ---------- replies ----------
   let replyTo = null;
   function startReply(m) {
-    const snippet = m.image ? "🖼 Фото" : m.audio || m.audioGone ? "🎤 Голосове повідомлення" : clean(m.text, 80);
+    const snippet = m.image ? "🖼 Фото" : m.audio || m.audioGone ? "🎤 Голосове повідомлення" : clean(plainText(m.text), 80);
     replyTo = { id: m.id, chan: m.chan, nick: m.nick, text: snippet };
     $("replyText").innerHTML = "Відповідь для <b></b>: <i></i>";
     $("replyText").querySelector("b").textContent = m.nick;
@@ -2356,7 +2962,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   const isPinned = m => pinsOf(m.chan).some(p => p.id === m.id);
   let pinIdx = -1;
   function pinMsg(m, on) {
-    if (on) { doAdmin({ a: "pin", chan: m.chan, id: m.id, nick: m.nick, text: clean(m.text, 100), mt: m.t }); sysMsg(me.nick + " закріпив повідомлення в #" + CHANNELS.find(c => c.id === m.chan).name + " 📌"); }
+    if (on) { doAdmin({ a: "pin", chan: m.chan, id: m.id, nick: m.nick, text: clean(plainText(m.text), 100), mt: m.t }); sysMsg(me.nick + " закріпив повідомлення в #" + CHANNELS.find(c => c.id === m.chan).name + " 📌"); }
     else doAdmin({ a: "unpin", chan: m.chan, id: m.id });
   }
   function renderPins() {
@@ -2414,7 +3020,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   const saveXp = () => { if (!code) return; const c = code; clearTimeout(xpTimer); xpTimer = setTimeout(() => store.set("xp-" + c, xpBook), 500); };
   const xpOf = pub => { const r = xpBook[pub]; return r ? (r.b + r.m.length) * XP_MIN : 0; };
   function gainXp(m) {
-    if (!m.pub || m.sys || m.chan === NEWS || m.del) return 0;
+    if (!m.pub || m.anon || m.sys || m.chan === NEWS || m.del) return 0;
     const min = Math.floor(m.t / 60000);
     const r = xpBook[m.pub] || (xpBook[m.pub] = { n: m.nick, b: 0, f: 0, m: [] });
     if (m.t >= (r.lt || 0)) { r.n = m.nick; r.lt = m.t; }
@@ -2485,7 +3091,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   let lastTyping = 0;
   $("text").addEventListener("input", () => {
-    if (!net || Date.now() - lastTyping < 2500) return;
+    if (!net || (anonOn && anonAllowed()) || Date.now() - lastTyping < 2500) return;
     lastTyping = Date.now(); net.send({ t: "typing", id: myId, chan });
   });
   $("btnRoar").onclick = () => {
@@ -2500,6 +3106,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
     store.set("st", me.st); store.set("stx", me.stx); store.set("photo", me.photo); store.set("bio", me.bio); store.set("banner", me.banner);
     renderMe();
+    for (const c of homeConns.values()) if (c.open) c.send({ t: "u", u: myCard() });
     if (!net) return;
     setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
     net.send({ t: "member", id: myId, u: members.get(myId) });
@@ -2618,13 +3225,13 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     b.textContent = rec ? "⏹ " + fmtDur((Date.now() - recStart) / 1000) : "🎙";
     b.title = rec ? "Надіслати" : "Записати голосове повідомлення";
     $("btnRecCancel").hidden = !rec;
-    $("text").hidden = !!rec; $("btnRoar").hidden = !!rec; $("btnPic").hidden = !!rec || chan === OWN || chan === NEWS;
+    $("text").hidden = !!rec; $("btnRoar").hidden = !!rec; $("btnAnon").hidden = !!rec || !anonAllowed(); $("btnPic").hidden = !!rec || chan === OWN || chan === NEWS;
   }
   function sendVoice(audio, dur) {
     if (!net) return;
     const data = audio.replace(/^data:([^;,]+)[^,]*,/, "data:$1;base64,");
     if (data.length > MAX_AUDIO) { sysLocal("Голосове повідомлення завелике. Спробуй коротше."); return; }
-    const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text: "🎤 Голосове повідомлення", audio: data, dur: Math.round(dur), t: Date.now(), pub: myPub };
+    const m = { id: newId(), chan, from: myId, ...author(), text: "🎤 Голосове повідомлення", audio: data, dur: Math.round(dur), t: Date.now(), pub: myPub };
     addMsg(m); net.send({ t: "msg", m });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   }
@@ -2652,7 +3259,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       }
     } catch { sysLocal("Не вдалося відкрити це фото. Спробуй інше."); return; }
     if (data.length > MAX_MEDIA) { sysLocal("Фото завелике. Спробуй інше."); return; }
-    const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text: "🖼 Фото", image: data, iw: w, ih: h, t: Date.now(), pub: myPub };
+    const m = { id: newId(), chan, from: myId, ...author(), text: "🖼 Фото", image: data, iw: w, ih: h, t: Date.now(), pub: myPub };
     addMsg(m); net.send({ t: "msg", m });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   }
@@ -2771,7 +3378,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       }
       const data = (await toDataUrl(blob)).replace(/^data:([^;,]+)[^,]*,/, "data:$1;base64,");
       if (data.length > MAX_VIDEO) throw new Error("big");
-      const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text: "🎬 Відео", video: true, videoData: data, poster, vw: w, vh: h, dur: Math.round(dur), t: Date.now(), pub: myPub };
+      const m = { id: newId(), chan, from: myId, ...author(), text: "🎬 Відео", video: true, videoData: data, poster, vw: w, vh: h, dur: Math.round(dur), t: Date.now(), pub: myPub };
       busy.remove();
       addMsg(m); net?.send({ t: "msg", m });
       $("msgs").scrollTop = $("msgs").scrollHeight;
@@ -2828,7 +3435,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     try {
       const type = /^[\w.+-]+\/[\w.+-]+$/.test(file.type) ? file.type : "application/octet-stream";
       const data = "data:" + type + ";base64," + (await toDataUrl(file)).split(",")[1];
-      const m = { id: newId(), chan, from: myId, nick: me.nick, ava: me.ava, color: me.color, text: "📎 " + safeName(file.name), file: true, fname: safeName(file.name), fsize: file.size, ftype: type, fileData: data, t: Date.now(), pub: myPub };
+      const m = { id: newId(), chan, from: myId, ...author(), text: "📎 " + safeName(file.name), file: true, fname: safeName(file.name), fsize: file.size, ftype: type, fileData: data, t: Date.now(), pub: myPub };
       addMsg(m); net?.send({ t: "msg", m });
       $("msgs").scrollTop = $("msgs").scrollHeight;
     } catch { sysLocal("Не вдалося надіслати цей файл. Спробуй інший."); }
@@ -3013,7 +3620,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   });
   $("joinCode").value = hashCode || store.get("lastCode", "");
   renderMe(); renderAll();
-  loadKeys().then(() => { if ($("joinCode").value.length >= 4 && (hashCode || hasHist($("joinCode").value))) enter(false, true); });
+  loadKeys().then(() => { startHome(); if ($("joinCode").value.length >= 4 && (hashCode || hasHist($("joinCode").value))) enter(false, true); });
 })();
 </script>
 </body>
