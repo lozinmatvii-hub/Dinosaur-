@@ -89,6 +89,27 @@ input { font: inherit; color: var(--ink); }
 .html-view .hv-head { display: flex; align-items: center; gap: 8px; color: #fff; padding: 0 0 8px; }
 .html-view .hv-head span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; }
 .html-view .hv-head button { background: #fff2; color: #fff; border-radius: 6px; padding: 6px 12px; font-size: 14px; }
+.call-ov { position: fixed; inset: 0; z-index: 25; background: radial-gradient(circle at 50% 30%, #2b2d6e, #0c0d1a 70%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.call-ov[hidden], .call-pill[hidden] { display: none !important; }
+.call-ov video.remote { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.call-ov video.self { position: absolute; right: 16px; top: calc(16px + env(safe-area-inset-top, 0px)); width: min(28vw, 180px); border-radius: 10px; background: #000; box-shadow: 0 4px 16px #0008; z-index: 2; transform: scaleX(-1); }
+.call-ov .ci { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.call-ov.vid .ci { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; align-items: flex-start; text-shadow: 0 1px 4px #000; }
+.call-ov.vid .ci .ava { display: none; }
+.call-ov .ci .ava { width: 120px; height: 120px; font-size: 64px; }
+.call-ov.ringing .ci .ava { animation: ringPulse 1.4s ease-out infinite; }
+@keyframes ringPulse { 0% { box-shadow: 0 0 0 0 #4fd27a99; } 100% { box-shadow: 0 0 0 28px #4fd27a00; } }
+.call-ov .cn { font-size: 26px; font-weight: 700; }
+.call-ov .cs { font-size: 15px; opacity: .8; }
+.call-ov .cbs { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; z-index: 3; display: flex; justify-content: center; gap: 18px; }
+.call-ov .cb { width: 60px; height: 60px; border-radius: 50%; background: #ffffff26; color: #fff; font-size: 26px; display: grid; place-items: center; }
+.call-ov .cb.off { background: #fff; color: #000; }
+.call-ov .cb.ok { background: #23a55a; }
+.call-ov .cb.end { background: #f23f43; }
+.call-ov .cb.end span { display: inline-block; transform: rotate(135deg); }
+.call-ov .cb[hidden] { display: none; }
+.call-ov .min { position: absolute; left: 16px; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); z-index: 3; background: #ffffff26; color: #fff; border-radius: 16px; padding: 6px 12px; font-size: 13px; }
+.call-pill { position: fixed; z-index: 24; left: 50%; transform: translateX(-50%); top: calc(8px + env(safe-area-inset-top, 0px)); background: #23a55a; color: #fff; border-radius: 20px; padding: 8px 16px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 14px #0005; }
 .html-view iframe { flex: 1; width: 100%; border: 0; border-radius: 8px; background: #fff; }
 .img-msg img { display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain; }
 .lightbox { position: fixed; inset: 0; z-index: 20; background: #000e; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); }
@@ -418,7 +439,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   <div class="dm-wrap" id="dmWrap">
     <div class="dm-list" id="dmList"></div>
     <div class="dm-main">
-      <div class="dm-head"><button class="icon-btn dm-back" id="dmBack" aria-label="До списку">←</button><span id="dmTitle">Особисті</span><span class="sp"></span><button class="icon-btn" id="dmDelete" title="Видалити розмову" hidden>🗑</button><button class="icon-btn" id="dmClose" aria-label="Закрити">✕</button></div>
+      <div class="dm-head"><button class="icon-btn dm-back" id="dmBack" aria-label="До списку">←</button><span id="dmTitle">Особисті</span><span class="sp"></span><button class="icon-btn" id="dmCallBtn" title="Подзвонити" hidden>📞</button><button class="icon-btn" id="dmVidBtn" title="Відеодзвінок" hidden>📹</button><button class="icon-btn" id="dmDelete" title="Видалити розмову" hidden>🗑</button><button class="icon-btn" id="dmClose" aria-label="Закрити">✕</button></div>
       <div class="dm-msgs" id="dmMsgs"></div>
       <form class="dm-form" id="dmForm" autocomplete="off"><input id="dmText" maxlength="500" placeholder="Особисте повідомлення"><button class="btn" style="flex:none" type="submit">➤</button></form>
     </div>
@@ -441,6 +462,21 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 </div>
 
 <div class="ov" id="ovCard" hidden><div class="card" id="card"></div></div>
+
+<div class="call-ov" id="ovCall" hidden>
+  <video class="remote" id="callRemote" autoplay playsinline muted hidden></video>
+  <audio id="callAudio" autoplay playsinline></audio>
+  <video class="self" id="callSelf" autoplay playsinline muted hidden></video>
+  <div class="ci"><div id="callAva"></div><div class="cn" id="callName"></div><div class="cs" id="callSt"></div></div>
+  <button class="min" id="callMin" hidden>⤡ Згорнути</button>
+  <div class="cbs">
+    <button class="cb" id="callMute" title="Мікрофон">🎤</button>
+    <button class="cb" id="callCam" title="Камера" hidden>📷</button>
+    <button class="cb ok" id="callAccept" title="Прийняти" hidden>📞</button>
+    <button class="cb end" id="callEnd" title="Завершити"><span>📞</span></button>
+  </div>
+</div>
+<button class="call-pill" id="callPill" hidden></button>
 
 <div class="ov" id="ovAdmin" hidden>
   <div class="dlg">
@@ -1218,6 +1254,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (mine) act("✏️ Редагувати профіль", "", () => $("meAva").click());
     else if (id) {
       act("💬 Написати особисто", "", () => openDm(dmKeyOf(id), id));
+      act("📞 Подзвонити", "sec", () => startCall(id, false));
+      act("📹 Відеодзвінок", "sec", () => startCall(id, true));
       if (canManage(u)) act("⚙️ Керувати учасником", "sec", () => manageMember(id));
     }
     if (acts.children.length) body.append(acts);
@@ -1365,6 +1403,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const u = members.get(id);
     if (!u) return;
     members.delete(id); typing.delete(id); dropVoice(id); dropLive(id);
+    if (dmCall?.peer === id) endCall("Зв'язок обірвався");
     if (isHost && ![...members.values()].some(o => u.pub && o.pub === u.pub)) {
       const k = u.pub || id;
       clearTimeout(leftSoon.get(k));
@@ -1538,6 +1577,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         call.on("close", () => { if (watchCall === call) closeStage(); });
         return;
       }
+      if (call.metadata?.kind === "dm-call") { onCallMedia(call); return; }
       // only answer while I'm in the voice channel; if we both dialled at once, the lower id's call wins
       if (!localStream || (calls.has(call.peer) && myId < call.peer)) { call.close(); return; }
       calls.get(call.peer)?.close();
@@ -1668,6 +1708,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   function leave(reason) {
     if (!net) return;
+    if (dmCall) { callSig("call-end"); endCall("Дзвінок завершено"); }
     leaveVoice(); stopLive(); closeStage(); live.clear();
     net.send({ t: "leave", id: myId }); net.close(); net = null; peerObj = null;
     clearTimeout(saveTimer); writeHist(code);
@@ -1852,7 +1893,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   function wireDm(c) {
     dmConns.set(c.peer, c);
     c.on("data", d => onDm(c.peer, d));
-    c.on("close", () => { if (dmConns.get(c.peer) === c) dmConns.delete(c.peer); });
+    c.on("close", () => { if (dmConns.get(c.peer) === c) dmConns.delete(c.peer); if (dmCall?.peer === c.peer) endCall("Зв'язок обірвався"); });
   }
   function dmConn(peerId) {
     const c = dmConns.get(peerId);
@@ -1866,6 +1907,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     });
   }
   function onDm(peerId, d) {
+    if (typeof d?.t === "string" && d.t.startsWith("call-")) { onCallSignal(peerId, d); return; }
     if (!d || d.t !== "dm" || !d.m) return;
     const text = clean(d.m.text, 500); if (!text) return;
     const key = dmKeyOf(peerId), t = dmThread(key, peerId);
@@ -1917,6 +1959,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (t) { $("dmTitle").firstChild.textContent = t.nick; $("dmTitle").lastChild.textContent = online ? "🟢 в мережі" : "не в мережі"; }
     $("dmText").disabled = !online;
     $("dmDelete").hidden = !t;
+    $("dmCallBtn").hidden = $("dmVidBtn").hidden = !online;
     $("dmText").placeholder = !t ? "Вибери розмову ліворуч" : online ? "Написати " + t.nick : t.nick + " зараз не в мережі на цьому сервері";
     if (!t) { box.innerHTML = '<div class="dm-empty">Вибери, кому написати. Особисті повідомлення йдуть напряму людині й не проходять через сервер.</div>'; return; }
     if (!t.msgs.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = "Почни розмову з " + t.nick + " 👋"; box.append(e); }
@@ -1939,6 +1982,161 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     dmThread(key, peerId).msgs.push({ id: m.id, me: true, text, t: Date.now() });
     saveDms(); renderDms();
   });
+  // ---------- calling a friend: it rings on their side until they pick up ----------
+  // the ring, answer and hang-up go over the private connection; voice and video over a direct media call
+  let dmCall = null;
+  const getCallMedia = video => navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true },
+    video: video ? { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } : false });
+  const callSig = (t, extra) => { const c = dmCall; if (c) dmConn(c.peer).then(n => n.send({ t, id: c.id, ...extra })).catch(() => {}); };
+  function callTone() {
+    // incoming: a bright double ring; outgoing: a soft long beep
+    if (!actx2 || !dmCall || dmCall.state !== "ringing") return;
+    try {
+      actx2.resume?.();
+      const t0 = actx2.currentTime, inc = dmCall.dir === "in";
+      const notes = inc ? [[660, 0, .25], [880, .3, .25], [660, .8, .25], [880, 1.1, .25]] : [[440, 0, 1]];
+      for (const [f, at, len] of notes) {
+        const o = actx2.createOscillator(), g = actx2.createGain(); o.frequency.value = f; o.type = "sine";
+        g.gain.setValueAtTime(0.0001, t0 + at); g.gain.exponentialRampToValueAtTime(inc ? 0.2 : 0.06, t0 + at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + len);
+        o.connect(g).connect(actx2.destination); o.start(t0 + at); o.stop(t0 + at + len + 0.02);
+      }
+    } catch {}
+    if (dmCall.dir === "in") navigator.vibrate?.([300, 150, 300]);
+  }
+  async function startCall(peerId, video) {
+    const u = members.get(peerId);
+    if (!u || peerId === myId) return;
+    if (dmCall) { sysLocal("Ти вже в дзвінку."); return; }
+    if (!navigator.mediaDevices?.getUserMedia) { sysLocal("Цей браузер не підтримує дзвінки."); return; }
+    $("ovCard").hidden = true;
+    let stream;
+    try { stream = await getCallMedia(video); }
+    catch { sysLocal(video ? "Немає доступу до камери чи мікрофона. Дозволь їх у налаштуваннях браузера." : "Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера."); return; }
+    leaveVoice();
+    dmCall = { id: newId(), peer: peerId, key: dmKeyOf(peerId), u: { ...u }, dir: "out", video, state: "ringing", stream, mic: true, cam: video };
+    renderCall();
+    try { (await dmConn(peerId)).send({ t: "call-ring", id: dmCall.id, video }); }
+    catch { endCall("Не вдалося додзвонитися"); return; }
+    const id = dmCall.id;
+    dmCall.toneTimer = setInterval(callTone, 3000); callTone();
+    dmCall.timeout = setTimeout(() => { if (dmCall?.id === id && dmCall.state === "ringing") { callSig("call-cancel"); endCall(u.nick + " не відповідає", "📞 Дзвінок без відповіді"); } }, 30000);
+  }
+  function onCallSignal(peerId, d) {
+    const id = typeof d.id === "string" ? d.id.slice(0, 40) : "";
+    if (!id) return;
+    if (d.t === "call-ring") {
+      if (dmCall) { dmConn(peerId).then(n => n.send({ t: "call-decline", id, busy: true })).catch(() => {}); return; }
+      const u = members.get(peerId) || { ...dmThread(dmKeyOf(peerId), peerId) };
+      dmCall = { id, peer: peerId, key: dmKeyOf(peerId), u: { nick: u.nick, ava: u.ava, color: u.color, pub: u.pub || "", photo: u.photo || "" }, dir: "in", video: !!d.video, state: "ringing", mic: true, cam: !!d.video };
+      renderCall();
+      dmCall.toneTimer = setInterval(callTone, 2000); callTone();
+      if (myStatus() !== "dnd" && nt.popup && "Notification" in window && Notification.permission === "granted" && document.hidden) {
+        try { new Notification("📞 " + dmCall.u.nick, { body: d.video ? "Відеодзвінок" : "Дзвонить тобі", tag: "dinocord-call" }); } catch {}
+      }
+      dmCall.timeout = setTimeout(() => { if (dmCall?.id === id && dmCall.state === "ringing") endCall("Пропущений дзвінок", "📞 Пропущений дзвінок"); }, 35000);
+      return;
+    }
+    if (!dmCall || dmCall.id !== id || dmCall.peer !== peerId) return;
+    if (d.t === "call-accept" && dmCall.dir === "out" && dmCall.state === "ringing") {
+      stopRing(); dmCall.state = "connecting"; renderCall();
+      wireCallMedia(peerObj.call(peerId, dmCall.stream, { metadata: { kind: "dm-call", id } }));
+    }
+    else if (d.t === "call-cancel") endCall("Пропущений дзвінок", "📞 Пропущений дзвінок");
+    else if (d.t === "call-decline") endCall(d.busy ? dmCall.u.nick + " зараз в іншому дзвінку" : dmCall.u.nick + " відхилив дзвінок", "📞 Дзвінок відхилено");
+    else if (d.t === "call-end") endCall("Дзвінок завершено");
+  }
+  async function acceptCall() {
+    const c = dmCall; if (!c || c.dir !== "in" || c.state !== "ringing") return;
+    stopRing(); c.state = "connecting"; renderCall();
+    try { c.stream = await getCallMedia(c.video); }
+    catch {
+      try { c.stream = await getCallMedia(false); c.video = c.cam = false; }
+      catch { callSig("call-decline"); endCall("Немає доступу до мікрофона"); return; }
+    }
+    if (dmCall !== c) { c.stream.getTracks().forEach(t => t.stop()); return; }
+    leaveVoice();
+    callSig("call-accept");
+    renderCall();
+  }
+  function onCallMedia(call) {
+    if (!dmCall || dmCall.dir !== "in" || call.peer !== dmCall.peer || call.metadata?.id !== dmCall.id || !dmCall.stream) { call.close(); return; }
+    call.answer(dmCall.stream);
+    wireCallMedia(call);
+  }
+  function wireCallMedia(call) {
+    const c = dmCall; c.media = call;
+    call.on("stream", s => {
+      if (dmCall !== c) return;
+      $("callAudio").srcObject = s; $("callAudio").play().catch(() => {});
+      $("callRemote").srcObject = s; $("callRemote").play().catch(() => {});
+      if (c.state !== "talking") { c.state = "talking"; c.started = Date.now(); c.clock = setInterval(renderCallStatus, 1000); }
+      renderCall();
+    });
+    const end = () => { if (dmCall === c) endCall("Дзвінок завершено"); };
+    call.on("close", end); call.on("error", end);
+  }
+  function stopRing() { if (!dmCall) return; clearInterval(dmCall.toneTimer); clearTimeout(dmCall.timeout); navigator.vibrate?.(0); }
+  const callLen = c => { const s = Math.round((Date.now() - c.started) / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  function endCall(note, logText) {
+    const c = dmCall; if (!c) return;
+    stopRing(); clearInterval(c.clock);
+    dmCall = null;
+    c.stream?.getTracks().forEach(t => t.stop());
+    try { c.media?.close(); } catch {}
+    for (const v of ["callAudio", "callRemote", "callSelf"]) $(v).srcObject = null;
+    // the call leaves a line in your private chat with that person
+    const t = dmThread(c.key, members.has(c.peer) ? c.peer : null);
+    t.msgs.push({ id: newId(), me: c.dir === "out", text: c.started ? "📞 Дзвінок · " + callLen(c) : logText || "📞 Дзвінок", t: Date.now() });
+    if (!c.started && c.dir === "in" && !(dmOpen === c.key && !$("ovDm").hidden)) t.unread = (t.unread || 0) + 1;
+    saveDms(); renderDmBadge(); if (!$("ovDm").hidden) renderDms();
+    $("callPill").hidden = true;
+    $("ovCall").classList.remove("ringing", "vid");
+    $("callSt").textContent = note || "Дзвінок завершено";
+    for (const b of ["callMute", "callCam", "callAccept", "callMin"]) $(b).hidden = true;
+    $("callEnd").hidden = true; $("callRemote").hidden = $("callSelf").hidden = true;
+    $("ovCall").hidden = false;
+    setTimeout(() => { if (!dmCall) $("ovCall").hidden = true; }, 1600);
+  }
+  function renderCallStatus() {
+    const c = dmCall; if (!c) return;
+    const st = c.state === "talking" ? callLen(c) : c.state === "connecting" ? "З'єднуємо…" : c.dir === "in" ? (c.video ? "📹 Відеодзвінок…" : "Дзвонить тобі…") : "Дзвоню…";
+    $("callSt").textContent = st;
+    $("callPill").textContent = "📞 " + c.u.nick + " · " + st + " · Повернутись";
+  }
+  function renderCall() {
+    const c = dmCall; if (!c) return;
+    const ov = $("ovCall");
+    if (!c.mini) ov.hidden = false;
+    $("callPill").hidden = !c.mini;
+    ov.classList.toggle("ringing", c.state === "ringing");
+    const remoteVid = c.state === "talking" && !!$("callRemote").srcObject?.getVideoTracks().length;
+    ov.classList.toggle("vid", remoteVid);
+    $("callRemote").hidden = !remoteVid;
+    $("callSelf").hidden = !(c.stream && c.cam && c.stream.getVideoTracks().length);
+    if (c.stream && $("callSelf").srcObject !== c.stream) { $("callSelf").srcObject = c.stream; $("callSelf").play().catch(() => {}); }
+    const a = $("callAva"); a.innerHTML = ""; a.append(avaEl(c.u, "ava"));
+    $("callName").textContent = c.u.nick;
+    renderCallStatus();
+    const incoming = c.dir === "in" && c.state === "ringing";
+    $("callAccept").hidden = !incoming;
+    $("callEnd").hidden = false; $("callEnd").title = incoming ? "Відхилити" : "Завершити";
+    $("callMute").hidden = incoming; $("callMute").textContent = c.mic ? "🎤" : "🔇"; $("callMute").classList.toggle("off", !c.mic);
+    $("callCam").hidden = incoming || !c.stream?.getVideoTracks().length; $("callCam").classList.toggle("off", !c.cam);
+    $("callMin").hidden = incoming;
+  }
+  $("callAccept").onclick = acceptCall;
+  $("callEnd").onclick = () => {
+    const c = dmCall; if (!c) return;
+    if (c.state === "ringing") { callSig(c.dir === "in" ? "call-decline" : "call-cancel"); endCall(c.dir === "in" ? "Дзвінок відхилено" : "Дзвінок скасовано", c.dir === "in" ? "📞 Дзвінок відхилено" : "📞 Скасований дзвінок"); }
+    else { callSig("call-end"); endCall("Дзвінок завершено"); }
+  };
+  $("callMute").onclick = () => { const c = dmCall; if (!c?.stream) return; c.mic = !c.mic; c.stream.getAudioTracks().forEach(t => { t.enabled = c.mic; }); renderCall(); };
+  $("callCam").onclick = () => { const c = dmCall; if (!c?.stream) return; c.cam = !c.cam; c.stream.getVideoTracks().forEach(t => { t.enabled = c.cam; }); renderCall(); };
+  $("callMin").onclick = () => { if (!dmCall) return; dmCall.mini = true; $("ovCall").hidden = true; renderCall(); };
+  $("callPill").onclick = () => { if (!dmCall) return; dmCall.mini = false; renderCall(); };
+  $("dmCallBtn").onclick = () => { const p = dmOpen && peerOfKey(dmOpen); if (p) { $("ovDm").hidden = true; startCall(p, false); } };
+  $("dmVidBtn").onclick = () => { const p = dmOpen && peerOfKey(dmOpen); if (p) { $("ovDm").hidden = true; startCall(p, true); } };
+
   $("btnDms").onclick = () => openDm(dmOpen && dms[dmOpen] ? dmOpen : "");
   $("dmClose").onclick = () => { $("ovDm").hidden = true; };
   $("ovCard").addEventListener("click", e => { if (e.target === $("ovCard")) $("ovCard").hidden = true; });
