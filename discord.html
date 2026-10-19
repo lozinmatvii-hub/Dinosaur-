@@ -139,6 +139,11 @@ input { font: inherit; color: var(--ink); }
 .msg .who { font-weight: 600; margin-right: 6px; }
 .msg .time { color: var(--muted); font-size: 12px; }
 .msg .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg .edited { color: var(--muted); font-size: 11px; margin-left: 4px; white-space: nowrap; }
+.edit-box { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+.edit-box textarea { width: 100%; min-height: 40px; resize: vertical; background: var(--input); border: 0; border-radius: 6px; padding: 8px 10px; color: var(--ink); font: inherit; outline: none; }
+.edit-box .hint { font-size: 12px; color: var(--muted); }
+.edit-box .hint button { color: var(--accent); padding: 0; font-size: 12px; }
 .msg.sys .text { color: var(--muted); font-style: italic; }
 .msg .text .ping { background: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--head); border-radius: 3px; padding: 0 2px; }
 .reacts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
@@ -618,6 +623,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     box.append(w);
     let prev = null;
     for (const m of history[chan]) {
+      if (m.del) continue;
       const cont = prev && !m.sys && !prev.sys && prev.from === m.from && m.t - prev.t < 5 * 60e3;
       const row = document.createElement("div");
       row.className = "msg" + (cont && !m.reply ? " cont" : "") + (m.sys ? " sys" : "");
@@ -659,7 +665,13 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         vm.append(au); body.append(vm);
       } else if (m.audioGone) {
         const g = document.createElement("div"); g.className = "text gone"; g.textContent = "🎤 Голосове повідомлення (вже недоступне)"; body.append(g);
-      } else { const tx = document.createElement("div"); tx.className = "text"; textNodes(tx, m.text); body.append(tx); }
+      } else if (editing?.id === m.id && editing.chan === m.chan) {
+        body.append(editorEl(m));
+      } else {
+        const tx = document.createElement("div"); tx.className = "text"; textNodes(tx, m.text);
+        if (m.edited) { const e = document.createElement("span"); e.className = "edited"; e.textContent = "(змінено)"; e.title = "Змінено о " + fmtTime(m.edited); tx.append(e); }
+        body.append(tx);
+      }
       const rs = Object.entries(m.reacts || {}).filter(([, ids]) => ids.length);
       if (rs.length) {
         const rb = document.createElement("div"); rb.className = "reacts";
@@ -679,6 +691,10 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
           const rb = document.createElement("button"); rb.textContent = "↩"; rb.title = "Відповісти";
           rb.onclick = () => startReply(m); tools.append(rb);
         }
+        if (canEditMsg(m) && !$("text").disabled) {
+          const eb = document.createElement("button"); eb.textContent = "✏️"; eb.title = "Редагувати";
+          eb.onclick = () => startEdit(m); tools.append(eb);
+        }
         for (const e of REACTS) {
           const b = document.createElement("button"); b.textContent = e; b.title = "Реакція";
           b.onclick = () => toggleReact(m, e);
@@ -687,7 +703,11 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         const more = document.createElement("button"); more.textContent = "＋"; more.title = "Інша реакція";
         more.onclick = ev => { ev.stopPropagation(); openEmoji(more, e => { const cur = history[m.chan]?.find(x => x.id === m.id); if (cur && !(cur.reacts[e] || []).includes(myId)) toggleReact(cur, e); }); };
         tools.append(more);
-        if (m.chan !== NEWS && (iOwn() || (iMod() && m.pub !== meta.owner))) {
+        if (canDeleteOwn(m)) {
+          const d = document.createElement("button"); d.textContent = "🗑"; d.title = "Видалити своє повідомлення";
+          d.onclick = () => { if (confirm("Видалити своє повідомлення для всіх?")) deleteOwn(m); };
+          tools.append(d);
+        } else if (m.chan !== NEWS && (iOwn() || (iMod() && m.pub !== meta.owner))) {
           const d = document.createElement("button"); d.textContent = "🗑"; d.title = "Видалити повідомлення";
           d.onclick = () => { if (confirm("Видалити це повідомлення для всіх?")) doAdmin({ a: "del", id: m.id, chan: m.chan }); };
           tools.append(d);
@@ -813,6 +833,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (m.pk && typeof m.pk === "object" && ["id", "a", "c", "s"].every(k => typeof m.pk[k] === "string" && m.pk[k].length < 2000))
       msg.pk = { id: m.pk.id, a: m.pk.a, c: m.pk.c, s: m.pk.s };
     if (validPub(m.pub)) msg.pub = m.pub;
+    if (Number(m.edited) > 0) msg.edited = Number(m.edited);
+    if (Number(m.del) > 0) { msg.del = Number(m.del); msg.text = "…"; delete msg.image; delete msg.audio; msg.video = false; }
     if (m.reply && typeof m.reply.id === "string") msg.reply = { id: m.reply.id.slice(0, 40), nick: clean(m.reply.nick, 16) || "Динозаврик", text: clean(m.reply.text, 80) };
     if (typeof m.audio === "string" && /^data:audio\/[\w.+-]+(;[\w=.+-]+)*;base64,[A-Za-z0-9+/=]+$/.test(m.audio) && m.audio.length <= MAX_AUDIO) { msg.audio = m.audio; msg.dur = Math.min(120, Number(m.dur) || 0); }
     else if (m.audioGone) msg.audioGone = true;
@@ -1259,6 +1281,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         }
         addMsg(m);
         const mine = history[c.id].find(x => x.id === m.id);
+        if (mine && Number(m.edited) > (mine.edited || 0) && clean(m.text, 500)) { mine.text = clean(m.text, 500); mine.edited = Number(m.edited); }
+        if (mine && Number(m.del) > 0 && !mine.del) applyDelete({ chan: c.id, id: m.id, at: Number(m.del) });
         const theirs = sanitizeReacts(m.reacts);
         if (mine) for (const e in theirs) mine.reacts[e] = [...new Set([...(mine.reacts[e] || []), ...theirs[e]])];
       }
@@ -1375,6 +1399,18 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       if (!msg.m || typeof msg.m !== "object") return;
       if (sender) { if (fromConn.pub && isMuted(fromConn.pub)) return; msg.m.from = sender; msg.m.pub = fromConn.pub || ""; }
       addChecked(msg.m);
+    }
+    else if (msg.t === "delown") {
+      const e = msg.e; if (!e || typeof e.id !== "string") return;
+      const orig = history[e.chan]?.find(x => x.id === e.id);
+      if (sender && (!orig || !(orig.pub ? orig.pub === fromConn.pub : orig.from === sender))) return;
+      applyDelete(e);
+    }
+    else if (msg.t === "edit") {
+      const e = msg.e; if (!e || typeof e.id !== "string") return;
+      const orig = history[e.chan]?.find(x => x.id === e.id);
+      if (sender && (!orig || !(orig.pub ? orig.pub === fromConn.pub : orig.from === sender))) return;
+      applyEdit(e);
     }
     else if (msg.t === "admin") {
       if (!msg.act) return;
@@ -1926,6 +1962,60 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     else crypto.subtle.sign(SIG, myKeys.privateKey, signed(m)).then(sig => { m.sig = b64(sig); addMsg(m, true); if (chan === NEWS) saveNews(); net?.send({ t: "msg", m }); });
     $("msgs").scrollTop = $("msgs").scrollHeight;
   });
+  // ---------- editing your own messages ----------
+  let editing = null;   // { id, chan, draft }
+  const canEditMsg = m => !m.sys && m.chan !== OWN && m.chan !== NEWS && !m.image && !m.audio && !m.video && !m.audioGone && !m.imageGone
+    && (m.pub ? m.pub === myPub : m.from === myId);
+  const canDeleteOwn = m => !m.sys && m.chan !== OWN && m.chan !== NEWS && (m.pub ? m.pub === myPub : m.from === myId);
+  function deleteOwn(m) {
+    const e = { chan: m.chan, id: m.id, at: Date.now() };
+    applyDelete(e); net?.send({ t: "delown", e });
+  }
+  function applyDelete(e) {
+    const m = history[e.chan]?.find(x => x.id === e.id);
+    if (!m || m.del) return;
+    m.del = Number(e.at) || Date.now(); m.text = "…";
+    delete m.image; delete m.audio; delete m.reacts; m.reacts = {};
+    if (m.video) { m.video = false; vEls.delete(m.id); }
+    if (editing?.id === m.id) editing = null;
+    saveHist();
+    if (e.chan === chan) renderMsgs();
+  }
+  function startEdit(m) { editing = { id: m.id, chan: m.chan, draft: m.text }; renderMsgs(); }
+  function cancelEdit() { editing = null; renderMsgs(); $("text").focus(); }
+  function saveEdit() {
+    const m = history[editing?.chan]?.find(x => x.id === editing.id);
+    const text = clean(editing?.draft, 500);
+    if (!m || !text || text === m.text) { cancelEdit(); return; }
+    const e = { chan: m.chan, id: m.id, text, at: Date.now() };
+    editing = null;
+    applyEdit(e); net?.send({ t: "edit", e });
+  }
+  function applyEdit(e) {
+    const m = history[e.chan]?.find(x => x.id === e.id);
+    const text = clean(e.text, 500), at = Number(e.at) || Date.now();
+    if (!m || !text || at <= (m.edited || 0)) return;
+    m.text = text; m.edited = at;
+    saveHist();
+    if (e.chan === chan) renderMsgs();
+  }
+  function editorEl(m) {
+    const box = document.createElement("div"); box.className = "edit-box";
+    const ta = document.createElement("textarea"); ta.maxLength = 500; ta.value = editing.draft;
+    ta.oninput = () => { editing.draft = ta.value; };
+    ta.onkeydown = ev => {
+      if (ev.key === "Escape") { ev.preventDefault(); cancelEdit(); }
+      else if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); saveEdit(); }
+    };
+    const hint = document.createElement("div"); hint.className = "hint";
+    const sv = document.createElement("button"); sv.type = "button"; sv.textContent = "Зберегти"; sv.onclick = saveEdit;
+    const cc = document.createElement("button"); cc.type = "button"; cc.textContent = "Скасувати"; cc.onclick = cancelEdit;
+    hint.append("Enter, щоб ", sv, " · Esc, щоб ", cc);
+    box.append(ta, hint);
+    requestAnimationFrame(() => { if (ta.isConnected) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } });
+    return box;
+  }
+
   // ---------- replies ----------
   let replyTo = null;
   function startReply(m) {
