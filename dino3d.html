@@ -1181,6 +1181,8 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     "12mgqwo": { skin: "dragon" },
     "36h0ae": { perk: "shield" },
     "67pms1": { perk: "dbl" },
+    "knihk8": { all: true },
+    "8de3uw": { all: true },
   };
   let usedCodes = store.get("codes", []), perks = store.get("perks", {});
   const promoIn = document.getElementById("promo"), promoMsg = document.getElementById("promoMsg");
@@ -1196,6 +1198,7 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     let text;
     if (p.coins) { coins += p.coins; store.set("coins", coins); text = "+" + p.coins + " монет"; }
     if (p.skin) { const s = SKINS.find(x => x.id === p.skin); unlockSkin(p.skin); text = "Відкрито скін «" + s.name + "»"; }
+    if (p.all) { SKINS.forEach(s => unlockSkin(s.id)); text = "Відкрито всі " + SKINS.length + " скінів!"; }
     if (p.perk) { perks[p.perk] = true; store.set("perks", perks); text = p.perk === "shield" ? "Наступний забіг почнеться зі щитом" : "Наступний забіг: подвійний стрибок на 30 секунд"; }
     promoMsg.textContent = "Промокод активовано: " + text; promoMsg.classList.add("good");
     promoIn.value = ""; updateStats(); renderSkins(); beep(1200, .15, "square", .05, 1.5);
