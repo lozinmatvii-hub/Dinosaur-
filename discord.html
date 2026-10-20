@@ -209,6 +209,21 @@ input { font: inherit; color: var(--ink); }
 .quote b { color: var(--ink); font-weight: 600; flex: none; }
 .quote span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .msg.flash { animation: flash 1.6s ease; }
+.cat { display: flex; align-items: center; }
+.cat-add { margin-left: auto; color: var(--muted); font-size: 16px; padding: 0 6px; border-radius: 4px; }
+.cat-add:hover { color: var(--head); background: var(--hover); }
+.chan-gear { margin-left: auto; font-size: 13px; opacity: .7; padding: 0 2px; }
+.chan-gear:hover { opacity: 1; }
+.composer { position: relative; }
+.cmd-pop { position: absolute; left: 16px; right: 16px; bottom: 100%; margin-bottom: 4px; z-index: 6; background: var(--side); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px #0005; padding: 6px; display: flex; flex-direction: column; max-height: 50vh; overflow-y: auto; }
+.cmd-pop button { display: flex; gap: 10px; align-items: baseline; padding: 7px 10px; border-radius: 6px; text-align: left; color: var(--ink); }
+.cmd-pop button:hover { background: var(--hover); }
+.cmd-pop b { color: var(--head); flex: none; }
+.cmd-pop span { color: var(--muted); font-size: 13px; }
+.top-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.top-tabs .btn { flex: 1; }
+.play-btn { margin-top: 6px; width: auto; padding: 6px 12px; font-size: 13px; }
+.game-view { background: #000e; }
 .pin-bar { flex: none; display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); text-align: left; color: var(--ink); min-width: 0; }
 .pin-bar[hidden] { display: none; }
 .pin-bar .pt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
@@ -303,6 +318,15 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 .dm-bubble { max-width: 78%; padding: 7px 11px; border-radius: 14px; background: var(--input); white-space: pre-wrap; overflow-wrap: anywhere; align-self: flex-start; }
 .dm-bubble.me { align-self: flex-end; background: var(--accent); color: #fff; }
 .dm-bubble small { display: block; font-size: 11px; opacity: .7; margin-top: 2px; }
+.dm-bubble.has-media { padding: 4px; background: var(--input); color: var(--ink); }
+.dm-bubble.has-media small { padding: 0 6px 2px; }
+.dm-bubble .file-msg { margin: 0; background: transparent; border: 0; }
+.dm-media img { display: block; max-width: 100%; max-height: 260px; width: auto; height: auto; border-radius: 10px; cursor: zoom-in; }
+.dm-media video { display: block; max-width: 100%; max-height: 300px; border-radius: 10px; background: #000; }
+.dm-media audio { display: block; max-width: 260px; }
+.dm-media .gone { padding: 6px 8px; color: var(--muted); font-style: italic; }
+.dm-rec { color: var(--danger); }
+.dm-form .icon-btn.rec { color: var(--danger); font-size: 13px; width: auto; padding: 0 8px; }
 .dm-sys { align-self: center; font-size: 12px; color: var(--muted); }
 .dm-who { display: block; font-size: 12px; margin-bottom: 2px; }
 .dm-bubble.pending { opacity: .6; }
@@ -425,6 +449,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       <button class="live-btn" id="btnScreen" hidden title="Показати свій екран">🖥️<span class="lbl"> Екран</span></button>
       <button class="live-btn" id="btnCam" hidden title="Транслювати камеру">📷<span class="lbl"> Камера</span></button>
       <button class="live-btn on" id="btnStopLive" hidden title="Зупинити трансляцію">⏹<span class="lbl"> Зупинити</span></button>
+      <button class="live-btn" id="btnPlay" title="Грати в Динозаврика">🎮<span class="lbl"> Грати</span></button>
       <button class="live-btn" id="btnPins" hidden title="Закріплені повідомлення">📌<span class="lbl"> Закріплені</span></button>
       <button class="live-btn" id="btnTop" hidden title="Рейтинг сервера: рівні учасників">🏆<span class="lbl"> Рейтинг</span></button>
       <button class="live-btn" id="btnClear" hidden title="Видалити всі повідомлення в цьому каналі">🧹<span class="lbl"> Очистити</span></button>
@@ -441,6 +466,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     <div class="typing" id="typing"></div>
     <div class="composer">
       <div class="reply-bar" id="replyBar" hidden><span id="replyText"></span><button class="icon-btn" type="button" id="replyCancel" title="Скасувати відповідь">✕</button></div>
+      <div class="cmd-pop" id="cmdPop" hidden></div>
       <form id="form" autocomplete="off">
         <input id="text" maxlength="500" placeholder="Спершу створи сервер або приєднайся" disabled>
         <button class="icon-btn" type="button" id="btnPic" title="Надіслати фото, відео або файл">📎</button>
@@ -487,7 +513,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     <div class="dm-main">
       <div class="dm-head"><button class="icon-btn dm-back" id="dmBack" aria-label="До списку">←</button><span id="dmTitle">Особисті</span><span class="sp"></span><button class="btn dm-join" id="dmJoin" hidden>📞 Приєднатися</button><button class="icon-btn" id="dmCallBtn" title="Подзвонити" hidden>📞</button><button class="icon-btn" id="dmVidBtn" title="Відеодзвінок" hidden>📹</button><button class="icon-btn" id="dmGroup" title="Учасники групи" hidden>👥</button><button class="icon-btn" id="dmBlock" title="Заблокувати" hidden>🚫</button><button class="icon-btn" id="dmDelete" title="Видалити розмову" hidden>🗑</button><button class="icon-btn" id="dmClose" aria-label="Закрити">✕</button></div>
       <div class="dm-msgs" id="dmMsgs"></div>
-      <form class="dm-form" id="dmForm" autocomplete="off"><input id="dmText" maxlength="500" placeholder="Особисте повідомлення"><button class="btn" style="flex:none" type="submit">➤</button></form>
+      <form class="dm-form" id="dmForm" autocomplete="off"><button class="icon-btn" type="button" id="dmPic" title="Фото, відео або файл">📎</button><input type="file" id="dmPicInput" hidden><button class="icon-btn" type="button" id="dmRecCancel" title="Скасувати запис" hidden>✕</button><button class="icon-btn" type="button" id="dmRec" title="Голосове повідомлення">🎙</button><input id="dmText" maxlength="500" placeholder="Особисте повідомлення"><button class="btn" style="flex:none" type="submit">➤</button></form>
     </div>
   </div>
 </div>
@@ -581,7 +607,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     set(k, v) { try { localStorage.setItem("dinocord-" + k, JSON.stringify(v)); } catch {} },
   };
 
-  const CHANNELS = [
+  const BASE_CHANNELS = [
     { id: "news", name: "новини-дінокорду", topic: "Новини від автора ДіноКорду. Читай і став реакції 🦖", news: true },
     { id: "general", name: "загальний", topic: "Балачки про все" },
     { id: "games", name: "ігри", topic: "Рекорди в Динозаврику, кличте на перегони" },
@@ -589,6 +615,11 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     { id: "memes", name: "мемчики", topic: "Тільки смішне" },
     { id: "help", name: "допомога", topic: "Питання та відповіді" },
   ];
+  // the creator can add, rename and remove channels; news, the owner's channel and #загальний always stay
+  let CHANNELS = BASE_CHANNELS.slice();
+  const CUSTOM_ID = /^c-[a-z0-9]{6}$/;
+  const isChanId = id => typeof id === "string" && (BASE_CHANNELS.some(c => c.id === id) || CUSTOM_ID.test(id));
+  const chanName = v => clean(v, 40).toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_-]/gu, "").replace(/-+/g, "-").slice(0, 24);
   const AVAS = ["🦖", "🦕", "🐊", "🐢", "🦎", "🐉", "🐲", "🥚", "🐸", "🦤", "🐍", "🦩"];
   const COLORS = ["#f47b67", "#ffbf3a", "#4fd27a", "#5ec8f2", "#a98bff", "#f28bd2", "#f2a35e", "#7ce0c3"];
   const REACTS = ["👍", "😂", "🔥", "🦖", "❤️"];   // quick reactions on every message; the picker offers the rest
@@ -642,18 +673,33 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   const live = new Map();      // id -> {kind} for everyone streaming their screen or camera
   const viewers = new Map();   // viewer id -> call carrying my stream
   let myLive = null, watching = null, watchCall = null;
-  CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
+  const ensureChan = id => { if (!history[id]) history[id] = []; if (unread[id] === undefined) unread[id] = 0; };
+  function resetChannelState() {
+    for (const k in history) delete history[k];
+    for (const k in unread) delete unread[k];
+    CHANNELS = BASE_CHANNELS.slice();
+    CHANNELS.forEach(c => ensureChan(c.id));
+  }
+  resetChannelState();
 
   // ---------- render ----------
   function renderChans() {
     const box = $("chans");
     box.innerHTML = '<div class="cat">Текстові канали</div>';
+    if (net && iOwn()) {
+      const add = document.createElement("button"); add.className = "cat-add"; add.textContent = "＋"; add.title = "Створити канал";
+      add.onclick = () => editChannel(null); box.firstChild.append(add);
+    }
     for (const c of CHANNELS) {
       const b = document.createElement("button");
       b.className = "chan" + (c.id === chan ? " on" : "");
-      b.innerHTML = '<span class="hash' + (c.news ? ' ic">📣' : c.own ? ' ic">📢' : '">#') + '</span><span></span>' + (unread[c.id] ? '<span class="unread">' + Math.min(99, unread[c.id]) + "</span>" : "");
+      b.innerHTML = '<span class="hash' + (c.news ? ' ic">📣' : c.own || c.ro ? ' ic">📢' : '">#') + '</span><span></span>' + (unread[c.id] ? '<span class="unread">' + Math.min(99, unread[c.id]) + "</span>" : "");
       b.children[1].textContent = c.name;
       b.onclick = () => { chan = c.id; unread[c.id] = 0; $("app").classList.remove("drawer"); renderAll(); $("text").focus(); };
+      if (net && iOwn() && c.id === chan && !c.news && !c.own) {
+        const g = document.createElement("span"); g.className = "chan-gear"; g.textContent = "⚙️"; g.title = "Налаштувати канал";
+        g.onclick = e => { e.stopPropagation(); editChannel(c); }; b.append(g);
+      }
       box.append(b);
     }
     const vc = document.createElement("div"); vc.className = "cat"; vc.textContent = "Голосові канали"; box.append(vc);
@@ -691,7 +737,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     }
     const c = CHANNELS.find(c => c.id === chan);
     $("chanName").textContent = c.name; $("chanTopic").textContent = c.topic;
-    const ownLock = (!!c.own && !iOwn()) || (!!c.news && !iSite()), mute = myPub && isMuted(myPub) ? adm.mutes.get(myPub).until : 0;
+    const roLock = !!c.ro && !isStaff(myPub);
+    const ownLock = (!!c.own && !iOwn()) || (!!c.news && !iSite()) || roLock, mute = myPub && isMuted(myPub) ? adm.mutes.get(myPub).until : 0;
     if (net) {
       $("text").disabled = $("btnRoar").disabled = $("btnRec").disabled = $("btnPic").disabled = ownLock || !!mute;
       $("btnPic").hidden = !!c.own || !!c.news;
@@ -699,7 +746,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       $("btnAnon").classList.toggle("on", anonOn && anonAllowed());
       $("btnAnon").title = anonOn ? "Зараз ти пишеш анонімно. Натисни, щоб писати під своїм ім'ям" : "Писати анонімно";
       $("btnRec").hidden = !!c.own || !!c.news || !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia;
-      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? (c.news ? "Тут пише тільки автор ДіноКорду 📣" : "Тут пише тільки творець сервера 👑") : anonOn && anonAllowed() ? "🎭 Анонімно в #" + c.name : "Написати в #" + c.name;
+      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? (c.news ? "Тут пише тільки автор ДіноКорду 📣" : roLock ? "Тут пишуть тільки адмін і модератори 📢" : "Тут пише тільки творець сервера 👑") : anonOn && anonAllowed() ? "🎭 Анонімно в #" + c.name : "Написати в #" + c.name;
     }
   }
 
@@ -780,7 +827,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const row = document.createElement("div");
       row.className = "msg" + (cont && !m.reply ? " cont" : "") + (m.sys ? " sys" : "") + (m.anon ? " anon" : "");
       row.dataset.id = m.id;
-      const rowAva = avaEl(m.sys ? { ava: "📢", color: "var(--sel)" } : m);
+      const rowAva = avaEl(m.sys ? { ava: m.ava === "🤖" ? "🤖" : "📢", color: "var(--sel)" } : m);
       if (!m.sys) { rowAva.style.cursor = "pointer"; rowAva.title = "Профіль"; rowAva.onclick = () => profileFromMsg(m); }
       row.append(rowAva);
       const body = document.createElement("div"); body.className = "body";
@@ -826,6 +873,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         if (m.edited) { const e = document.createElement("span"); e.className = "edited"; e.textContent = "(змінено)"; e.title = "Змінено о " + fmtTime(m.edited); tx.append(e); }
         body.append(tx);
       }
+      if (m.dino) { const pb = document.createElement("button"); pb.className = "btn sec play-btn"; pb.textContent = "▶ Грати в «" + m.dino.g + "»"; pb.onclick = () => openGame(GAMES.find(g => g.n === m.dino.g) || GAMES[0]); body.append(pb); }
       if (!m.sys && isPinned(m)) { const pn = document.createElement("div"); pn.className = "pinned"; pn.textContent = "📌 закріплено"; body.append(pn); }
       const rs = Object.entries(m.reacts || {}).filter(([, ids]) => ids.length);
       if (rs.length) {
@@ -875,7 +923,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       if (rl === "mod") tags.push("🛡️ модератор"); else if (rl === "vip") tags.push("⭐ VIP");
       if (u.host) tags.push("🖥️ тримає сервер");
       if (u.pub && isMuted(u.pub)) tags.push("🔇 заглушений");
-      if (u.pub && xpOf(u.pub)) tags.push("рів. " + levelOf(xpOf(u.pub)).level);
+      if (u.pub && levelOf(xpOf(u.pub)).level) tags.push("рів. " + levelOf(xpOf(u.pub)).level);
       if (tags.length) { const t = document.createElement("div"); t.className = "tag"; t.textContent = tags.join(" · "); n.append(t); }
       r.classList.add("can"); r.title = "Профіль"; r.onclick = () => memberMenu(id);
       r.append(a, n); box.append(r);
@@ -958,7 +1006,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   // ---------- state changes (same on every peer; host relays) ----------
   function addMsg(m, verified) {
-    if (!m || !history[m.chan] || typeof m.id !== "string") return;
+    if (!m || !isChanId(m.chan) || typeof m.id !== "string") return;
+    ensureChan(m.chan);
+    if (chanInfo(m.chan)?.ro && !m.sys && !isStaff(m.pub) && !merging) return;
     if ((m.chan === OWN || m.chan === NEWS) && !verified) return;
     if (m.chan !== NEWS && (adm.deleted.has(m.id) || Number(m.t) <= (adm.cleared[m.chan] || 0))) return;
     if (history[m.chan].some(x => x.id === m.id)) return;
@@ -971,6 +1021,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (validPub(m.pub)) msg.pub = m.pub;
     if (m.anon === true && !msg.sys && m.chan !== OWN && m.chan !== NEWS) { if (adm.noAnon && !merging) return; msg.anon = true; msg.nick = "Анонім"; msg.ava = "🎭"; msg.color = "#7a7f8a"; }
     if (Number(m.edited) > 0) msg.edited = Number(m.edited);
+    if (m.dino && typeof m.dino === "object" && Number.isInteger(m.dino.s) && m.dino.s >= 0 && m.dino.s < 1e7) msg.dino = { s: m.dino.s, g: clean(m.dino.g, 30) || "Динозаврик" };
     if (Number(m.del) > 0) { msg.del = Number(m.del); msg.text = "…"; delete msg.image; delete msg.audio; msg.video = false; msg.file = false; }
     if (m.reply && typeof m.reply.id === "string") msg.reply = { id: m.reply.id.slice(0, 40), nick: clean(m.reply.nick, 16) || "Динозаврик", text: clean(m.reply.text, 80) };
     if (typeof m.audio === "string" && /^data:audio\/[\w.+-]+(;[\w=.+-]+)*;base64,[A-Za-z0-9+/=]+$/.test(m.audio) && m.audio.length <= MAX_AUDIO) { msg.audio = m.audio; msg.dur = Math.min(120, Number(m.dur) || 0); }
@@ -994,6 +1045,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (history[m.chan].length > MAX_HIST) history[m.chan].shift();
     if (msg.audio || msg.image) pruneAudio();
     saveHist();
+    if (msg.dino && msg.pub && !msg.anon) noteDino(msg.pub, msg.nick, msg.dino.s, msg.dino.g);
     const up = gainXp(msg);
     if (up && !merging && msg.from === myId && msg.pub === myPub) setTimeout(() => sysMsg(me.nick + " досяг рівня " + up + "! 🎉"), 300);
     typing.delete(msg.from);
@@ -1152,10 +1204,10 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   // ---------- admin: every action is signed by the owner's key and replayed by everyone ----------
   let acts = [];
   const seenSigs = new Set();
-  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {}, roles: new Map(), pins: {}, noAnon: false };
+  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {}, roles: new Map(), pins: {}, noAnon: false, chans: { add: new Map(), edit: {}, del: new Set() } };
   const isMuted = pub => (adm.mutes.get(pub)?.until || 0) > Date.now();
   const isBanned = pub => !!pub && adm.bans.has(pub);
-  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear", "role", "pin", "unpin", "anon"];
+  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear", "role", "pin", "unpin", "anon", "chan"];
   const MOD_ACTS = ["del", "mute", "unmute", "kick", "pin", "unpin"];   // what a moderator may do; the rest is the creator's
   const iMod = () => !!myPub && adm.roles.get(myPub)?.role === "mod";
   const isStaff = pub => !!pub && (pub === meta.owner || adm.roles.get(pub)?.role === "mod");
@@ -1172,7 +1224,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   function resetAdmin() {
     acts = []; seenSigs.clear();
-    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {}; adm.roles.clear(); adm.pins = {}; adm.noAnon = false;
+    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {}; adm.roles.clear(); adm.pins = {}; adm.noAnon = false; adm.chans = { add: new Map(), edit: {}, del: new Set() };
   }
 
   async function addActs(list) {
@@ -1199,7 +1251,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     acts.sort((x, y) => x.d.ts - y.d.ts);
     if (acts.length > 300) acts.splice(0, acts.length - 300);
     adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {};
-    adm.roles.clear(); adm.pins = {}; adm.noAnon = false;
+    adm.roles.clear(); adm.pins = {}; adm.noAnon = false; adm.chans = { add: new Map(), edit: {}, del: new Set() };
     for (const rec of acts) {
       const d = rec.d;
       // replay in time order: a moderator's action counts only if they were a moderator then, and never against staff
@@ -1215,12 +1267,19 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       else if (d.a === "del" && typeof d.id === "string") adm.deleted.add(d.id);
       else if (d.a === "clear" && history[d.chan]) adm.cleared[d.chan] = Math.max(adm.cleared[d.chan] || 0, d.ts);
       else if (d.a === "anon") adm.noAnon = !!d.off;
+      else if (d.a === "chan" && isChanId(d.id) && d.id !== NEWS && d.id !== OWN) {
+        const info = { name: chanName(d.name) || "канал", topic: clean(d.topic, 80), ro: !!d.ro };
+        if (d.op === "add" && CUSTOM_ID.test(d.id) && adm.chans.add.size < 20 && !adm.chans.del.has(d.id)) { adm.chans.add.set(d.id, info); ensureChan(d.id); }
+        else if (d.op === "edit") { if (adm.chans.add.has(d.id)) adm.chans.add.set(d.id, info); else adm.chans.edit[d.id] = info; }
+        else if (d.op === "del" && d.id !== "general") { adm.chans.add.delete(d.id); adm.chans.del.add(d.id); }
+      }
       else if ((d.a === "pin" || d.a === "unpin") && history[d.chan] && d.chan !== NEWS && typeof d.id === "string") {
         const list = (adm.pins[d.chan] || []).filter(p => p.id !== d.id);
         if (d.a === "pin") list.push({ id: d.id.slice(0, 40), nick: clean(d.nick, 16) || "Динозаврик", text: clean(d.text, 100), mt: Number(d.mt) || d.ts });
         adm.pins[d.chan] = list.slice(-25);
       }
     }
+    rebuildChannels();
     for (const c of CHANNELS) {
       const cut = adm.cleared[c.id] || 0;
       if (c.id !== NEWS) history[c.id] = history[c.id].filter(m => !adm.deleted.has(m.id) && m.t > cut);
@@ -1229,6 +1288,35 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (code) store.set("meta-" + code, meta);
     saveHist();
     renderAll();
+  }
+
+  function rebuildChannels() {
+    const e = adm.chans.edit;
+    CHANNELS = BASE_CHANNELS.filter(c => !adm.chans.del.has(c.id)).map(c => e[c.id] ? { ...c, name: e[c.id].name, topic: e[c.id].topic || c.topic, ro: e[c.id].ro } : c)
+      .concat([...adm.chans.add].map(([id, v]) => ({ id, name: v.name, topic: v.topic || "Канал сервера", ro: v.ro })));
+    CHANNELS.forEach(c => ensureChan(c.id));
+    if (!CHANNELS.some(c => c.id === chan)) chan = "general";
+  }
+  const chanInfo = id => CHANNELS.find(c => c.id === id);
+  function editChannel(c) {
+    openAdmin(c ? "Канал #" + c.name : "Новий канал", c ? "Зміни назву чи опис, або видали канал." : "Його побачать усі на сервері.", body => {
+      const h1 = document.createElement("h3"); h1.textContent = "Назва"; body.append(h1);
+      const nm = document.createElement("input"); nm.maxLength = 24; nm.placeholder = "наприклад, майнкрафт"; nm.value = c?.name || ""; nm.style.width = "100%"; body.append(nm);
+      const h2 = document.createElement("h3"); h2.textContent = "Опис"; body.append(h2);
+      const tp = document.createElement("input"); tp.maxLength = 80; tp.placeholder = "Про що тут говорять"; tp.value = c && c.topic !== "Канал сервера" ? c.topic : ""; tp.style.width = "100%"; body.append(tp);
+      const rl = document.createElement("label"); rl.className = "adm-row pick-row";
+      const ro = document.createElement("input"); ro.type = "checkbox"; ro.checked = !!c?.ro;
+      rl.append(ro, "📢 Пишуть тільки адмін і модератори"); if (c?.id !== "general") body.append(rl);
+      admBtn(body, c ? "Зберегти" : "Створити канал", "", () => {
+        const name = chanName(nm.value); if (!name) { alert("Напиши назву каналу."); return; }
+        const id = c?.id || "c-" + Math.random().toString(36).slice(2, 8).padEnd(6, "0");
+        doAdmin({ a: "chan", op: c ? "edit" : "add", id, name, topic: clean(tp.value, 80), ro: c?.id === "general" ? false : ro.checked })
+          .then(() => { if (!c && chanInfo(id)) { chan = id; renderAll(); sysMsg("Новий канал #" + name + " 🎉"); } });
+      });
+      if (c && c.id !== "general") admBtn(body, "🗑 Видалити канал", "danger", () => {
+        if (confirm("Видалити #" + c.name + " разом з усіма повідомленнями?")) doAdmin({ a: "chan", op: "del", id: c.id });
+      });
+    });
   }
 
   async function doAdmin(d) {
@@ -1448,7 +1536,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   }
   function mergeHistInner(h) {
     const keepUnread = { ...unread };
-    for (const c of CHANNELS) {
+    for (const c of Object.keys(h).filter(isChanId).map(id => ({ id }))) {
+      ensureChan(c.id);
       const arr = Array.isArray(h[c.id]) ? h[c.id].slice(-MAX_HIST) : [];
       for (const m of arr) {
         if (!m || m.chan !== c.id) continue;
@@ -1552,11 +1641,11 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   function welcome(msg, fromConn, conns, pub) {
       setMeta(msg.meta);
       mergeHist(msg.hist);
-      mergeXp(msg.xp);
+      mergeXp(msg.xp); mergeDino(msg.dino);
       const back = pub && leftSoon.has(pub);
       if (back) { clearTimeout(leftSoon.get(pub)); leftSoon.delete(pub); }
       const fresh = setMember(fromConn.peer, { ...(msg.u || {}), pub }) && !back;
-      fromConn.send({ t: "sync", meta, history, xp: xpBook, members: [...members.entries()], voice: [...voice.entries()], live: [...live.entries()] });
+      fromConn.send({ t: "sync", meta, history, xp: xpBook, dino: dinoBook, members: [...members.entries()], voice: [...voice.entries()], live: [...live.entries()] });
       relay({ t: "member", id: fromConn.peer, u: members.get(fromConn.peer) }, fromConn, conns);
       if (fresh) sysMsg(members.get(fromConn.peer).nick + " приєднався до сервера! 🦖");
   }
@@ -1565,8 +1654,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (msg.t === "sync" && !isHost) {
       setMeta(msg.meta);
       mergeHist(msg.history);
-      mergeXp(msg.xp);
-      CHANNELS.forEach(c => { unread[c.id] = 0; });
+      mergeXp(msg.xp); mergeDino(msg.dino);
+      for (const k in unread) unread[k] = 0;
       members.clear();
       for (const [id, u] of msg.members || []) setMember(id, u);
       live.clear();
@@ -1706,7 +1795,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
           conn.on("open", () => {
             clearTimeout(timer); peer.off("error", fail); peer.on("error", () => {});
             const n = makeNet(peer, conn);
-            helloProof(id).then(proof => { conn.send({ t: "hello", u: { ...me, st: myStatus(), photo: me.photo }, hist: history, meta, pub: myPub, proof, xp: xpBook }); res(n); });
+            helloProof(id).then(proof => { conn.send({ t: "hello", u: { ...me, stx: meStx(), st: myStatus(), photo: me.photo }, hist: history, meta, pub: myPub, proof, xp: xpBook, dino: dinoBook }); res(n); });
           });
         });
       });
@@ -1722,9 +1811,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     $("btnJoin").disabled = $("btnCreate").disabled = true;
     setStatus(auto ? "Повертаюсь на сервер " + c + "…" : "Підключаюсь…");
     // start from what this browser remembers about the server
-    CHANNELS.forEach(x => { history[x.id] = []; unread[x.id] = 0; });
+    resetChannelState();
     meta = {}; ownerKeyCache = null; resetAdmin();
-    code = c; loadXp(c); setMeta(store.get("meta-" + c, null)); mergeHist(store.get("hist-" + c, null));
+    code = c; loadXp(c); loadDino(c); setMeta(store.get("meta-" + c, null)); mergeHist(store.get("hist-" + c, null));
     mergeHist({ [NEWS]: store.get("news", []) }); code = "";
     try {
       try { net = await connect(c, create); }
@@ -1749,7 +1838,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     store.set("lastCode", code);
     rememberServer(code, adm.name);
     members.clear();
-    setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
+    setMember(myId, { ...me, stx: meStx(), st: myStatus(), host: isHost, pub: myPub });
     if (isHost) sysMsg(hasHist(c) && history.general.length > 1 ? me.nick + " повернув сервер онлайн 🦖" : "Сервер створено! Код для друзів: " + code);
     $("ovJoin").hidden = true;
     $("text").disabled = false;
@@ -1779,7 +1868,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (!net) { code = c; leaveUi("Сервер " + c + " зараз недоступний. Натисни «Приєднатися», щоб спробувати ще раз."); return; }
     code = c;
     members.clear();
-    setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
+    setMember(myId, { ...me, stx: meStx(), st: myStatus(), host: isHost, pub: myPub });
     if (isHost) sysMsg(me.nick + " тепер тримає сервер.");
     $("text").disabled = false;
     renderAll(); renderLiveBtns();
@@ -1789,7 +1878,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     code = ""; isHost = false; myId = "me";
     $("btnJoinCancel").hidden = true;
     members.clear(); typing.clear(); voice.clear(); live.clear();
-    CHANNELS.forEach(c => { history[c.id] = []; unread[c.id] = 0; });
+    resetChannelState();
     $("text").disabled = true; $("text").placeholder = "Спершу створи сервер або приєднайся";
     $("ovJoin").hidden = false;
     setStatus(reason || "", !!reason);
@@ -2030,7 +2119,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   const saveFriends = () => store.set("friends", friends);
   let peopleTimer = 0;
   const savePeople = () => { clearTimeout(peopleTimer); peopleTimer = setTimeout(() => store.set("people", people), 400); };
-  const myCard = () => ({ nick: me.nick, ava: me.ava, color: me.color, photo: me.photo, st: myStatus(), stx: me.stx });
+  const myCard = () => ({ nick: me.nick, ava: me.ava, color: me.color, photo: me.photo, st: myStatus(), stx: meStx() });
   const isOnline = pub => !!homeConns.get(pub)?.open;
   const nickOf = pub => pub === myPub ? me.nick : people[pub]?.nick || [...members.values()].find(u => u.pub === pub)?.nick || "Динозаврик";
   function meetPerson(pub, u) {
@@ -2198,13 +2287,16 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     return t;
   }
   const seenOpen = key => dmOpen === key && !$("ovDm").hidden;
-  function takeDm(pub, m) {
+  async function takeDm(pub, m) {
     if (!m || typeof m !== "object") return;
     const text = clean(m.text, 500); if (!text) return;
     const t = dmThread(pub);
     const id = String(m.id).slice(0, 40);
     if (t.msgs.some(x => x.id === id)) return;
-    t.msgs.push({ id, me: false, text, t: Math.min(Date.now(), Number(m.t) || Date.now()) });
+    const md = cleanMedia(m.media);
+    if (md && okData(m.data)) await putVideo(id, m.data);
+    if (t.msgs.some(x => x.id === id)) return;
+    t.msgs.push({ id, me: false, text, t: Math.min(Date.now(), Number(m.t) || Date.now()), ...(md ? { media: md } : {}) });
     t.msgs.sort((a, b) => a.t - b.t);
     if (!seenOpen(pub)) t.unread = (t.unread || 0) + 1;
     saveDms(); renderSocial();
@@ -2215,11 +2307,66 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const t = dms[pub]; if (!t || t.group) return;
     const c = homeConns.get(pub); if (!c?.open) return;
     // still marked as waiting until they say they got it; they skip copies they already have
-    for (const m of t.msgs) if (m.me && m.pending) c.send({ t: "dm", m: { id: m.id, text: m.text, t: m.t } });
+    for (const m of t.msgs) if (m.me && m.pending) {
+      if (m.media) mediaData(m.id).then(data => c.open && c.send({ t: "dm", m: { id: m.id, text: m.text, t: m.t, media: m.media, data } })).catch(() => {});
+      else c.send({ t: "dm", m: { id: m.id, text: m.text, t: m.t } });
+    }
   }
   const ginfo = t => ({ id: t.gid, name: t.name, nameT: t.nameT || 0, members: t.members, gone: t.gone || [] });
   const groupKey = gid => "g:" + gid;
-  const signG = async (gid, m) => b64(await crypto.subtle.sign(SIG, myKeys.privateKey, new TextEncoder().encode("g|" + gid + "|" + m.id + "|" + m.t + "|" + m.text)));
+  const gSigned = (gid, m) => new TextEncoder().encode("g|" + gid + "|" + m.id + "|" + m.t + "|" + m.text + (m.media ? "|" + JSON.stringify(m.media) : ""));
+  const signG = async (gid, m) => b64(await crypto.subtle.sign(SIG, myKeys.privateKey, gSigned(gid, m)));
+
+  // ---------- photos, voice notes, videos and files in private chats: the bytes live in this browser's file store ----------
+  const MEDIA_TEXT = { image: "🖼 Фото", audio: "🎤 Голосове повідомлення", video: "🎬 Відео", file: "📎 Файл" };
+  function cleanMedia(md) {
+    if (!md || typeof md !== "object" || !Object.hasOwn(MEDIA_TEXT, md.k)) return null;
+    const o = { k: md.k };
+    if (md.k === "image") { o.w = Math.min(4000, Math.max(0, Math.round(Number(md.w) || 0))); o.h = Math.min(4000, Math.max(0, Math.round(Number(md.h) || 0))); }
+    if (md.k === "audio") o.dur = Math.min(120, Math.max(0, Math.round(Number(md.dur) || 0)));
+    if (md.k === "file" || md.k === "video") { o.name = safeName(md.name); o.size = Math.min(MAX_FILE, Math.max(0, Math.round(Number(md.size) || 0))); }
+    o.type = /^[\w.+-]+\/[\w.+-]+$/.test(md.type) ? md.type : "application/octet-stream";
+    return o;
+  }
+  const mediaText = md => md.k === "file" ? "📎 " + md.name : MEDIA_TEXT[md.k];
+  const okData = d => typeof d === "string" && d.length <= MAX_FILE * 1.4 && /^data:[\w.+-]+\/[\w.+-]+;base64,[A-Za-z0-9+/=]*$/.test(d);
+  const normData = d => String(d).replace(/^data:([^;,]+)[^,]*,/, "data:$1;base64,");
+  async function mediaData(id) { const u = await getVideoUrl(id); return u ? normData(await toDataUrl(await (await fetch(u)).blob())) : ""; }
+  async function sendDmMedia(key, md, data) {
+    const t = dms[key]; if (!t || !homeReady) return;
+    data = normData(data); md = cleanMedia(md);
+    if (!md || !okData(data)) { alert("Не вдалося надіслати: файл завеликий або пошкоджений."); return; }
+    const id = newId(), text = mediaText(md);
+    await putVideo(id, data);
+    if (t.group) {
+      const m = { id, from: myPub, text, t: Date.now(), media: md }; m.sig = await signG(t.gid, m);
+      t.msgs.push({ ...m, me: true }); saveDms(); renderSocial();
+      toGroup(t, { t: "gmsg", g: ginfo(t), m: { ...m, data } });
+      return;
+    }
+    const m = { id, me: true, text, t: Date.now(), pending: true, media: md };
+    t.msgs.push(m); saveDms(); renderSocial();
+    homeConn(key).then(c => c.send({ t: "dm", m: { id, text, t: m.t, media: md, data } })).catch(() => {});
+  }
+  const dmEls = new Map();
+  function dmMediaEl(m, nick) {
+    if (dmEls.has(m.id)) return dmEls.get(m.id);
+    const md = m.media; let el;
+    if (md.k === "file") el = fileEl({ id: m.id, fname: md.name, fsize: md.size, ftype: md.type, nick });
+    else {
+      el = document.createElement("div"); el.className = "dm-media";
+      getVideoUrl(m.id).then(u => {
+        if (!u) { const g = document.createElement("div"); g.className = "gone"; g.textContent = mediaText(md) + " (недоступне на цьому пристрої)"; el.append(g); return; }
+        if (md.k === "image") {
+          const im = document.createElement("img"); im.src = u; im.alt = "Фото"; if (md.w && md.h) { im.width = md.w; im.height = md.h; }
+          im.onclick = () => { $("lightImg").src = u; $("lightbox").hidden = false; }; el.append(im);
+        } else if (md.k === "audio") { const a = document.createElement("audio"); a.controls = true; a.preload = "metadata"; a.src = u; el.append(a); }
+        else { const v = document.createElement("video"); v.controls = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "metadata"; v.src = u; el.append(v); }
+      });
+    }
+    dmEls.set(m.id, el);
+    return el;
+  }
   function takeGroupInfo(from, g, quiet) {
     if (!g || typeof g !== "object" || typeof g.id !== "string" || !/^[\w-]{4,40}$/.test(g.id) || leftGroups.has(g.id)) return false;
     const mem = Array.isArray(g.members) ? g.members.filter(validPub).slice(0, 10) : [];
@@ -2247,9 +2394,11 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const text = clean(m.text, 500), id = String(m.id || "").slice(0, 40), at = Number(m.t) || 0;
     if (!text || !id || !t.members.includes(m.from) || t.msgs.some(x => x.id === id)) return;
     // every group message is signed by its author, so nobody can put words in someone else's mouth
-    try { if (!await crypto.subtle.verify(SIG, await pubKey(m.from), unb64(String(m.sig)), new TextEncoder().encode("g|" + g.id + "|" + id + "|" + at + "|" + text))) return; } catch { return; }
+    const md = cleanMedia(m.media);
+    try { if (!await crypto.subtle.verify(SIG, await pubKey(m.from), unb64(String(m.sig)), gSigned(g.id, { id, t: at, text, media: md }))) return; } catch { return; }
+    if (md && okData(m.data)) await putVideo(id, m.data);
     if (t.msgs.some(x => x.id === id)) return;
-    t.msgs.push({ id, from: m.from, text, t: Math.min(Date.now(), at), sig: String(m.sig), me: m.from === myPub });
+    t.msgs.push({ id, from: m.from, text, t: Math.min(Date.now(), at), sig: String(m.sig), me: m.from === myPub, ...(md ? { media: md } : {}) });
     t.msgs.sort((a, b) => a.t - b.t);
     if (m.from !== myPub && !seenOpen(key)) t.unread = (t.unread || 0) + 1;
     saveDms(); renderSocial();
@@ -2258,7 +2407,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   function syncGroups(pub) {
     for (const k in dms) {
       const t = dms[k];
-      if (t.group && t.members.includes(pub)) homeConns.get(pub)?.send({ t: "gsync", g: ginfo(t), msgs: t.msgs.filter(m => m.sig).slice(-50).map(({ id, from, text, t: at, sig }) => ({ id, from, text, t: at, sig })) });
+      if (t.group && t.members.includes(pub)) homeConns.get(pub)?.send({ t: "gsync", g: ginfo(t), msgs: t.msgs.filter(m => m.sig).slice(-50).map(({ id, from, text, t: at, sig, media }) => ({ id, from, text, t: at, sig, ...(media ? { media } : {}) })) });
     }
   }
   const toGroup = (t, d) => { for (const p of t.members) if (p !== myPub) sendHome(p, d).catch(() => {}); };
@@ -2461,7 +2610,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const b = document.createElement("div"); b.className = "dm-bubble" + (m.me ? " me" : "") + (m.pending ? " pending" : "");
       if (t.group && !m.me && m.from !== prevFrom) { const w = document.createElement("b"); w.className = "dm-who"; w.textContent = nickOf(m.from); w.style.color = people[m.from]?.color || ""; b.append(w); }
       prevFrom = m.me ? "" : m.from;
-      const tx = document.createElement("div"); richText(tx, m.text);
+      const tx = m.media ? dmMediaEl(m, m.me ? me.nick : t.group ? nickOf(m.from) : t.nick) : document.createElement("div");
+      if (!m.media) richText(tx, m.text);
+      if (m.media) b.classList.add("has-media");
       const tm = document.createElement("small"); tm.textContent = fmtTime(m.t) + (m.pending ? " · ще не доставлено" : "");
       b.append(tx, tm); box.append(b);
     }
@@ -2798,13 +2949,86 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   const author = () => anonOn && anonAllowed() ? { nick: "Анонім", ava: "🎭", color: "#7a7f8a", anon: true } : { nick: me.nick, ava: me.ava, color: me.color };
   $("btnAnon").onclick = () => { anonOn = !anonOn; renderChans(); $("text").focus(); };
 
+  // ---------- bot commands: type / and pick one ----------
+  const DINO_FACTS = [
+    "Слово «динозавр» означає «жахливий ящір».",
+    "Динозаври жили на Землі близько 165 мільйонів років.",
+    "Динозаври вимерли приблизно 66 мільйонів років тому, коли на Землю впав великий астероїд.",
+    "Птахи це нащадки динозаврів. Голуб за вікном теж трошки динозавр 🐦",
+    "Зуби тиранозавра разом із коренем були завдовжки до 30 сантиметрів.",
+    "Велоцираптор був завбільшки з індика і мав пір'я.",
+    "Аргентинозавр важив приблизно як 10 слонів.",
+    "Мозок стегозавра був завбільшки з волоський горіх.",
+    "У трицератопса було кілька сотень зубів, які весь час замінювались новими.",
+    "Птеродактилі не динозаври, а їхні літаючі родичі птерозаври.",
+    "Анкілозавр мав на хвості кістяну булаву.",
+    "Спінозавр, мабуть, добре плавав і полював на рибу.",
+    "Найменші динозаври були завбільшки з курку.",
+    "Першого динозавра, мегалозавра, вчені описали ще у 1824 році.",
+  ];
+  const DINO_JOKES = [
+    "Чому динозаври не користуються телефонами? Бо в них лапки закороткі для селфі 🦖",
+    "Як називається динозавр, що спить? Динохропус 😴",
+    "Чому тиранозавр не плескає в долоні? Бо лапки не дістають 👏",
+    "Що каже динозавр, коли спізнюється? Я застряг у юрському періоді!",
+    "Чому динозаври не грають у хованки? Їх видно навіть за деревом 🌳",
+    "Який динозавр найкраще знає слова? Тезаурус 📚",
+  ];
+  const BALL = ["Безперечно ✅", "Так 👍", "Скоріше так", "Знаки кажуть «так»", "Спитай пізніше 🤔", "Не можу сказати зараз", "Краще не кажу 🤐", "Скоріше ні", "Ні 👎", "Дуже сумнівно", "Динозаври кажуть «РРРАР», тобто так 🦖", "Навіть тиранозавр не знає"];
+  const rnd = n => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; };
+  const COMMANDS = [
+    { n: ["кубик", "roll"], d: "кинути кубик (можна /кубик 20)", run: (who, arg) => { const max = Math.min(1000, Math.max(2, parseInt(arg) || 6)); return "🎲 " + who + " кидає кубик" + (max !== 6 ? " (1–" + max + ")" : "") + ": **" + (1 + rnd(max)) + "**"; } },
+    { n: ["монетка", "coin"], d: "підкинути монетку", run: who => "🪙 " + who + " підкидає монетку: **" + (rnd(2) ? "Орел" : "Решка") + "**" },
+    { n: ["діно", "dino"], d: "цікавий факт про динозаврів", run: () => "🦖 **Діно-факт:** " + DINO_FACTS[rnd(DINO_FACTS.length)] },
+    { n: ["жарт", "joke"], d: "динозаврячий жарт", run: () => "😂 " + DINO_JOKES[rnd(DINO_JOKES.length)] },
+    { n: ["куля", "8ball"], d: "чарівна куля відповість на питання", run: (who, arg) => arg ? "🎱 " + who + " питає: *" + clean(arg, 120) + "*\nВідповідь: **" + BALL[rnd(BALL.length)] + "**" : null, need: "Напиши питання після /куля" },
+    { n: ["вибери", "choose"], d: "вибрати одне: /вибери піца, суші, бургер", run: (who, arg) => { const o = arg.split(/[,;]| або /).map(x => clean(x, 40)).filter(Boolean); return o.length > 1 ? "🤔 Із " + o.join(", ") + " я вибираю: **" + o[rnd(o.length)] + "**" : null; }, need: "Напиши варіанти через кому: /вибери кіно, гра" },
+    { n: ["обійняти", "hug"], d: "обійняти когось: /обійняти @нік", run: (who, arg) => "🤗 " + who + " обіймає " + (clean(arg, 30) || "усіх"), },
+    { n: ["допомога", "help"], d: "список команд", local: true },
+  ];
+  const findCmd = name => COMMANDS.find(c => c.n.includes(name.toLowerCase()));
+  function showCommands() {
+    openAdmin("🤖 Команди ДіноБота", "Напиши їх у чаті, і ДіноБот відповість усім.", body => {
+      for (const c of COMMANDS) { const r = document.createElement("div"); r.className = "adm-row"; const b = document.createElement("b"); b.textContent = "/" + c.n[0]; const sp = document.createElement("span"); sp.textContent = c.d; sp.style.color = "var(--muted)"; r.append(b, sp); body.append(r); }
+    });
+  }
+  function runCommand(text) {
+    const [, name, arg = ""] = text.match(/^\/(\S+)\s*([\s\S]*)$/) || [];
+    const c = name && findCmd(name);
+    if (!c) return false;
+    if (c.local) { showCommands(); return true; }
+    const who = anonOn && anonAllowed() ? "Анонім" : me.nick;
+    const out = c.run(who, arg.trim());
+    if (!out) { $("text").value = text; $("text").placeholder = c.need || ""; alert(c.need); return true; }
+    const m = { id: newId(), chan, from: "sys", nick: "ДіноБот", ava: "🤖", color: "#888888", text: clean(out.replace(/\n/g, " · "), 500), t: Date.now(), sys: true, bot: true };
+    addMsg(m); net.send({ t: "msg", m });
+    $("msgs").scrollTop = $("msgs").scrollHeight;
+    return true;
+  }
+  function renderCmdPop() {
+    const v = $("text").value, pop = $("cmdPop");
+    const m = v.match(/^\/(\S*)$/);
+    const list = m && !$("text").disabled ? COMMANDS.filter(c => c.n.some(n => n.startsWith(m[1].toLowerCase()))) : [];
+    pop.hidden = !list.length; pop.innerHTML = "";
+    for (const c of list) {
+      const b = document.createElement("button"); b.type = "button";
+      const n = document.createElement("b"); n.textContent = "/" + c.n[0]; const d = document.createElement("span"); d.textContent = c.d;
+      b.append(n, d);
+      b.onclick = () => { $("text").value = "/" + c.n[0] + " "; pop.hidden = true; $("text").focus(); if (!c.need && c.n[0] !== "кубик" && c.n[0] !== "обійняти") $("form").requestSubmit(); };
+      pop.append(b);
+    }
+  }
+  $("text").addEventListener("input", renderCmdPop);
+  $("text").addEventListener("blur", () => setTimeout(() => { $("cmdPop").hidden = true; }, 200));
+
   // ---------- UI wiring ----------
   $("form").addEventListener("submit", e => {
     e.preventDefault();
     const text = clean($("text").value, 500);
     if (!text || !net) return;
     if ((chan === OWN && !iOwn()) || (chan === NEWS && !iSite())) return;
-    $("text").value = "";
+    $("text").value = ""; $("cmdPop").hidden = true;
+    if (text.startsWith("/") && runCommand(text)) return;
     const m = { id: newId(), chan, from: myId, ...author(), text, t: Date.now(), pub: myPub };
     if (replyTo && replyTo.chan === chan) m.reply = { id: replyTo.id, nick: replyTo.nick, text: replyTo.text };
     cancelReply();
@@ -3054,8 +3278,16 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     saveXp();
   }
   const rankOf = pub => Object.keys(xpBook).sort((a, b) => xpOf(b) - xpOf(a)).indexOf(pub) + 1;
+  let topTab = "xp";
   $("btnTop").onclick = () => {
-    openAdmin("🏆 Рейтинг сервера", "Досвід дається за кожну хвилину, коли ти пишеш у чаті.", body => {
+    openAdmin("🏆 Рейтинг сервера", topTab === "xp" ? "Досвід дається за кожну хвилину, коли ти пишеш у чаті." : "Найкращі рахунки в Динозаврику. Грай кнопкою 🎮 зверху.", body => {
+      const tabs = document.createElement("div"); tabs.className = "top-tabs";
+      for (const [k, t] of [["xp", "⭐ Рівні"], ["dino", "🦖 Рекорди"]]) {
+        const b = document.createElement("button"); b.className = "btn" + (k === topTab ? "" : " sec"); b.textContent = t;
+        b.onclick = () => { topTab = k; $("btnTop").click(); }; tabs.append(b);
+      }
+      body.append(tabs);
+      if (topTab === "dino") { renderDinoTop(body); return; }
       const list = Object.keys(xpBook).filter(p => xpOf(p) > 0).sort((a, b) => xpOf(b) - xpOf(a)).slice(0, 30);
       if (!list.length) { const e = document.createElement("div"); e.className = "adm-row"; e.textContent = "Ще ніхто нічого не писав. Будь першим!"; body.append(e); return; }
       list.forEach((pub, i) => {
@@ -3070,6 +3302,93 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       });
     });
   };
+
+  // ---------- Dinosaur game together: play right here, show "playing" to everyone, records go on the leaderboard ----------
+  const GAMES = [{ f: "index.html", n: "Динозаврик Реверс", ic: "🦖" }, { f: "dino3d.html", n: "Динозаврик 3D", ic: "🧊" }, { f: "online.html", n: "Динозаврик Онлайн", ic: "🏁" }];
+  let playing = null, gameOpen = null;
+  const meStx = () => playing ? "🎮 Грає в «" + playing.game + "»" : me.stx;
+  const myDino = (() => { const v = store.get("dinoBest", null); return v && Number.isInteger(v.s) ? v : { s: 0, g: "" }; })();
+  try {
+    // records from before ДіноКорд knew about the game
+    const old = parseInt(localStorage.getItem("dinorev:best")) || 0;
+    if (old > myDino.s) { myDino.s = old; myDino.g = myDino.g || "Динозаврик Реверс"; store.set("dinoBest", myDino); }
+  } catch {}
+  let dinoBook = {};
+  const saveDino = () => { if (code) store.set("dino-" + code, dinoBook); };
+  function noteDino(pub, nick, sc, g) {
+    if (!validPub(pub) || !Number.isInteger(sc) || sc <= 0 || sc >= 1e7) return;
+    const r = dinoBook[pub];
+    if (!r || sc > r.s) { dinoBook[pub] = { n: clean(nick, 16) || "Динозаврик", s: sc, g: clean(g, 30) || "Динозаврик" }; saveDino(); }
+  }
+  function mergeDino(o) {
+    if (!o || typeof o !== "object") return;
+    for (const [pub, v] of Object.entries(o).slice(0, 300)) if (v && typeof v === "object") noteDino(pub, v.n, v.s, v.g);
+  }
+  function loadDino(c) { dinoBook = {}; mergeDino(store.get("dino-" + c, {})); if (myPub) noteDino(myPub, me.nick, myDino.s, myDino.g); }
+  function renderDinoTop(body) {
+    const list = Object.keys(dinoBook).sort((a, b) => dinoBook[b].s - dinoBook[a].s).slice(0, 30);
+    if (!list.length) { const e = document.createElement("div"); e.className = "adm-row"; e.textContent = "Ще ніхто не грав. Натисни 🎮 і стань першим!"; body.append(e); }
+    list.forEach((pub, i) => {
+      const v = dinoBook[pub], r = document.createElement("div"); r.className = "top-row" + (pub === myPub ? " me" : "");
+      const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = ["🥇", "🥈", "🥉"][i] || "#" + (i + 1);
+      const u = [...members.values()].find(x => x.pub === pub);
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = (u?.nick || v.n) + (pub === myPub ? " (ти)" : "");
+      if (u) nm.style.color = u.color;
+      const g = document.createElement("span"); g.className = "xp"; g.textContent = v.g;
+      const sc = document.createElement("span"); sc.className = "lvl"; sc.textContent = v.s;
+      r.append(rk, nm, g, sc); body.append(r);
+    });
+    admBtn(body, "🎮 Грати", "", chooseGame);
+  }
+  function setPlaying(game, until) {
+    const was = playing?.game;
+    playing = { game: clean(game, 30) || "Динозаврик", until };
+    if (was !== playing.game) pushMe();
+  }
+  setInterval(() => { if (playing && !gameOpen && Date.now() > playing.until) { playing = null; pushMe(); } }, 15000);
+  let lastGameAt = 0;
+  function onGameEvent(d) {
+    if (!d || typeof d !== "object" || !["play", "score"].includes(d.dinocord) || Number(d.at) <= lastGameAt) return;
+    lastGameAt = Number(d.at);
+    const game = clean(d.game, 30) || "Динозаврик";
+    setPlaying(game, Date.now() + 3 * 60e3);
+    if (d.dinocord !== "score") return;
+    const sc = Math.floor(Number(d.s));
+    if (!Number.isInteger(sc) || sc <= 0 || sc >= 1e7 || sc <= myDino.s) return;
+    // a new personal record: tell the server
+    const beat = myDino.s;
+    myDino.s = sc; myDino.g = game; store.set("dinoBest", myDino);
+    if (!net || !myPub) return;
+    noteDino(myPub, me.nick, sc, game);
+    const where = chanInfo("games") ? "games" : "general";
+    const m = { id: newId(), chan: where, from: myId, nick: me.nick, ava: me.ava, color: me.color, pub: myPub, t: Date.now(),
+      text: "🏆 Новий рекорд у «" + game + "»: **" + sc + "**!" + (beat ? " (було " + beat + ")" : ""), dino: { s: sc, g: game } };
+    addMsg(m); net.send({ t: "msg", m });
+  }
+  window.addEventListener("message", e => { if (e.origin === location.origin) onGameEvent(e.data); });
+  window.addEventListener("storage", e => { if (e.key === "dinocord-game" && e.newValue) try { onGameEvent(JSON.parse(e.newValue)); } catch {} });
+  function chooseGame() {
+    openAdmin("🎮 Ігри", "Грай прямо тут. Усі бачать, що ти граєш, а рекорди потрапляють у 🏆 рейтинг сервера.", body => {
+      for (const g of GAMES) admBtn(body, g.ic + " " + g.n, "sec", () => openGame(g));
+    });
+  }
+  function openGame(g) {
+    $("ovAdmin").hidden = true; closeGame();
+    const wrap = document.createElement("div"); wrap.className = "html-view game-view"; wrap.id = "gameView";
+    const head = document.createElement("div"); head.className = "hv-head";
+    const t = document.createElement("span"); t.textContent = g.ic + " " + g.n + (myDino.s ? " · твій рекорд " + myDino.s : "");
+    const x = document.createElement("button"); x.textContent = "✕ Закрити";
+    const fr = document.createElement("iframe"); fr.src = g.f; fr.setAttribute("allow", "fullscreen; autoplay");
+    x.onclick = closeGame;
+    head.append(t, x); wrap.append(head, fr); document.body.append(wrap);
+    gameOpen = g; setPlaying(g.n, Infinity);
+    setTimeout(() => fr.focus(), 300);
+  }
+  function closeGame() {
+    $("gameView")?.remove();
+    if (gameOpen) { gameOpen = null; playing = null; pushMe(); }
+  }
+  $("btnPlay").onclick = chooseGame;
 
   // ---------- invite link: opens the page straight on this server ----------
   $("btnInvite").onclick = () => {
@@ -3108,7 +3427,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     renderMe();
     for (const c of homeConns.values()) if (c.open) c.send({ t: "u", u: myCard() });
     if (!net) return;
-    setMember(myId, { ...me, st: myStatus(), host: isHost, pub: myPub });
+    setMember(myId, { ...me, stx: meStx(), st: myStatus(), host: isHost, pub: myPub });
     net.send({ t: "member", id: myId, u: members.get(myId) });
   }
   $("nick").addEventListener("change", () => { me.nick = clean($("nick").value, 16) || "Динозаврик"; pushMe(); });
@@ -3194,10 +3513,12 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   });
 
   // ---------- voice notes: tap 🎙 to record, tap again to send ----------
-  let rec = null, recChunks = [], recStart = 0, recTimer = 0, recCancelled = false;
+  let rec = null, recChunks = [], recStart = 0, recTimer = 0, recCancelled = false, recTo = "";
   const MAX_REC = 45;
-  async function startRec() {
-    if (rec || !net) return;
+  async function startRec(to = "") {
+    // to: "" for the channel, or a private chat's key
+    if (rec || (!to && !net)) return;
+    recTo = to;
     let stream;
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
     catch { sysLocal("Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера."); return; }
@@ -3212,7 +3533,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       rec = null; clearInterval(recTimer); renderRec();
       if (recCancelled || dur < 0.7) return;
       const fr = new FileReader();
-      fr.onload = () => sendVoice(String(fr.result), dur);
+      const target = recTo;
+      fr.onload = () => target ? sendDmMedia(target, { k: "audio", dur: Math.round(dur), type: blob.type }, String(fr.result)) : sendVoice(String(fr.result), dur);
       fr.readAsDataURL(blob);
     };
     rec.start(250);
@@ -3220,12 +3542,14 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     renderRec();
   }
   function renderRec() {
-    const b = $("btnRec");
-    b.classList.toggle("rec", !!rec);
-    b.textContent = rec ? "⏹ " + fmtDur((Date.now() - recStart) / 1000) : "🎙";
-    b.title = rec ? "Надіслати" : "Записати голосове повідомлення";
-    $("btnRecCancel").hidden = !rec;
-    $("text").hidden = !!rec; $("btnRoar").hidden = !!rec; $("btnAnon").hidden = !!rec || !anonAllowed(); $("btnPic").hidden = !!rec || chan === OWN || chan === NEWS;
+    const b = $("btnRec"), on = !!rec && !recTo, dm = !!rec && !!recTo;
+    b.classList.toggle("rec", on);
+    b.textContent = on ? "⏹ " + fmtDur((Date.now() - recStart) / 1000) : "🎙";
+    b.title = on ? "Надіслати" : "Записати голосове повідомлення";
+    $("dmRec").classList.toggle("rec", dm); $("dmRec").textContent = dm ? "⏹ " + fmtDur((Date.now() - recStart) / 1000) : "🎙";
+    $("dmRecCancel").hidden = !dm; $("dmText").hidden = dm; $("dmPic").hidden = dm;
+    $("btnRecCancel").hidden = !on;
+    $("text").hidden = on; $("btnRoar").hidden = on; $("btnAnon").hidden = on || !anonAllowed(); $("btnPic").hidden = on || chan === OWN || chan === NEWS;
   }
   function sendVoice(audio, dur) {
     if (!net) return;
@@ -3238,8 +3562,17 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   // ---------- photos: shrink on this device, then send as a message ----------
   async function sendImage(file) {
     if (!net || !file || !file.type.startsWith("image/") || chan === OWN || chan === NEWS || $("btnPic").disabled) return;
+    let data, w, h;
+    try { ({ data, w, h } = await prepImage(file)); }
+    catch { sysLocal("Не вдалося відкрити це фото. Спробуй інше."); return; }
+    if (data.length > MAX_MEDIA) { sysLocal("Фото завелике. Спробуй інше."); return; }
+    const m = { id: newId(), chan, from: myId, ...author(), text: "🖼 Фото", image: data, iw: w, ih: h, t: Date.now(), pub: myPub };
+    addMsg(m); net.send({ t: "msg", m });
+    $("msgs").scrollTop = $("msgs").scrollHeight;
+  }
+  async function prepImage(file) {
     let data, w = 0, h = 0;
-    try {
+    {
       if (file.type === "image/gif" && file.size <= 450000) {
         // small GIFs go as they are, so they keep moving
         data = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result)); fr.onerror = rej; fr.readAsDataURL(file); });
@@ -3257,11 +3590,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
           side = Math.round(side * 0.8); q = Math.max(0.5, q - 0.08);
         } while (data.length > MAX_MEDIA && side > 200);
       }
-    } catch { sysLocal("Не вдалося відкрити це фото. Спробуй інше."); return; }
-    if (data.length > MAX_MEDIA) { sysLocal("Фото завелике. Спробуй інше."); return; }
-    const m = { id: newId(), chan, from: myId, ...author(), text: "🖼 Фото", image: data, iw: w, ih: h, t: Date.now(), pub: myPub };
-    addMsg(m); net.send({ t: "msg", m });
-    $("msgs").scrollTop = $("msgs").scrollHeight;
+    }
+    if (data.length > MAX_MEDIA) throw new Error("big");
+    return { data, w, h };
   }
   const loadImg = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
 
@@ -3561,6 +3892,20 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   $("btnRec").onclick = () => { if (rec) rec.stop(); else startRec(); };
   $("btnRecCancel").onclick = () => { recCancelled = true; rec?.stop(); };
+  $("dmRec").onclick = () => { if (rec) { if (recTo) rec.stop(); } else if (dms[dmOpen] && window.MediaRecorder) startRec(dmOpen); };
+  $("dmRecCancel").onclick = () => { recCancelled = true; rec?.stop(); };
+  $("dmPic").onclick = () => $("dmPicInput").click();
+  $("dmPicInput").onchange = async () => {
+    const f = $("dmPicInput").files[0], key = dmOpen; $("dmPicInput").value = "";
+    if (!f || !dms[key]) return;
+    try {
+      if (/^image\/(jpeg|png|webp|gif|heic|heif)$/.test(f.type)) { const { data, w, h } = await prepImage(f); sendDmMedia(key, { k: "image", w, h, type: "image/jpeg" }, data); return; }
+      if (f.size > MAX_FILE) { alert("Файл завеликий (" + fmtSize(f.size) + "). Можна до " + fmtSize(MAX_FILE) + "."); return; }
+      const type = /^[\w.+-]+\/[\w.+-]+$/.test(f.type) ? f.type : "application/octet-stream";
+      const data = "data:" + type + ";base64," + (await toDataUrl(f)).split(",")[1];
+      sendDmMedia(key, { k: /^video\/(mp4|webm|quicktime)$/.test(type) ? "video" : "file", name: safeName(f.name), size: f.size, type }, data);
+    } catch { alert("Не вдалося надіслати цей файл. Спробуй інший."); }
+  };
 
   $("btnCreate").onclick = () => enter(true);
   $("btnJoin").onclick = () => enter(false);
