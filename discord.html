@@ -136,7 +136,11 @@ input { font: inherit; color: var(--ink); }
 .live-btn:hover { background: var(--sel); }
 .live-btn.on { background: var(--danger); color: #fff; }
 .live-btn[hidden] { display: none; }
-@media (max-width: 1100px) { .live-btn .lbl { display: none; } .live-btn { padding: 5px 8px; } }
+/* the channel name always fits; the buttons show only their icons unless the screen is really wide */
+#chanName { flex: none; white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.main-head .topic { flex: 0 1 auto; min-width: 0; }
+.live-btn { flex: none; }
+@media (max-width: 1500px) { .live-btn .lbl { display: none; } .live-btn { padding: 5px 9px; font-size: 16px; } }
 .stage { background: #000; position: relative; flex: none; border-bottom: 1px solid var(--line); }
 .stage video { display: block; width: 100%; max-height: 52vh; background: #000; }
 .stage .cap { position: absolute; left: 10px; top: 10px; display: flex; align-items: center; gap: 6px; background: #000a; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 13px; max-width: calc(100% - 120px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -817,7 +821,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     a.className = "ava " + cls;
     a.style.background = u.color || "#888";
     a.textContent = u.ava || "🦖";
-    const ph = u.photo || (u.pub && (u.pub === myPub ? me.photo : photoCache[u.pub]));
+    // an anonymous message never shows anyone's photo, or everyone would know who wrote it
+    const ph = u.anon ? "" : u.photo || (u.pub && (u.pub === myPub ? me.photo : photoCache[u.pub]));
     if (ph) { a.classList.add("photo"); a.style.backgroundImage = 'url("' + photoUrl(ph) + '")'; }
     return a;
   }
