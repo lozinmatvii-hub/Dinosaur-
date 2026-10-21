@@ -220,6 +220,33 @@ input { font: inherit; color: var(--ink); }
 .cmd-pop button:hover { background: var(--hover); }
 .cmd-pop b { color: var(--head); flex: none; }
 .cmd-pop span { color: var(--muted); font-size: 13px; }
+.cemoji { width: 22px; height: 22px; object-fit: contain; vertical-align: -5px; display: inline-block; }
+.react .cemoji { width: 18px; height: 18px; vertical-align: -4px; }
+.emoji-grid .cemoji { width: 28px; height: 28px; }
+.sticker { display: block; width: 160px; height: 160px; margin-top: 4px; border-radius: 18px; object-fit: contain; }
+.sticker.builtin { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: inset 0 -6px 0 #0002; }
+.sticker .se { font-size: 72px; line-height: 1; filter: drop-shadow(0 3px 2px #0003); }
+.sticker .stc { font: 800 20px var(--body); color: #fff; text-shadow: 0 2px 0 #0004, 0 0 6px #0003; letter-spacing: .02em; text-align: center; padding: 0 6px; }
+.emoji-grid.stickers { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+.emoji-grid.stickers button { padding: 2px; height: auto; }
+.emoji-grid.stickers .sticker { width: 88px; height: 88px; margin: 0; border-radius: 12px; }
+.emoji-grid.stickers .sticker .se { font-size: 38px; }
+.emoji-grid.stickers .sticker .stc { font-size: 12px; }
+.own-emoji { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; color: var(--muted); font-size: 13px; text-align: left; }
+.own-emoji button { display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; background: var(--input); color: var(--ink); font-size: 13px; }
+.srv.img { background-size: cover; background-position: center; color: transparent; }
+.side-head.banner { height: 120px; align-items: flex-end; padding-bottom: 10px; background-size: cover; background-position: center; color: #fff; text-shadow: 0 1px 4px #000; border-bottom: 0; }
+.side-head.banner .icon-btn { color: #fff; background: #0006; border-radius: 6px; }
+.look-edit { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; }
+.srv-prev { width: 64px; height: 64px; border-radius: 22px; background: var(--input) center / cover; display: grid; place-items: center; font-weight: 700; flex: none; }
+.banner-prev { flex: 1; height: 64px; border-radius: 10px; background: var(--input) center / cover; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+.rules-text { text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 50vh; overflow-y: auto; background: var(--input); border-radius: 8px; padding: 12px; margin: 8px 0; line-height: 1.45; }
+.rules-edit { min-height: 110px; width: 100%; }
+.acct-btns { display: flex; flex-direction: column; gap: 6px; }
+.qr-box { display: grid; place-items: center; background: #fff; border-radius: 10px; padding: 8px; margin: 4px auto 8px; width: fit-content; min-height: 60px; color: #333; }
+.qr-box svg { display: block; width: min(240px, 60vw); height: auto; }
+.show-older { display: block; margin: 10px auto; padding: 6px 14px; border-radius: 14px; background: var(--input); color: var(--muted); font-size: 13px; font-weight: 600; }
+.show-older:hover { color: var(--head); }
 .top-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
 .top-tabs .btn { flex: 1; }
 .play-btn { margin-top: 6px; width: auto; padding: 6px 12px; font-size: 13px; }
@@ -327,6 +354,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 .dm-media .gone { padding: 6px 8px; color: var(--muted); font-style: italic; }
 .dm-rec { color: var(--danger); }
 .dm-form .icon-btn.rec { color: var(--danger); font-size: 13px; width: auto; padding: 0 8px; }
+.dm-bubble small.read { opacity: 1; font-weight: 600; }
+.dm-bubble.me small.read { color: #cfe3ff; }
+.dm-typing { align-self: flex-start; font-size: 12px; color: var(--muted); font-style: italic; padding: 2px 6px; }
 .dm-sys { align-self: center; font-size: 12px; color: var(--muted); }
 .dm-who { display: block; font-size: 12px; margin-bottom: 2px; }
 .dm-bubble.pending { opacity: .6; }
@@ -423,7 +453,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   </nav>
 
   <aside class="side">
-    <div class="side-head"><span id="srvName">ДіноКорд</span><span class="code" id="srvCode"></span><button class="icon-btn gear" id="btnInvite" title="Запросити друзів" hidden>🔗</button><button class="icon-btn" id="btnAdmin" title="Налаштування сервера" hidden>⚙️</button></div>
+    <div class="side-head" id="sideHead"><span id="srvName">ДіноКорд</span><span class="code" id="srvCode"></span><button class="icon-btn gear" id="btnRules" title="Правила сервера" hidden>📜</button><button class="icon-btn gear" id="btnInvite" title="Запросити друзів" hidden>🔗</button><button class="icon-btn" id="btnAdmin" title="Налаштування сервера" hidden>⚙️</button></div>
     <div class="chans" id="chans"></div>
     <div class="vbar" id="vbar" hidden>
       <div class="st"><b>Голос підключено</b><span id="vbarName">🔊 Балачка</span></div>
@@ -535,6 +565,15 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
 <div class="ov" id="ovCard" hidden><div class="card" id="card"></div></div>
 
+<div class="ov" id="ovRules" hidden>
+  <div class="dlg">
+    <h2>📜 Правила сервера</h2>
+    <p>Прочитай уважно. Щоб писати на цьому сервері, треба з ними погодитися.</p>
+    <div class="rules-text" id="rulesText"></div>
+    <div class="row"><button class="btn sec" id="rulesClose">Пізніше</button><button class="btn" id="rulesOk">✅ Погоджуюсь</button></div>
+  </div>
+</div>
+
 <div class="call-ov" id="ovCall" hidden>
   <video class="remote" id="callRemote" autoplay playsinline muted hidden></video>
   <div id="callAudios"></div>
@@ -595,6 +634,12 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         <div class="status" id="pkStatus"></div>
       </div>
     </div>
+    <label>Мій акаунт на інших пристроях</label>
+    <div class="acct-btns">
+      <button class="btn sec" id="acctCopy" type="button">📋 Скопіювати акаунт</button>
+      <button class="btn sec" id="acctPaste" type="button">📥 Вставити акаунт</button>
+      <button class="btn sec" id="acctQr" type="button">📲 На інший пристрій (QR-код)</button>
+    </div>
     <div class="row"><button class="btn" id="avaDone">Готово</button></div>
   </div>
 </div>
@@ -630,7 +675,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     "🎮": "🎮 🕹️ 🎲 🧩 🏆 🥇 🥈 🥉 🏅 🎯 🎳 ⚽ 🏀 🏈 ⚾ 🎾 🏐 🏓 🥊 🛹 🚀 🛸 🚗 🏎️ 🚲 ✈️ 🎉 🎊 🎈 🎁 🎂 🍕 🍔 🍟 🌭 🍿 🍩 🍪 🍫 🍬 🍭 🍦 🍉 🍓 🍌 🍎 🥤 🧃 🎵 🎶 🎤 🎧 🎸 🥁 📱 💻 📷 💡 💎 🔑 🗡️ 🛡️ 🏰",
   };
   const ALL_EMOJI = new Set(Object.values(EMOJI).join(" ").split(" ").filter(Boolean));
-  const okReact = e => REACTS.includes(e) || ALL_EMOJI.has(e);
+  const CUSTOM_EMOJI = /^:[a-z0-9_]{2,24}:$/;
+  const okReact = e => REACTS.includes(e) || ALL_EMOJI.has(e) || CUSTOM_EMOJI.test(e);
   const PREFIX = "dinocord-";
   const MAX_HIST = 200;
 
@@ -657,8 +703,23 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const keys = Object.keys(photoCache); if (keys.length > 60) delete photoCache[keys[0]];
     store.set("photos", photoCache);
   }
+  // a photo is a long text; turned into a short link once, every avatar on screen reuses it
+  const photoUrls = new Map();
+  function photoUrl(data) {
+    let u = photoUrls.get(data);
+    if (!u) {
+      try {
+        const bin = atob(data.slice(data.indexOf(",") + 1)), bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        u = URL.createObjectURL(new Blob([bytes], { type: data.slice(5, data.indexOf(";")) || "image/jpeg" }));
+      } catch { u = data; }
+      if (photoUrls.size > 150) { const [k, old] = photoUrls.entries().next().value; photoUrls.delete(k); if (old.startsWith("blob:")) URL.revokeObjectURL(old); }
+      photoUrls.set(data, u);
+    }
+    return u;
+  }
   let autoAway = false;
-  const myStatus = () => me.st === "on" && autoAway ? "away" : me.st;
+  const myStatus =() => me.st === "on" && autoAway ? "away" : me.st;
   store.set("nick", me.nick); store.set("ava", me.ava); store.set("color", me.color);
 
   let net = null, myId = "me", code = "", isHost = false, chan = "general";
@@ -740,13 +801,14 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const roLock = !!c.ro && !isStaff(myPub);
     const ownLock = (!!c.own && !iOwn()) || (!!c.news && !iSite()) || roLock, mute = myPub && isMuted(myPub) ? adm.mutes.get(myPub).until : 0;
     if (net) {
-      $("text").disabled = $("btnRoar").disabled = $("btnRec").disabled = $("btnPic").disabled = ownLock || !!mute;
+      const rulesLock = !ownLock && needRules();
+      $("text").disabled = $("btnRoar").disabled = $("btnRec").disabled = $("btnPic").disabled = ownLock || !!mute || rulesLock;
       $("btnPic").hidden = !!c.own || !!c.news;
       $("btnAnon").hidden = !anonAllowed();
       $("btnAnon").classList.toggle("on", anonOn && anonAllowed());
       $("btnAnon").title = anonOn ? "Зараз ти пишеш анонімно. Натисни, щоб писати під своїм ім'ям" : "Писати анонімно";
       $("btnRec").hidden = !!c.own || !!c.news || !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia;
-      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : ownLock ? (c.news ? "Тут пише тільки автор ДіноКорду 📣" : roLock ? "Тут пишуть тільки адмін і модератори 📢" : "Тут пише тільки творець сервера 👑") : anonOn && anonAllowed() ? "🎭 Анонімно в #" + c.name : "Написати в #" + c.name;
+      $("text").placeholder = mute ? "Тобі заборонили писати до " + fmtTime(mute) : rulesLock ? "📜 Прийми правила сервера, щоб писати (кнопка 📜 угорі)" : ownLock ? (c.news ? "Тут пише тільки автор ДіноКорду 📣" : roLock ? "Тут пишуть тільки адмін і модератори 📢" : "Тут пише тільки творець сервера 👑") : anonOn && anonAllowed() ? "🎭 Анонімно в #" + c.name : "Написати в #" + c.name;
     }
   }
 
@@ -756,7 +818,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     a.style.background = u.color || "#888";
     a.textContent = u.ava || "🦖";
     const ph = u.photo || (u.pub && (u.pub === myPub ? me.photo : photoCache[u.pub]));
-    if (ph) { a.classList.add("photo"); a.style.backgroundImage = 'url("' + ph + '")'; }
+    if (ph) { a.classList.add("photo"); a.style.backgroundImage = 'url("' + photoUrl(ph) + '")'; }
     return a;
   }
 
@@ -788,9 +850,16 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (last < text.length) textNodes(el, text.slice(last));
   }
   function textNodes(el, text) {
-    // links become clickable, @mentions of my nick are highlighted, everything else is plain text
-    const re = /(https?:\/\/[^\s<>"]+)|(@[^\s@]+(?:\s[^\s@]+)?)/g; let last = 0, m;
+    // links become clickable, @mentions of my nick are highlighted, :server_emoji: become pictures, everything else is plain text
+    const re = /(https?:\/\/[^\s<>"]+)|(@[^\s@]+(?:\s[^\s@]+)?)|(:[a-z0-9_]{2,24}:)/g; let last = 0, m;
     while ((m = re.exec(text))) {
+      if (m[3]) {
+        const img = customEmoji(m[3]);
+        if (!img) { re.lastIndex = m.index + 1; continue; }
+        el.append(text.slice(last, m.index), img);
+        last = m.index + m[3].length;
+        continue;
+      }
       if (m[1]) {
         const url = m[1].replace(/[.,!?)»]+$/, "");
         el.append(text.slice(last, m.index));
@@ -808,6 +877,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     el.append(text.slice(last));
   }
 
+  const SHOW_STEP = 60, showN = {};
   function renderMsgs() {
     const box = $("msgs");
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
@@ -819,10 +889,16 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     w.innerHTML = '<div class="big">#</div><h2></h2><p></p>';
     w.querySelector("h2").textContent = "Ласкаво просимо в #" + c.name + "!";
     w.querySelector("p").textContent = net ? "Це початок каналу #" + c.name + ". " + c.topic + "." : "Створи сервер або приєднайся за кодом, щоб почати спілкування.";
-    box.append(w);
+    // only the newest messages are drawn; older ones appear on request, so a long chat stays fast
+    const all = history[chan].filter(m => !m.del);
+    const from = Math.max(0, all.length - (showN[chan] || SHOW_STEP));
+    if (from) {
+      const more = document.createElement("button"); more.className = "show-older"; more.textContent = "⬆ Показати старіші повідомлення (" + from + ")";
+      more.onclick = () => { const h = box.scrollHeight - box.scrollTop; showN[chan] = (showN[chan] || SHOW_STEP) + SHOW_STEP; renderMsgs(); box.scrollTop = box.scrollHeight - h; };
+      box.append(more);
+    } else box.append(w);
     let prev = null;
-    for (const m of history[chan]) {
-      if (m.del) continue;
+    for (const m of all.slice(from)) {
       const cont = prev && !m.sys && !prev.sys && prev.from === m.from && !!prev.anon === !!m.anon && m.t - prev.t < 5 * 60e3;
       const row = document.createElement("div");
       row.className = "msg" + (cont && !m.reply ? " cont" : "") + (m.sys ? " sys" : "") + (m.anon ? " anon" : "");
@@ -848,15 +924,17 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         if (bg) { const sp = document.createElement("span"); sp.className = "badge"; sp.textContent = bg; h.append(sp); }
         h.append(tm); body.append(h);
       }
-      if (m.file) {
+      if (m.sticker) {
+        body.append(stickerEl(m.sticker));
+      } else if (m.file) {
         body.append(fileEl(m));
       } else if (m.video) {
         body.append(videoEl(m));
       } else if (m.image) {
         const bt = document.createElement("button"); bt.className = "img-msg"; bt.title = "Відкрити фото";
-        const im = document.createElement("img"); im.src = m.image; im.alt = "Фото від " + m.nick; im.loading = "lazy";
+        const im = document.createElement("img"); im.src = photoUrl(m.image); im.alt = "Фото від " + m.nick; im.loading = "lazy";
         if (m.iw && m.ih) { im.width = m.iw; im.height = m.ih; }
-        bt.append(im); bt.onclick = () => { $("lightImg").src = m.image; $("lightbox").hidden = false; };
+        bt.append(im); bt.onclick = () => { $("lightImg").src = photoUrl(m.image); $("lightbox").hidden = false; };
         body.append(bt);
       } else if (m.imageGone) {
         const g = document.createElement("div"); g.className = "text gone"; g.textContent = "🖼 Фото (вже недоступне)"; body.append(g);
@@ -881,7 +959,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         for (const [e, ids] of rs) {
           const b = document.createElement("button");
           b.className = "react" + (ids.includes(myId) ? " mine" : "");
-          b.textContent = e + " " + ids.length;
+          emojiInto(b, e); b.append(" " + ids.length);
           b.onclick = () => toggleReact(m, e);
           rb.append(b);
         }
@@ -945,10 +1023,10 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   // every server you've been on stays in the rail; one tap switches to it
   const savedServers = () => { const v = store.get("servers", []); return Array.isArray(v) ? v.filter(x => x && /^\d{4,6}$/.test(x.code)).slice(0, 30) : []; };
-  function rememberServer(c, name) {
+  function rememberServer(c, name, icon) {
     const list = savedServers(), i = list.findIndex(x => x.code === c);
-    if (i < 0) list.push({ code: c, name: name || "" });
-    else if (name && list[i].name !== name) list[i].name = name;
+    if (i < 0) list.push({ code: c, name: name || "", icon: icon || "" });
+    else if ((name && list[i].name !== name) || (icon !== undefined && (list[i].icon || "") !== icon)) { if (name) list[i].name = name; if (icon !== undefined) list[i].icon = icon; }
     else return;
     store.set("servers", list);
   }
@@ -981,19 +1059,26 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   function renderRail() {
     const list = $("srvList"); list.innerHTML = "";
-    if (code && net) rememberServer(code, adm.name);
+    // the icon is kept with the saved server, so it shows even before you open that server
+    if (code && net) rememberServer(code, adm.name, adm.look.icon ? blobData(adm.look.icon) || undefined : "");
     renderJoinSaved();
     for (const sv of savedServers()) {
       const b = document.createElement("button");
       b.className = "srv" + (sv.code === code ? " on" : "") + (switching && sv.code === $("joinCode").value ? " busy" : "");
       b.title = (sv.name || "Сервер " + sv.code) + " (#" + sv.code + ")";
-      b.textContent = initials(sv.name, sv.code);
-      if (!sv.name) b.classList.add("num");
+      if (okImg(sv.icon, 40000)) { b.classList.add("img"); b.style.backgroundImage = 'url("' + photoUrl(sv.icon) + '")'; }
+      else b.textContent = initials(sv.name, sv.code);
+      if (!sv.name && !sv.icon) b.classList.add("num");
       b.onclick = () => switchServer(sv.code);
       list.append(b);
     }
     $("srvHome").classList.toggle("on", !code);
     $("srvName").textContent = code ? (adm.name || "Сервер " + code) : "ДіноКорд";
+    const ban = net ? blobData(adm.look.banner) : "";
+    $("sideHead").classList.toggle("banner", !!ban);
+    $("sideHead").style.backgroundImage = ban ? 'linear-gradient(transparent 40%, #000a), url("' + photoUrl(ban) + '")' : "";
+    $("btnRules").hidden = !net || !adm.rules;
+    checkRules();
     $("btnAdmin").hidden = !net || !iOwn();
     $("btnInvite").hidden = !net;
     $("btnClear").hidden = !net || !iOwn();
@@ -1003,6 +1088,19 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   }
 
   function renderAll() { renderChans(); renderMsgs(); renderMembers(); renderTyping(); renderRail(); }
+  // a burst of changes (joining a server, many messages at once) redraws the screen only once per frame
+  const dirty = new Set(); let drawId = 0;
+  function later(...what) { what.forEach(w => dirty.add(w)); if (!drawId) drawId = requestAnimationFrame(drawNow); }
+  function drawNow() {
+    drawId = 0;
+    const d = new Set(dirty); dirty.clear();
+    if (d.has("all")) { renderAll(); renderVGrid(); return; }
+    if (d.has("chans")) renderChans();
+    if (d.has("msgs")) renderMsgs();
+    if (d.has("members")) renderMembers();
+    if (d.has("typing")) renderTyping();
+    if (d.has("vgrid")) renderVGrid();
+  }
 
   // ---------- state changes (same on every peer; host relays) ----------
   function addMsg(m, verified) {
@@ -1021,6 +1119,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (validPub(m.pub)) msg.pub = m.pub;
     if (m.anon === true && !msg.sys && m.chan !== OWN && m.chan !== NEWS) { if (adm.noAnon && !merging) return; msg.anon = true; msg.nick = "Анонім"; msg.ava = "🎭"; msg.color = "#7a7f8a"; }
     if (Number(m.edited) > 0) msg.edited = Number(m.edited);
+    if (stickerOk(m.sticker)) { msg.sticker = m.sticker; msg.text = "🖼 Стікер"; }
     if (m.dino && typeof m.dino === "object" && Number.isInteger(m.dino.s) && m.dino.s >= 0 && m.dino.s < 1e7) msg.dino = { s: m.dino.s, g: clean(m.dino.g, 30) || "Динозаврик" };
     if (Number(m.del) > 0) { msg.del = Number(m.del); msg.text = "…"; delete msg.image; delete msg.audio; msg.video = false; msg.file = false; }
     if (m.reply && typeof m.reply.id === "string") msg.reply = { id: m.reply.id.slice(0, 40), nick: clean(m.reply.nick, 16) || "Динозаврик", text: clean(m.reply.text, 80) };
@@ -1054,7 +1153,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const where = CHANNELS.find(c => c.id === msg.chan)?.name || "";
       notify(msg.nick + " у #" + where, msg.image ? "🖼 Фото" : msg.audio ? "🎤 Голосове повідомлення" : plainText(msg.text), mentionsMe(msg.text) || msg.chan === NEWS);
     }
-    renderChans(); renderMsgs(); renderTyping();
+    later("chans", "msgs", "typing");
   }
 
   function applyReact(r) {
@@ -1066,7 +1165,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (!r.on && i >= 0) ids.splice(i, 1);
     saveHist();
     if (r.chan === NEWS) saveNews();
-    if (r.chan === chan) renderMsgs();
+    if (r.chan === chan) later("msgs");
   }
 
   // ---------- owner channel: the server's creator signs every post with a key only their browser has ----------
@@ -1204,10 +1303,12 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   // ---------- admin: every action is signed by the owner's key and replayed by everyone ----------
   let acts = [];
   const seenSigs = new Set();
-  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {}, roles: new Map(), pins: {}, noAnon: false, chans: { add: new Map(), edit: {}, del: new Set() } };
+  const adm = { name: "", bans: new Map(), mutes: new Map(), deleted: new Set(), cleared: {}, roles: new Map(), pins: {}, noAnon: false, chans: { add: new Map(), edit: {}, del: new Set() },
+    look: { icon: "", banner: "" }, rules: "", emoji: new Map(), stickers: new Map() };
+  const resetLook = () => { adm.look = { icon: "", banner: "" }; adm.rules = ""; adm.emoji = new Map(); adm.stickers = new Map(); };
   const isMuted = pub => (adm.mutes.get(pub)?.until || 0) > Date.now();
   const isBanned = pub => !!pub && adm.bans.has(pub);
-  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear", "role", "pin", "unpin", "anon", "chan"];
+  const ADM_ACTS = ["rename", "ban", "unban", "mute", "unmute", "kick", "del", "clear", "role", "pin", "unpin", "anon", "chan", "look", "rules", "emoji", "sticker"];
   const MOD_ACTS = ["del", "mute", "unmute", "kick", "pin", "unpin"];   // what a moderator may do; the rest is the creator's
   const iMod = () => !!myPub && adm.roles.get(myPub)?.role === "mod";
   const isStaff = pub => !!pub && (pub === meta.owner || adm.roles.get(pub)?.role === "mod");
@@ -1224,14 +1325,14 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   function resetAdmin() {
     acts = []; seenSigs.clear();
-    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {}; adm.roles.clear(); adm.pins = {}; adm.noAnon = false; adm.chans = { add: new Map(), edit: {}, del: new Set() };
+    adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {}; adm.roles.clear(); adm.pins = {}; adm.noAnon = false; adm.chans = { add: new Map(), edit: {}, del: new Set() }; resetLook();
   }
 
   async function addActs(list) {
     const fresh = [];
     if (!meta.owner) return fresh;
     for (const a of list.slice(-300)) {
-      if (!a || typeof a.p !== "string" || typeof a.s !== "string" || a.p.length > 600 || seenSigs.has(a.s)) continue;
+      if (!a || typeof a.p !== "string" || typeof a.s !== "string" || a.p.length > 4000 || seenSigs.has(a.s)) continue;
       const by = validPub(a.by) ? a.by : meta.owner;
       let d;
       try {
@@ -1251,7 +1352,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     acts.sort((x, y) => x.d.ts - y.d.ts);
     if (acts.length > 300) acts.splice(0, acts.length - 300);
     adm.name = ""; adm.bans.clear(); adm.mutes.clear(); adm.deleted.clear(); adm.cleared = {};
-    adm.roles.clear(); adm.pins = {}; adm.noAnon = false; adm.chans = { add: new Map(), edit: {}, del: new Set() };
+    adm.roles.clear(); adm.pins = {}; adm.noAnon = false; adm.chans = { add: new Map(), edit: {}, del: new Set() }; resetLook();
     for (const rec of acts) {
       const d = rec.d;
       // replay in time order: a moderator's action counts only if they were a moderator then, and never against staff
@@ -1267,6 +1368,16 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       else if (d.a === "del" && typeof d.id === "string") adm.deleted.add(d.id);
       else if (d.a === "clear" && history[d.chan]) adm.cleared[d.chan] = Math.max(adm.cleared[d.chan] || 0, d.ts);
       else if (d.a === "anon") adm.noAnon = !!d.off;
+      else if (d.a === "look") { for (const k of ["icon", "banner"]) if (d[k] !== undefined) adm.look[k] = FP.test(d[k]) ? d[k] : ""; }
+      else if (d.a === "rules") adm.rules = String(d.text ?? "").replace(/[\u0000-\u0009\u000b-\u001f]/g, "").trim().slice(0, 1500);
+      else if (d.a === "emoji" && /^[a-z0-9_]{2,24}$/.test(d.name)) {
+        if (d.op === "del") adm.emoji.delete(d.name);
+        else if (FP.test(d.h) && (adm.emoji.has(d.name) || adm.emoji.size < 40)) adm.emoji.set(d.name, d.h);
+      }
+      else if (d.a === "sticker" && FP.test(d.h)) {
+        if (d.op === "del") adm.stickers.delete(d.h);
+        else if (adm.stickers.size < 12) adm.stickers.set(d.h, clean(d.name, 20) || "стікер");
+      }
       else if (d.a === "chan" && isChanId(d.id) && d.id !== NEWS && d.id !== OWN) {
         const info = { name: chanName(d.name) || "канал", topic: clean(d.topic, 80), ro: !!d.ro };
         if (d.op === "add" && CUSTOM_ID.test(d.id) && adm.chans.add.size < 20 && !adm.chans.del.has(d.id)) { adm.chans.add.set(d.id, info); ensureChan(d.id); }
@@ -1280,6 +1391,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       }
     }
     rebuildChannels();
+    fetchBlobs();
     for (const c of CHANNELS) {
       const cut = adm.cleared[c.id] || 0;
       if (c.id !== NEWS) history[c.id] = history[c.id].filter(m => !adm.deleted.has(m.id) && m.t > cut);
@@ -1287,8 +1399,95 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     meta.acts = acts.map(({ p, s, by }) => by ? { p, s, by } : { p, s });
     if (code) store.set("meta-" + code, meta);
     saveHist();
-    renderAll();
+    later("all");
   }
+
+  // ---------- server pictures (icon, banner, emoji, stickers): the admin signs a fingerprint, the picture itself travels separately ----------
+  const FP = /^[\w-]{24}$/;
+  const blobs = new Map();          // fingerprint -> picture as a data URL
+  const fingerprint = async data => b64u(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data))).slice(0, 24);
+  const okImg = (d, max) => typeof d === "string" && d.length <= max && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(d);
+  async function keepBlob(h, data) {
+    if (blobs.has(h) || !FP.test(h) || !okImg(data, 200000) || await fingerprint(data) !== h) return false;
+    blobs.set(h, data);
+    try { const db = await openVdb(); db.transaction("v", "readwrite").objectStore("v").put(data, "b:" + h); } catch {}
+    return true;
+  }
+  async function loadBlob(h) {
+    if (blobs.has(h)) return true;
+    try {
+      const db = await openVdb();
+      const d = await new Promise((res, rej) => { const r = db.transaction("v").objectStore("v").get("b:" + h); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      if (typeof d === "string" && okImg(d, 200000)) { blobs.set(h, d); return true; }
+    } catch {}
+    return false;
+  }
+  const wantedBlobs = () => [adm.look.icon, adm.look.banner, ...adm.emoji.values(), ...adm.stickers.keys()].filter(Boolean);
+  const askedBlobs = new Map();     // fingerprint -> when we last asked for it
+  async function fetchBlobs() {
+    // pictures this device doesn't have yet are asked from whoever is online
+    const miss = [];
+    for (const h of wantedBlobs()) if (!await loadBlob(h)) miss.push(h);
+    later("all");
+    const ask = miss.filter(h => Date.now() - (askedBlobs.get(h) || 0) > 20000);
+    if (ask.length && net) { ask.forEach(h => askedBlobs.set(h, Date.now())); net.send({ t: "need", hs: ask }); }
+  }
+  setInterval(() => { if (net && wantedBlobs().some(h => !blobs.has(h))) fetchBlobs(); }, 25000);
+  async function takeBlobs(b) {
+    let got = false;
+    for (const [h, d] of Object.entries(b && typeof b === "object" ? b : {}).slice(0, 60)) if (await keepBlob(h, d)) got = true;
+    if (got) later("all");
+  }
+  const blobData = h => (h && blobs.get(h)) || "";
+  async function shareBlob(data) {
+    const h = await fingerprint(data);
+    await keepBlob(h, data);
+    net?.send({ t: "blobs", b: { [h]: data } });
+    return h;
+  }
+  // a picture from the device, cut to size: "cover" fills the frame, "contain" keeps all of it (with transparency for PNG)
+  async function fitImage(file, w, h, mode, type, q) {
+    const url = URL.createObjectURL(file);
+    try {
+      const im = await loadImg(url);
+      const k = mode === "cover" ? Math.max(w / im.naturalWidth, h / im.naturalHeight) : Math.min(w / im.naturalWidth, h / im.naturalHeight, 1);
+      const dw = Math.round(im.naturalWidth * k), dh = Math.round(im.naturalHeight * k);
+      const cw = mode === "cover" ? w : dw, ch = mode === "cover" ? h : dh;
+      const cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
+      const x = cv.getContext("2d");
+      if (type === "image/jpeg") { x.fillStyle = "#fff"; x.fillRect(0, 0, cw, ch); }
+      x.drawImage(im, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+      return cv.toDataURL(type, q);
+    } finally { URL.revokeObjectURL(url); }
+  }
+  const pickImage = () => new Promise(res => {
+    const fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*";
+    fi.onchange = () => res(fi.files[0] || null); fi.click();
+  });
+  async function setLook(kind) {
+    const f = await pickImage(); if (!f) return;
+    try {
+      const data = kind === "icon" ? await fitImage(f, 128, 128, "cover", "image/jpeg", .85) : await fitImage(f, 640, 240, "cover", "image/jpeg", .75);
+      const h = await shareBlob(data);
+      doAdmin({ a: "look", [kind]: h });
+    } catch { alert("Не вдалося відкрити цю картинку. Спробуй іншу."); }
+  }
+
+  // ---------- server rules: a newcomer reads them and agrees before writing ----------
+  const rulesKey = () => { let h = 5381; for (const ch of adm.rules) h = (h * 33 + ch.codePointAt(0)) >>> 0; return h.toString(36); };
+  const needRules = () => !!net && !!adm.rules && !isStaff(myPub) && store.get("rulesOk-" + code, "") !== rulesKey();
+  let rulesShown = "";
+  function showRules(gate) {
+    $("rulesText").textContent = adm.rules || "Правил ще немає.";
+    $("rulesOk").hidden = !gate; $("rulesClose").textContent = gate ? "Пізніше" : "Закрити";
+    $("ovRules").hidden = false;
+  }
+  function checkRules() {
+    if (needRules() && rulesShown !== code + rulesKey()) { rulesShown = code + rulesKey(); showRules(true); }
+  }
+  $("rulesOk").onclick = () => { store.set("rulesOk-" + code, rulesKey()); $("ovRules").hidden = true; renderChans(); $("text").focus(); };
+  $("rulesClose").onclick = () => { $("ovRules").hidden = true; };
+  $("btnRules").onclick = () => showRules(needRules());
 
   function rebuildChannels() {
     const e = adm.chans.edit;
@@ -1469,6 +1668,46 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const ok = document.createElement("button"); ok.textContent = "Зберегти";
       ok.onclick = () => { $("ovAdmin").hidden = true; doAdmin({ a: "rename", name: clean(inp.value, 24) }); };
       row.append(inp, ok); body.append(row);
+      const lh = document.createElement("h3"); lh.textContent = "Значок і банер"; body.append(lh);
+      const lr = document.createElement("div"); lr.className = "look-edit";
+      const ic = document.createElement("div"); ic.className = "srv-prev";
+      const icd = blobData(adm.look.icon); if (icd) ic.style.backgroundImage = 'url("' + photoUrl(icd) + '")'; else ic.textContent = initials(adm.name, code);
+      const bn = document.createElement("div"); bn.className = "banner-prev";
+      const bnd = blobData(adm.look.banner); if (bnd) bn.style.backgroundImage = 'url("' + photoUrl(bnd) + '")'; else bn.textContent = "Банера ще немає";
+      lr.append(ic, bn); body.append(lr);
+      const lb = document.createElement("div"); lb.className = "adm-row";
+      const mk = (t, fn) => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => { $("ovAdmin").hidden = true; fn(); }; lb.append(b); };
+      mk("🖼 Значок", () => setLook("icon")); mk("🌄 Банер", () => setLook("banner"));
+      if (adm.look.icon || adm.look.banner) mk("Прибрати", () => doAdmin({ a: "look", icon: "", banner: "" }));
+      body.append(lb);
+      const rh = document.createElement("h3"); rh.textContent = "📜 Правила"; body.append(rh);
+      const rt = document.createElement("textarea"); rt.className = "bio rules-edit"; rt.maxLength = 1500; rt.value = adm.rules;
+      rt.placeholder = "1. Поважай інших\n2. Без образ і спаму\n3. …\nЯкщо залишити порожнім, правил не буде."; body.append(rt);
+      const rb = document.createElement("div"); rb.className = "adm-row";
+      const rs = document.createElement("span"); rs.textContent = adm.rules ? "Новенькі мусять погодитися з правилами" : "Правил ще немає";
+      const rok = document.createElement("button"); rok.textContent = "Зберегти правила";
+      rok.onclick = () => { $("ovAdmin").hidden = true; const text = rt.value.trim().slice(0, 1500); doAdmin({ a: "rules", text }); if (text && text !== adm.rules) sysMsg("Адмін оновив правила сервера 📜"); };
+      rb.append(rs, rok); body.append(rb);
+      const eh = document.createElement("h3"); eh.textContent = "😀 Свої емодзі та стікери"; body.append(eh);
+      const eg = document.createElement("div"); eg.className = "own-emoji";
+      for (const [name, h] of adm.emoji) {
+        const it = document.createElement("button"); it.title = "Видалити :" + name + ":";
+        const im = customEmoji(":" + name + ":"); it.append(im || "…", " :" + name + ": ✕");
+        it.onclick = () => { if (confirm("Видалити емодзі :" + name + ":?")) { $("ovAdmin").hidden = true; doAdmin({ a: "emoji", op: "del", name }); } };
+        eg.append(it);
+      }
+      for (const [h, name] of adm.stickers) {
+        const it = document.createElement("button"); it.title = "Видалити стікер";
+        const d = blobData(h); if (d) { const im = document.createElement("img"); im.src = photoUrl(d); im.className = "cemoji"; it.append(im); }
+        it.append(" " + name + " ✕");
+        it.onclick = () => { if (confirm("Видалити стікер «" + name + "»?")) { $("ovAdmin").hidden = true; doAdmin({ a: "sticker", op: "del", h }); } };
+        eg.append(it);
+      }
+      if (!eg.children.length) eg.textContent = "Ще немає. Додай картинку, і всі на сервері зможуть нею користуватися.";
+      body.append(eg);
+      const eb = document.createElement("div"); eb.className = "adm-row";
+      for (const [t, fn] of [["➕ Емодзі", addServerEmoji], ["➕ Стікер", addServerSticker]]) { const b = document.createElement("button"); b.textContent = t; b.onclick = () => { $("ovAdmin").hidden = true; fn(); }; eb.append(b); }
+      body.append(eb);
       const ah = document.createElement("h3"); ah.textContent = "Анонімні повідомлення"; body.append(ah);
       const ar = document.createElement("div"); ar.className = "adm-row";
       const at = document.createElement("span"); at.textContent = adm.noAnon ? "Вимкнені: усі пишуть під своїм ім'ям" : "Увімкнені: можна писати як 🎭 Анонім (ти бачиш, хто це)";
@@ -1499,7 +1738,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (!code) return;
     const c = code;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => writeHist(c), 400);
+    saveTimer = setTimeout(() => writeHist(c), 1500);
   }
 
   function writeHist(c) {
@@ -1577,7 +1816,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       bio: String(u.bio ?? "").replace(/[\u0000-\u0009\u000b-\u001f]/g, "").trim().slice(0, 160), banner: /^#[0-9a-f]{6}$/i.test(u.banner) ? u.banner : "", since });
     if (validPub(u.pub)) rememberPhoto(u.pub, validPhoto(u.photo) ? u.photo : "");
     seeMember(members.get(id));
-    renderMembers();
+    later("members");
     return !was;
   }
 
@@ -1594,7 +1833,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         if (net && isHost && ![...members.values()].some(o => u.pub && o.pub === u.pub)) sysMsg(u.nick + " пішов із сервера.");
       }, 30000));
     }
-    renderMembers(); renderTyping();
+    later("members", "typing");
   }
 
   let hostConns = new Set();
@@ -1683,6 +1922,16 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const orig = history[e.chan]?.find(x => x.id === e.id);
       if (sender && (!orig || !(orig.pub ? orig.pub === fromConn.pub : orig.from === sender))) return;
       applyEdit(e);
+    }
+    else if (msg.t === "blobs") takeBlobs(msg.b);
+    else if (msg.t === "need") {
+      if (!Array.isArray(msg.hs)) return;
+      const have = {};
+      for (const h of msg.hs.slice(0, 60)) if (blobs.has(h)) have[h] = blobs.get(h);
+      const n = Object.keys(have).length;
+      if (n) { if (isHost && fromConn) fromConn.send({ t: "blobs", b: have }); else net?.send({ t: "blobs", b: have }); }
+      // the host answers what it can; only if it's missing something do the others get asked
+      if (!isHost || n === msg.hs.length) return;
     }
     else if (msg.t === "admin") {
       if (!msg.act) return;
@@ -1934,7 +2183,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         an.getByteTimeDomainData(buf);
         let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v - 128));
         const on = peak > 10, was = talking.has(id);
-        if (on !== was) { on ? talking.add(id) : talking.delete(id); renderChans(); renderVGrid(); }
+        if (on !== was) { on ? talking.add(id) : talking.delete(id); later("chans", "vgrid"); }
       }, 150);
       meters.set(id, { timer, src });
     } catch {}
@@ -2218,6 +2467,18 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   function onHome(pub, d) {
     if (typeof d.t === "string" && d.t.startsWith("call-")) { onCallSignal(pub, d); return; }
     if (d.t === "dm") { takeDm(pub, d.m); if (typeof d.m?.id === "string") homeConns.get(pub)?.send({ t: "dm-ok", id: d.m.id }); }
+    else if (d.t === "typing") {
+      const key = typeof d.g === "string" ? groupKey(d.g) : pub;
+      if (key !== pub && !dms[key]?.members.includes(pub)) return;
+      (dmTyping[key] ||= new Map()).set(pub, Date.now() + 4500);
+      renderSocial(); setTimeout(renderSocial, 4700);
+    }
+    else if (d.t === "read") {
+      // they've seen everything up to this message
+      const t = dms[pub]; if (!t || t.group || typeof d.id !== "string") return;
+      const at = t.msgs.findIndex(x => x.id === d.id), was = t.msgs.findIndex(x => x.id === t.readId);
+      if (at >= 0 && at > was) { t.readId = d.id; saveDms(); renderSocial(); }
+    }
     else if (d.t === "dm-ok") { const m = dms[pub]?.msgs.find(x => x.me && x.id === d.id); if (m?.pending) { m.pending = false; saveDms(); renderSocial(); } }
     else if (d.t === "fr") reconcileFriend(pub, d.st);
     else if (d.t === "u") { meetPerson(pub, d.u); renderSocial(); }
@@ -2298,6 +2559,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (t.msgs.some(x => x.id === id)) return;
     t.msgs.push({ id, me: false, text, t: Math.min(Date.now(), Number(m.t) || Date.now()), ...(md ? { media: md } : {}) });
     t.msgs.sort((a, b) => a.t - b.t);
+    dmTyping[pub]?.delete(pub);
     if (!seenOpen(pub)) t.unread = (t.unread || 0) + 1;
     saveDms(); renderSocial();
     notify("💬 " + t.nick, plainText(text), true);
@@ -2311,7 +2573,27 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       if (m.media) mediaData(m.id).then(data => c.open && c.send({ t: "dm", m: { id: m.id, text: m.text, t: m.t, media: m.media, data } })).catch(() => {});
       else c.send({ t: "dm", m: { id: m.id, text: m.text, t: m.t } });
     }
+    if (t.readSent) c.send({ t: "read", id: t.readSent });
   }
+  // "друкує…" in private chats and groups: who is typing where, until when
+  const dmTyping = {};
+  let dmTypedAt = 0;
+  $("dmText").addEventListener("input", () => {
+    const t = dms[dmOpen];
+    if (!t || !$("dmText").value || Date.now() - dmTypedAt < 2500) return;
+    dmTypedAt = Date.now();
+    // only to whoever is connected right now: typing isn't worth dialing anyone for
+    const to = t.group ? t.members.filter(p => p !== myPub) : [dmOpen];
+    for (const p of to) homeConns.get(p)?.open && homeConns.get(p).send(t.group ? { t: "typing", g: t.gid } : { t: "typing" });
+  });
+  function markRead(key) {
+    const t = dms[key]; if (!t || t.group || document.hidden) return;
+    const last = t.msgs.findLast(m => !m.me && !m.sys);
+    if (!last || t.readSent === last.id) return;
+    const c = homeConns.get(key); if (!c?.open) return;
+    c.send({ t: "read", id: last.id }); t.readSent = last.id; saveDms();
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && seenOpen(dmOpen)) markRead(dmOpen); });
   const ginfo = t => ({ id: t.gid, name: t.name, nameT: t.nameT || 0, members: t.members, gone: t.gone || [] });
   const groupKey = gid => "g:" + gid;
   const gSigned = (gid, m) => new TextEncoder().encode("g|" + gid + "|" + m.id + "|" + m.t + "|" + m.text + (m.media ? "|" + JSON.stringify(m.media) : ""));
@@ -2400,6 +2682,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (t.msgs.some(x => x.id === id)) return;
     t.msgs.push({ id, from: m.from, text, t: Math.min(Date.now(), at), sig: String(m.sig), me: m.from === myPub, ...(md ? { media: md } : {}) });
     t.msgs.sort((a, b) => a.t - b.t);
+    dmTyping[key]?.delete(m.from);
     if (m.from !== myPub && !seenOpen(key)) t.unread = (t.unread || 0) + 1;
     saveDms(); renderSocial();
     if (m.from !== myPub && !quiet) notify("👥 " + t.name, nickOf(m.from) + ": " + plainText(text), true);
@@ -2605,7 +2888,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     $("dmText").placeholder = !homeReady ? "Підключаюсь…" : t.group ? "Написати в групу" : online ? "Написати " + t.nick : t.nick + " не в мережі: отримає, коли зайде";
     if (!t.msgs.length) { const e = document.createElement("div"); e.className = "dm-empty"; e.textContent = t.group ? "Це початок групи «" + t.name + "» 👋" : "Почни розмову з " + t.nick + " 👋"; box.append(e); }
     let prevFrom = "";
-    for (const m of t.msgs) {
+    const readTo = t.group ? -1 : t.msgs.findIndex(x => x.id === t.readId);
+    const lastRead = readTo < 0 ? -1 : t.msgs.findLastIndex((x, i) => i <= readTo && x.me && !x.sys);
+    for (const [i, m] of t.msgs.entries()) {
       if (m.sys) { const s = document.createElement("div"); s.className = "dm-sys"; s.textContent = m.text + " · " + fmtTime(m.t); box.append(s); prevFrom = ""; continue; }
       const b = document.createElement("div"); b.className = "dm-bubble" + (m.me ? " me" : "") + (m.pending ? " pending" : "");
       if (t.group && !m.me && m.from !== prevFrom) { const w = document.createElement("b"); w.className = "dm-who"; w.textContent = nickOf(m.from); w.style.color = people[m.from]?.color || ""; b.append(w); }
@@ -2613,15 +2898,23 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const tx = m.media ? dmMediaEl(m, m.me ? me.nick : t.group ? nickOf(m.from) : t.nick) : document.createElement("div");
       if (!m.media) richText(tx, m.text);
       if (m.media) b.classList.add("has-media");
-      const tm = document.createElement("small"); tm.textContent = fmtTime(m.t) + (m.pending ? " · ще не доставлено" : "");
+      const tm = document.createElement("small");
+      // ✓ delivered, ✓✓ read (private chats only)
+      const tick = !m.me || t.group ? "" : m.pending ? " · ще не доставлено" : i <= readTo ? " ✓✓" : " ✓";
+      tm.textContent = fmtTime(m.t) + tick + (i === lastRead ? " Прочитано" : "");
+      if (m.me && i <= readTo) tm.classList.add("read");
       b.append(tx, tm); box.append(b);
     }
+    const who = [...(dmTyping[dmOpen] || [])].filter(([, until]) => until > Date.now()).map(([p]) => nickOf(p));
+    if (who.length) { const ty = document.createElement("div"); ty.className = "dm-typing"; ty.textContent = (who.length > 2 ? "Кілька людей" : who.join(" і ")) + (who.length > 1 ? " друкують…" : " друкує…"); box.append(ty); }
     box.scrollTop = box.scrollHeight;
+    if (seenOpen(dmOpen)) markRead(dmOpen);
   }
   $("dmForm").addEventListener("submit", async e => {
     e.preventDefault();
     const text = clean($("dmText").value, 500), key = dmOpen, t = dms[key];
     if (!text || !t || !homeReady) return;
+    if (guardSecret($("dmText").value)) { $("dmText").value = ""; return; }
     $("dmText").value = "";
     if (t.group) {
       const m = { id: newId(), from: myPub, text, t: Date.now() }; m.sig = await signG(t.gid, m);
@@ -3027,6 +3320,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const text = clean($("text").value, 500);
     if (!text || !net) return;
     if ((chan === OWN && !iOwn()) || (chan === NEWS && !iSite())) return;
+    if (guardSecret($("text").value)) { $("text").value = ""; return; }
     $("text").value = ""; $("cmdPop").hidden = true;
     if (text.startsWith("/") && runCommand(text)) return;
     const m = { id: newId(), chan, from: myId, ...author(), text, t: Date.now(), pub: myPub };
@@ -3089,7 +3383,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     const canWrite = !$("text").disabled;
     if (canWrite) act("↩", "Відповісти", () => startReply(cur));
     if (canEditMsg(cur) && canWrite) act("✏️", "Редагувати", () => startEdit(cur));
-    if (cur.text && !cur.image && !cur.audio && !cur.video && !cur.file) act("📋", "Копіювати текст", async () => {
+    if (cur.text && !cur.image && !cur.audio && !cur.video && !cur.file && !cur.sticker) act("📋", "Копіювати текст", async () => {
       try { await navigator.clipboard.writeText(cur.text); } catch {}
     });
     if (validPub(cur.pub) && cur.pub !== myPub && !cur.anon) act("💬", "Написати особисто", () => openDm(cur.pub));
@@ -3107,7 +3401,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
 
   // ---------- editing your own messages ----------
   let editing = null;   // { id, chan, draft }
-  const canEditMsg = m => !m.sys && m.chan !== OWN && m.chan !== NEWS && !m.image && !m.audio && !m.video && !m.file && !m.audioGone && !m.imageGone
+  const canEditMsg = m => !m.sys && m.chan !== OWN && m.chan !== NEWS && !m.image && !m.audio && !m.video && !m.file && !m.sticker && !m.audioGone && !m.imageGone
     && (m.pub ? m.pub === myPub : m.from === myId);
   const canDeleteOwn = m => !m.sys && m.chan !== OWN && m.chan !== NEWS && (m.pub ? m.pub === myPub : m.from === myId);
   function deleteOwn(m) {
@@ -3174,6 +3468,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   function cancelReply() { replyTo = null; $("replyBar").hidden = true; }
   $("replyCancel").onclick = cancelReply;
   function jumpTo(id) {
+    const kept = history[chan].filter(m => !m.del), at = kept.findIndex(m => m.id === id);
+    if (at >= 0 && kept.length - at > (showN[chan] || SHOW_STEP)) { showN[chan] = kept.length - at + 10; renderMsgs(); }
     const row = [...$("msgs").querySelectorAll(".msg")].find(r => r.dataset.id === id);
     if (!row) { sysLocal("Це повідомлення вже видалене або надто старе."); return; }
     row.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -3611,7 +3907,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const db = await openVdb();
       await new Promise((res, rej) => { const t = db.transaction("v", "readwrite"); t.objectStore("v").put(blob, id); t.oncomplete = res; t.onerror = () => rej(t.error); });
       vurls.set(id, URL.createObjectURL(blob));
-      vEls.get(id)?.refresh();
+      vEls.get(id)?.refresh(); fEls.get(id)?.refresh?.();
     } catch {}
   }
   async function getVideoUrl(id) {
@@ -3736,13 +4032,17 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     fn.append(nm, sz);
     const fb = document.createElement("div"); fb.className = "fb";
     el.append(ic, fn, fb);
-    getVideoUrl(m.id).then(u => {
+    // the file may still be on its way into this browser's store: show the buttons as soon as it lands
+    const fill = () => getVideoUrl(m.id).then(u => {
+      fb.innerHTML = "";
       if (!u) { sz.textContent = fmtSize(m.fsize) + " · недоступний на цьому пристрої"; return; }
+      sz.textContent = fmtSize(m.fsize);
       if (isHtml(m)) { const o = document.createElement("button"); o.textContent = "▶ Відкрити"; o.onclick = () => openHtml(m, u); fb.append(o); }
       const d = document.createElement("button"); d.textContent = "⬇"; d.title = "Завантажити";
       d.onclick = () => { const a = document.createElement("a"); a.href = u; a.download = m.fname; document.body.append(a); a.click(); a.remove(); };
       fb.append(d);
     });
+    fill(); el.refresh = fill;
     fEls.set(m.id, el);
     return el;
   }
@@ -3783,20 +4083,102 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   $("lightbox").addEventListener("click", e => { if (e.target === $("lightbox")) $("lightbox").hidden = true; });
   document.addEventListener("keydown", e => { if (e.key === "Escape") { $("lightbox").hidden = true; $("emojiPop").hidden = true; } });
 
+  // ---------- the server's own emoji (:name:) and stickers ----------
+  function customEmoji(tag) {
+    const d = blobData(adm.emoji.get(tag.slice(1, -1)));
+    if (!d) return null;
+    const im = document.createElement("img"); im.className = "cemoji"; im.src = photoUrl(d); im.alt = tag; im.title = tag;
+    return im;
+  }
+  const emojiInto = (el, e) => { const im = CUSTOM_EMOJI.test(e) && customEmoji(e); el.append(im || e); };
+  const STICKERS = [
+    { id: "rawr", e: "🦖", t: "РРРАР!", c: ["#ff9a3d", "#ff4e50"] },
+    { id: "hi", e: "👋", t: "Привіт!", c: ["#56ccf2", "#2f80ed"] },
+    { id: "gg", e: "🏆", t: "GG!", c: ["#f7d046", "#f2994a"] },
+    { id: "lol", e: "😂", t: "Ха-ха-ха", c: ["#ffd86f", "#fc6262"] },
+    { id: "sad", e: "🥺", t: "Сумно…", c: ["#a1c4fd", "#7f8fd6"] },
+    { id: "love", e: "💖", t: "Люблю!", c: ["#ff9a9e", "#f0629b"] },
+    { id: "ok", e: "👍", t: "Окей!", c: ["#84fab0", "#3cba92"] },
+    { id: "wow", e: "😮", t: "Вау!", c: ["#fbc2eb", "#a18cd1"] },
+    { id: "sleep", e: "😴", t: "Сплю…", c: ["#667db6", "#485aa0"] },
+    { id: "angry", e: "😡", t: "Ррр, злий!", c: ["#f85032", "#c0392b"] },
+    { id: "play", e: "🎮", t: "Го грати?", c: ["#43e97b", "#2bb673"] },
+    { id: "bye", e: "🦕", t: "Бувай!", c: ["#30cfd0", "#5b6ee1"] },
+  ];
+  const stickerOk = s => typeof s === "string" && ((/^b:[a-z]{2,10}$/.test(s) && STICKERS.some(x => "b:" + x.id === s)) || /^s:[\w-]{24}$/.test(s));
+  function stickerEl(s) {
+    if (s.startsWith("b:")) {
+      const k = STICKERS.find(x => "b:" + x.id === s);
+      const el = document.createElement("div"); el.className = "sticker builtin";
+      el.style.background = "linear-gradient(135deg, " + k.c[0] + ", " + k.c[1] + ")";
+      const e = document.createElement("span"); e.className = "se"; e.textContent = k.e;
+      const t = document.createElement("span"); t.className = "stc"; t.textContent = k.t;
+      el.append(e, t); return el;
+    }
+    const d = blobData(s.slice(2));
+    if (!d) { const g = document.createElement("div"); g.className = "text gone"; g.textContent = "🖼 Стікер (ще завантажується)"; return g; }
+    const im = document.createElement("img"); im.className = "sticker"; im.src = photoUrl(d); im.alt = adm.stickers.get(s.slice(2)) || "Стікер";
+    return im;
+  }
+  function sendSticker(s) {
+    if (!net || $("text").disabled || !stickerOk(s)) return;
+    const m = { id: newId(), chan, from: myId, ...author(), text: "🖼 Стікер", sticker: s, t: Date.now(), pub: myPub };
+    addMsg(m); net.send({ t: "msg", m });
+    $("msgs").scrollTop = $("msgs").scrollHeight;
+  }
+  async function addServerEmoji() {
+    const f = await pickImage(); if (!f) return;
+    let name = prompt("Назва емодзі латиницею, наприклад dino_happy. Писатимуть :dino_happy:");
+    name = String(name || "").toLowerCase().trim().replace(/^:|:$/g, "").replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_").slice(0, 24);
+    if (name.length < 2) return;
+    try {
+      let data = await fitImage(f, 64, 64, "contain", "image/png");
+      if (data.length > 30000) data = await fitImage(f, 48, 48, "contain", "image/png");
+      doAdmin({ a: "emoji", op: "add", name, h: await shareBlob(data) });
+    } catch { alert("Не вдалося відкрити цю картинку. Спробуй іншу."); }
+  }
+  async function addServerSticker() {
+    const f = await pickImage(); if (!f) return;
+    const name = clean(prompt("Як назвати стікер?", "стікер") || "", 20) || "стікер";
+    try {
+      let data = await fitImage(f, 200, 200, "contain", "image/png");
+      if (data.length > 150000) data = await fitImage(f, 200, 200, "contain", "image/jpeg", .82);
+      doAdmin({ a: "sticker", op: "add", name, h: await shareBlob(data) });
+    } catch { alert("Не вдалося відкрити цю картинку. Спробуй іншу."); }
+  }
+
   // ---------- emoji picker: for the message box and for reactions ----------
-  let emojiCb = null, emojiTab = Object.keys(EMOJI)[0];
+  let emojiCb = null, emojiTab = Object.keys(EMOJI)[0], stickerCb = null;
   const recentEmoji = () => { const v = store.get("recentEmoji", []); return Array.isArray(v) ? v.filter(e => ALL_EMOJI.has(e)).slice(0, 16) : []; };
   function renderEmoji() {
     const tabs = $("emojiTabs"); tabs.innerHTML = "";
-    const keys = (recentEmoji().length ? ["🕘"] : []).concat(Object.keys(EMOJI));
-    if (!keys.includes(emojiTab)) emojiTab = keys[0];
+    const keys = (stickerCb ? ["🖼"] : []).concat(net && adm.emoji.size ? ["⭐"] : [], recentEmoji().length ? ["🕘"] : [], Object.keys(EMOJI));
+    if (!keys.includes(emojiTab)) emojiTab = keys.includes("🕘") ? "🕘" : Object.keys(EMOJI)[0];
     for (const k of keys) {
       const b = document.createElement("button"); b.textContent = k; b.className = k === emojiTab ? "on" : "";
-      b.title = k === "🕘" ? "Нещодавні" : "";
+      b.title = k === "🕘" ? "Нещодавні" : k === "🖼" ? "Стікери" : k === "⭐" ? "Емодзі сервера" : "";
       b.onclick = ev => { ev.stopPropagation(); emojiTab = k; renderEmoji(); };
       tabs.append(b);
     }
     const grid = $("emojiGrid"); grid.innerHTML = "";
+    grid.classList.toggle("stickers", emojiTab === "🖼");
+    if (emojiTab === "🖼") {
+      for (const s of STICKERS.map(x => "b:" + x.id).concat([...adm.stickers.keys()].filter(h => blobs.has(h)).map(h => "s:" + h))) {
+        const b = document.createElement("button"); b.append(stickerEl(s)); b.title = "Надіслати стікер";
+        b.onclick = ev => { ev.stopPropagation(); const cb = stickerCb; $("emojiPop").hidden = true; cb?.(s); };
+        grid.append(b);
+      }
+      return;
+    }
+    if (emojiTab === "⭐") {
+      for (const name of adm.emoji.keys()) {
+        const tag = ":" + name + ":", im = customEmoji(tag); if (!im) continue;
+        const b = document.createElement("button"); b.append(im); b.title = tag;
+        b.onclick = ev => { ev.stopPropagation(); const cb = emojiCb; $("emojiPop").hidden = true; cb?.(tag); };
+        grid.append(b);
+      }
+      return;
+    }
     for (const e of emojiTab === "🕘" ? recentEmoji() : EMOJI[emojiTab].split(" ")) {
       const b = document.createElement("button"); b.textContent = e;
       b.onclick = ev => {
@@ -3807,8 +4189,8 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       grid.append(b);
     }
   }
-  function openEmoji(anchor, cb) {
-    emojiCb = cb; renderEmoji();
+  function openEmoji(anchor, cb, onSticker) {
+    emojiCb = cb; stickerCb = onSticker || null; renderEmoji();
     const pop = $("emojiPop"); pop.hidden = false;
     const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
     pop.style.left = Math.max(12, Math.min(innerWidth - w - 12, r.right - w)) + "px";
@@ -3822,7 +4204,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       const t = $("text"), a = t.selectionStart ?? t.value.length, z = t.selectionEnd ?? a;
       t.value = (t.value.slice(0, a) + e + t.value.slice(z)).slice(0, 500);
       t.focus(); t.setSelectionRange(a + e.length, a + e.length);
-    });
+    }, $("text").disabled ? null : sendSticker);
   };
 
   // ---------- looks: accent colour and chat background, kept on this device ----------
@@ -3956,8 +4338,136 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   });
   $("toBottom").onclick = () => { const box = $("msgs"); box.scrollTo({ top: box.scrollHeight, behavior: "smooth" }); $("toBottom").hidden = true; };
 
-  const hashCode = (location.hash.match(/\d{4,6}/) || [])[0];
+  // ---------- one account everywhere: move yourself to Safari, the home screen icon or another device ----------
+  const ACCT = "DINOCORD-ACCOUNT:";
+  const toB64 = str => btoa(String.fromCharCode(...new TextEncoder().encode(str)));
+  const fromB64 = str => new TextDecoder().decode(Uint8Array.from(atob(str), ch => ch.charCodeAt(0)));
+  function accountText() {
+    // everything that makes you "you": the key, the profile, friends, chats and servers (messages without photos and files)
+    const slimDms = {};
+    for (const [k, t] of Object.entries(dms)) slimDms[k] = { ...t, msgs: t.msgs.slice(-50).map(({ media, ...rest }) => rest) };
+    const data = { v: 1, key: store.get("key", null), me: { nick: me.nick, ava: me.ava, color: me.color, st: me.st, stx: me.stx, bio: me.bio, banner: me.banner, photo: me.photo },
+      friends, people, blocked: [...blocked], servers: savedServers(), dms: slimDms, leftGroups: [...leftGroups], dinoBest: myDino, lastCode: store.get("lastCode", "") };
+    return ACCT + toB64(JSON.stringify(data));
+  }
+  async function importAccount(text, asked) {
+    let data;
+    try { data = JSON.parse(fromB64(String(text).trim().slice(ACCT.length).replace(/\s+/g, ""))); } catch { data = null; }
+    if (!String(text).trim().startsWith(ACCT) || !data?.key?.priv || !data?.key?.pub) return "Це не схоже на акаунт ДіноКорду. Скопіюй його ще раз.";
+    try {
+      // make sure the key really works before replacing anything
+      const priv = await crypto.subtle.importKey("jwk", data.key.priv, ALG, false, ["sign"]);
+      const pub = await crypto.subtle.importKey("jwk", { kty: "EC", crv: "P-256", x: data.key.pub.x, y: data.key.pub.y, ext: true }, ALG, false, ["verify"]);
+      const probe = new TextEncoder().encode("dinocord-move");
+      if (!await crypto.subtle.verify(SIG, pub, await crypto.subtle.sign(SIG, priv, probe), probe)) throw 0;
+    } catch { return "Ключ у цьому акаунті пошкоджений."; }
+    const nick = clean(data.me?.nick, 16) || "Динозаврик";
+    if (data.key.pub.x + "." + data.key.pub.y === myPub) return "Це вже твій акаунт на цьому пристрої 🙂";
+    if (!asked && !confirm("Перенести сюди акаунт «" + nick + "»?\n\nАкаунт, який зараз на цьому пристрої, буде замінено.")) return "";
+    store.set("key", data.key);
+    for (const k of ["nick", "ava", "color", "st", "stx", "bio", "banner", "photo"]) if (data.me?.[k] !== undefined) store.set(k, data.me[k]);
+    const mergeObj = (k, v) => { if (v && typeof v === "object") store.set(k, { ...store.get(k, {}), ...v }); };
+    mergeObj("friends", data.friends); mergeObj("people", data.people);
+    if (Array.isArray(data.blocked)) store.set("blocked", [...new Set([...store.get("blocked", []), ...data.blocked])]);
+    if (Array.isArray(data.leftGroups)) store.set("leftGroups", [...new Set([...store.get("leftGroups", []), ...data.leftGroups])]);
+    if (Array.isArray(data.servers)) { const have = savedServers(); for (const s of data.servers) if (s && /^\d{4,6}$/.test(s.code) && !have.some(x => x.code === s.code)) have.push(s); store.set("servers", have.slice(0, 30)); }
+    if (data.dms && typeof data.dms === "object") {
+      const mine = store.get("dms", {});
+      for (const [k, t] of Object.entries(data.dms)) {
+        if (!t || !Array.isArray(t.msgs)) continue;
+        if (!mine[k]) mine[k] = t;
+        else { const ids = new Set(mine[k].msgs.map(m => m.id)); mine[k].msgs = [...mine[k].msgs, ...t.msgs.filter(m => !ids.has(m.id))].sort((a, b) => a.t - b.t).slice(-200); }
+      }
+      try { localStorage.setItem("dinocord-dms", JSON.stringify(mine)); } catch {}
+    }
+    if (Number.isInteger(data.dinoBest?.s) && data.dinoBest.s > myDino.s) store.set("dinoBest", data.dinoBest);
+    if (/^\d{4,6}$/.test(data.lastCode)) store.set("lastCode", data.lastCode);
+    // start fresh with the moved account
+    if (net) leave("move");
+    home?.destroy();
+    setTimeout(() => { location.hash = ""; location.reload(); }, 200);
+    return "";
+  }
+  const guardSecret = text => { if (text.includes(ACCT)) { alert("Це твій секретний акаунт! Не надсилай його нікому, бо тоді хтось зможе бути тобою."); return true; } return false; };
+  $("acctCopy").onclick = async () => {
+    if (!myPub) { alert("Ключ ще не готовий. Спробуй за секунду."); return; }
+    const text = accountText();
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {}
+    $("ovAva").hidden = true;
+    openAdmin("📋 Акаунт скопійовано", ok ? "Тепер відкрий ДіноКорд там, куди переносиш (наприклад, іконку на головному екрані), і в профілі натисни «📥 Вставити акаунт»." : "Скопіювати не вийшло. Виділи текст нижче й скопіюй сам.", body => {
+      const warn = document.createElement("div"); warn.className = "status bad"; warn.textContent = "🔒 Це секрет! Хто отримає цей текст, зможе бути тобою. Нікому його не надсилай.";
+      body.append(warn);
+      if (!ok) { const ta = document.createElement("textarea"); ta.className = "bio"; ta.readOnly = true; ta.value = text; ta.onclick = () => ta.select(); body.append(ta); }
+    });
+  };
+  $("acctPaste").onclick = () => {
+    $("ovAva").hidden = true;
+    openAdmin("📥 Вставити акаунт", "Встав сюди акаунт, скопійований на іншому пристрої чи в іншому браузері.", body => {
+      const ta = document.createElement("textarea"); ta.className = "bio"; ta.placeholder = ACCT + "…"; body.append(ta);
+      const st = document.createElement("div"); st.className = "status";
+      admBtn(body, "Перенести акаунт сюди", "", async () => {
+        const err = await importAccount(ta.value);
+        if (err) { $("ovAdmin").hidden = false; st.textContent = err; st.className = "status bad"; }
+      });
+      body.append(st);
+      try { navigator.clipboard.readText?.().then(t => { if (t.startsWith(ACCT) && !ta.value) ta.value = t; }).catch(() => {}); } catch {}
+    });
+  };
+  // another device: it opens a link (or scans the QR code) and gets the account straight from this one
+  let xferPeer = null;
+  const loadQr = () => window.qrcode ? Promise.resolve() : new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = "https://unpkg.com/qrcode-generator@1.4.4/qrcode.js";
+    s.onload = () => window.qrcode ? res() : rej(new Error("qr")); s.onerror = rej; document.head.append(s);
+  });
+  $("acctQr").onclick = async () => {
+    if (!myPub) { alert("Ключ ще не готовий. Спробуй за секунду."); return; }
+    $("ovAva").hidden = true;
+    try { await loadPeerJs(); } catch { alert("Немає зв'язку. Спробуй пізніше."); return; }
+    xferPeer?.destroy();
+    const rid = Array.from(crypto.getRandomValues(new Uint8Array(12)), x => "abcdefghijklmnopqrstuvwxyz"[x % 26]).join("");
+    const url = location.origin + location.pathname + "#xfer=" + rid;
+    const p = new Peer(PREFIX + "x-" + rid); xferPeer = p;
+    setTimeout(() => { if (xferPeer === p) { p.destroy(); xferPeer = null; } }, 10 * 60e3);
+    openAdmin("📲 На інший пристрій", "Відскануй цей код камерою на іншому пристрої або відкрий там посилання. Тримай цю сторінку відкритою.", body => {
+      const box = document.createElement("div"); box.className = "qr-box"; body.append(box);
+      loadQr().then(() => { const q = qrcode(0, "M"); q.addData(url); q.make(); box.innerHTML = q.createSvgTag({ cellSize: 5, margin: 3 }); }).catch(() => { box.textContent = "QR-код не завантажився, скористайся посиланням 👇"; });
+      const inp = document.createElement("input"); inp.readOnly = true; inp.value = url; inp.className = "invite"; inp.onclick = () => inp.select(); body.append(inp);
+      const st = document.createElement("div"); st.className = "status"; st.textContent = "⏳ Чекаю на інший пристрій…"; body.append(st);
+      p.on("connection", c => c.on("open", () => {
+        if (xferPeer !== p) return;
+        if (!confirm("Інший пристрій хоче отримати твій акаунт. Дозволити?\n\nНатискай «OK», тільки якщо це твій пристрій.")) { c.send({ t: "no" }); setTimeout(() => c.close(), 300); st.textContent = "❌ Не дозволено."; return; }
+        c.send({ t: "acct", text: accountText() });
+        st.textContent = "✅ Готово! Акаунт перенесено."; st.className = "status";
+        setTimeout(() => { p.destroy(); if (xferPeer === p) xferPeer = null; }, 3000);
+      }));
+      p.on("error", () => { st.textContent = "Немає зв'язку. Закрий і спробуй ще раз."; st.className = "status bad"; });
+    });
+  };
+  async function receiveAccount(rid) {
+    window.history.replaceState(null, "", location.pathname + location.search);
+    if (!confirm("Перенести сюди акаунт з іншого пристрою?\n\nАкаунт, який зараз на цьому пристрої, буде замінено.")) { boot(); return; }
+    try { await loadPeerJs(); } catch { alert("Немає зв'язку. Спробуй пізніше."); boot(); return; }
+    const p = new Peer();
+    const fail = msg => { try { p.destroy(); } catch {} alert(msg); boot(); };
+    const timer = setTimeout(() => fail("Не вдалося з'єднатися. Перевір, що на іншому пристрої відкрите вікно з QR-кодом."), 60000);
+    p.on("open", () => {
+      const c = p.connect(PREFIX + "x-" + rid, { reliable: true });
+      c.on("data", async d => {
+        if (d?.t === "no") { clearTimeout(timer); fail("Інший пристрій не дозволив перенесення."); return; }
+        if (d?.t !== "acct") return;
+        clearTimeout(timer);
+        const err = await importAccount(d.text, true);
+        if (err) fail(err);
+      });
+    });
+    p.on("error", e => { if (e?.type === "peer-unavailable") { clearTimeout(timer); fail("Не знайшов інший пристрій. Можливо, вікно з QR-кодом уже закрите."); } });
+  }
+  const xferId = (location.hash.match(/^#xfer=([a-z]{12})$/) || [])[1];
+
+  const hashCode = xferId ? "" : (location.hash.match(/\d{4,6}/) || [])[0];
   window.addEventListener("hashchange", () => {
+    if (location.hash.startsWith("#xfer=")) return;
     const c = (location.hash.match(/\d{4,6}/) || [])[0];
     if (!c || c === code) return;
     if (net) leave();
@@ -3965,7 +4475,11 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
   });
   $("joinCode").value = hashCode || store.get("lastCode", "");
   renderMe(); renderAll();
-  loadKeys().then(() => { startHome(); if ($("joinCode").value.length >= 4 && (hashCode || hasHist($("joinCode").value))) enter(false, true); });
+  function boot() {
+    startHome();
+    if ($("joinCode").value.length >= 4 && (hashCode || hasHist($("joinCode").value))) enter(false, true);
+  }
+  loadKeys().then(() => { if (xferId) receiveAccount(xferId); else boot(); });
 })();
 </script>
 </body>
