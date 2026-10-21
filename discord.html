@@ -141,6 +141,15 @@ input { font: inherit; color: var(--ink); }
 .main-head .topic { flex: 0 1 auto; min-width: 0; }
 .live-btn { flex: none; }
 @media (max-width: 1500px) { .live-btn .lbl { display: none; } .live-btn { padding: 5px 9px; font-size: 16px; } }
+/* one ⋯ button opens every action, with words */
+.main-head { position: relative; }
+.tools-btn { font-size: 18px; font-weight: 800; letter-spacing: .05em; min-width: 40px; justify-content: center; }
+.tools-btn[aria-expanded="true"] { background: var(--accent); color: #fff; }
+.tools-pop { position: absolute; top: calc(100% + 4px); right: 12px; z-index: 8; display: flex; flex-direction: column; gap: 2px; padding: 6px; min-width: 230px; background: var(--side); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px #0006; }
+.tools-pop[hidden] { display: none; }
+.tools-pop .live-btn { background: none; padding: 9px 10px; font-size: 15px; justify-content: flex-start; width: 100%; }
+.tools-pop .live-btn:hover { background: var(--hover); }
+.tools-pop .live-btn .lbl { display: inline !important; }
 .stage { background: #000; position: relative; flex: none; border-bottom: 1px solid var(--line); }
 .stage video { display: block; width: 100%; max-height: 52vh; background: #000; }
 .stage .cap { position: absolute; left: 10px; top: 10px; display: flex; align-items: center; gap: 6px; background: #000a; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 13px; max-width: calc(100% - 120px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -480,13 +489,16 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       <span class="hash">#</span><span id="chanName">загальний</span>
       <span class="topic" id="chanTopic"></span>
       <span class="sp"></span>
-      <button class="live-btn" id="btnScreen" hidden title="Показати свій екран">🖥️<span class="lbl"> Екран</span></button>
-      <button class="live-btn" id="btnCam" hidden title="Транслювати камеру">📷<span class="lbl"> Камера</span></button>
       <button class="live-btn on" id="btnStopLive" hidden title="Зупинити трансляцію">⏹<span class="lbl"> Зупинити</span></button>
-      <button class="live-btn" id="btnPlay" title="Грати в Динозаврика">🎮<span class="lbl"> Грати</span></button>
-      <button class="live-btn" id="btnPins" hidden title="Закріплені повідомлення">📌<span class="lbl"> Закріплені</span></button>
-      <button class="live-btn" id="btnTop" hidden title="Рейтинг сервера: рівні учасників">🏆<span class="lbl"> Рейтинг</span></button>
-      <button class="live-btn" id="btnClear" hidden title="Видалити всі повідомлення в цьому каналі">🧹<span class="lbl"> Очистити</span></button>
+      <button class="live-btn tools-btn" id="btnTools" title="Усі дії" aria-haspopup="menu" aria-expanded="false">⋯</button>
+      <div class="tools-pop" id="toolsPop" role="menu" hidden>
+        <button class="live-btn" id="btnPlay" title="Грати в Динозаврика">🎮<span class="lbl"> Грати в Динозаврика</span></button>
+        <button class="live-btn" id="btnScreen" hidden title="Показати свій екран">🖥️<span class="lbl"> Показати свій екран</span></button>
+        <button class="live-btn" id="btnCam" hidden title="Транслювати камеру">📷<span class="lbl"> Транслювати камеру</span></button>
+        <button class="live-btn" id="btnPins" hidden title="Закріплені повідомлення">📌<span class="lbl"> Закріплені повідомлення</span></button>
+        <button class="live-btn" id="btnTop" hidden title="Рейтинг сервера">🏆<span class="lbl"> Рейтинг сервера</span></button>
+        <button class="live-btn" id="btnClear" hidden title="Видалити всі повідомлення в цьому каналі">🧹<span class="lbl"> Очистити канал</span></button>
+      </div>
     </div>
     <div class="vgrid" id="vgrid" hidden></div>
     <div class="stage" id="stage" hidden>
@@ -3690,6 +3702,11 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (gameOpen) { gameOpen = null; playing = null; pushMe(); }
   }
   $("btnPlay").onclick = chooseGame;
+  const toggleTools = open => { $("toolsPop").hidden = !open; $("btnTools").setAttribute("aria-expanded", String(open)); };
+  $("btnTools").onclick = ev => { ev.stopPropagation(); toggleTools($("toolsPop").hidden); };
+  // picking an action, or tapping anywhere else, closes the list
+  $("toolsPop").addEventListener("click", () => toggleTools(false));
+  document.addEventListener("click", e => { if (!$("toolsPop").hidden && !$("toolsPop").contains(e.target)) toggleTools(false); });
 
   // ---------- invite link: opens the page straight on this server ----------
   $("btnInvite").onclick = () => {
