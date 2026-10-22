@@ -260,8 +260,23 @@ input { font: inherit; color: var(--ink); }
 .bore-area { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 8px 0; }
 .bore-big { font-size: 20px; font-weight: 700; color: var(--head); text-align: center; }
 .bore-say { min-height: 22px; text-align: center; color: var(--muted); font-style: italic; margin-bottom: 8px; }
-.paint-wall { --wet: 1; width: 100%; height: 120px; border-radius: 10px; background: linear-gradient(135deg, hsl(200 60% calc(48% + var(--wet) * 8%)), hsl(200 55% 40%)); position: relative; overflow: hidden; }
-.paint-wall::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, #fff8 45%, transparent 60%); opacity: var(--wet); }
+/* the wall: old plaster around a freshly painted patch */
+.paint-wall { --wet: 1; --run: 0; --hue: 200; position: relative; width: 100%; height: 170px; border-radius: 10px; overflow: hidden;
+  background: repeating-linear-gradient(0deg, #00000008 0 2px, transparent 2px 7px), #e9e2d4; box-shadow: inset 0 -14px 0 #b9ad98; }
+.paint-wall .coat { position: absolute; left: 8%; right: 8%; top: 10px; height: 100px; border-radius: 4px 4px 2px 2px;
+  background:
+    repeating-linear-gradient(90deg, #ffffff0a 0 9px, #00000009 9px 10px, transparent 10px 23px),
+    repeating-linear-gradient(90deg, transparent 0 31px, #ffffff07 31px 44px),
+    hsl(var(--hue) calc(58% + var(--wet) * 14%) calc(50% + var(--wet) * 5%));
+  transition: background .8s; }
+/* the wet shine slides across and fades as the paint dries */
+.paint-wall .coat::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 25%, #ffffffaa 40%, transparent 55%); background-size: 250% 100%; opacity: calc(var(--wet) * .9); animation: wetShine 3.5s ease-in-out infinite; }
+@keyframes wetShine { from { background-position: 120% 0; } to { background-position: -40% 0; } }
+.paint-wall .drip { position: absolute; top: 96px; width: 7px; height: calc(4px + var(--len) * var(--run)); border-radius: 0 0 6px 6px;
+  background: hsl(var(--hue) calc(58% + var(--wet) * 14%) calc(50% + var(--wet) * 5%)); box-shadow: inset 1px 0 0 #fff4; }
+.paint-wall .drip::after { content: ""; position: absolute; left: -1.5px; bottom: -4px; width: 10px; height: 10px; border-radius: 50%; background: inherit; }
+.paint-sign { position: absolute; right: 12px; bottom: 22px; background: #ffd23f; color: #3a2a00; font: 800 11px/1.25 var(--body); text-align: center; padding: 5px 8px; border: 2px solid #3a2a00; border-radius: 4px; transform: rotate(-4deg); box-shadow: 0 2px 4px #0003; }
+.paint-tools { position: absolute; left: 10px; bottom: 6px; font-size: 26px; }
 .bore-area .xpbar { width: 100%; }
 .sheep-field { position: relative; width: 100%; height: 90px; border-radius: 10px; background: linear-gradient(#bfe6ff 60%, #7cc96a 60%); overflow: hidden; }
 .sheep-field .fence { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font-size: 30px; }
@@ -3749,14 +3764,21 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
       // one clock per open activity; it stops by itself when the window closes or another activity opens
       const tick = fn => { const id = setInterval(() => { if (!area.isConnected || $("ovAdmin").hidden) { clearInterval(id); return; } fn(); }, 1000); };
       if (boreKind === "paint") {
+        // a freshly painted wall: roller streaks, a wet shine and drips running down; it all goes matte as it dries
         const wall = document.createElement("div"); wall.className = "paint-wall";
+        wall.style.setProperty("--hue", String([200, 140, 20, 280, 340, 45][rnd(6)]));
+        wall.innerHTML = '<div class="coat">' + [8, 21, 37, 52, 66, 81, 93].map((x, i) => '<span class="drip" style="left:' + x + '%;--len:' + (18 + (i * 7) % 26) + 'px"></span>').join("") +
+          '</div><div class="paint-sign">⚠️ Обережно!<br>Свіжопофарбовано</div><span class="paint-tools">🪣🖌️</span>';
+        const sign = wall.querySelector(".paint-sign");
         const bar = document.createElement("div"); bar.className = "xpbar"; const fill = document.createElement("i"); bar.append(fill);
         const pct = document.createElement("div"); pct.className = "bore-big";
         area.append(wall, bar, pct);
         const start = Date.now(); let lastSay = 0;
         const draw = () => {
           const p = Math.min(1, (Date.now() - start) / 1000 / PAINT_SEC);
-          wall.style.setProperty("--wet", String(1 - p)); fill.style.width = Math.round(p * 100) + "%";
+          wall.style.setProperty("--wet", String(1 - p)); wall.style.setProperty("--run", String(Math.min(1, p * 4)));
+          fill.style.width = Math.round(p * 100) + "%";
+          if (p >= 1) sign.innerHTML = "Висохло ✅<br>Можна торкатися";
           pct.textContent = p < 1 ? "Фарба висохла на " + Math.floor(p * 100) + "%" : "🎉 Фарба висохла!";
           if (p >= 1 && !wall.dataset.done) {
             wall.dataset.done = "1"; bore.paint = (bore.paint || 0) + 1; saveBore();
