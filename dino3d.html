@@ -67,7 +67,7 @@ canvas#game { position: absolute; inset: 0; display: block; width: 100%; height:
 .nogl { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 16px; text-align: center; color: #fff; background: #20252e; }
 
 .touch { display: none; gap: 10px; }
-@media (pointer: coarse) { .touch { display: grid; grid-template-columns: 1fr 1fr; } }
+@media (pointer: coarse) { .touch { display: grid; grid-template-columns: 1fr 1fr 1fr; } }
 .touch button { font-family: var(--display); font-size: 18px; padding: 16px 0; border-radius: 6px; border: 2px solid var(--ink); background: var(--panel); color: var(--ink); touch-action: none; }
 .touch button:active { background: var(--accent); color: #1b1300; }
 
@@ -173,12 +173,29 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
 .ach li span { font-size: 13px; }
 .ach li.got { border-style: solid; border-color: var(--accent); background: var(--panel); }
 .ach li.got b { opacity: 1; }
+.bossbar { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: min(420px, 70%); display: flex; flex-direction: column; gap: 3px; pointer-events: none; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.5); font-family: var(--display); text-align: center; }
+.bossbar small { font-family: var(--body); font-size: 11px; opacity: .85; }
+.bossbar .bt { height: 10px; border-radius: 5px; background: rgba(0,0,0,.45); overflow: hidden; border: 1px solid rgba(255,255,255,.5); }
+.bossbar .bt i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ff3b30, #ff9f0a); transition: width .15s; }
+#btnFire { background: #c4573c; color: #fff; border-color: #7c2d1c; }
+#btnFire:disabled { opacity: .4; }
+.pets { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.pet { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; text-align: left; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; color: var(--ink); font: inherit; cursor: pointer; }
+.pet .pe { font-size: 30px; line-height: 1.1; }
+.pet .pd { font-size: 13px; color: var(--muted); }
+.pet .req { font-family: var(--display); font-size: 12px; color: var(--muted); margin-top: 2px; }
+.pet.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.pet.on .req { color: var(--accent); }
+.pet.locked .pe { filter: grayscale(1); opacity: .5; }
+.pet.locked.buy { border-style: dashed; border-color: var(--accent); }
+.pet.locked:not(.buy) { cursor: not-allowed; }
+.pet:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 </style>
 
 <div class="wrap">
   <header>
     <h1>Динозаврик <span class="rev">3D</span></h1>
-    <p class="hint">Воксельний динозаврик біжить уперед. <kbd>Пробіл</kbd>/<kbd>↑</kbd> стрибок, <kbd>↓</kbd> пригнутись, <kbd>P</kbd> пауза. На телефоні тапни екран. Збирай монети, щит береже від одного удару, ×2 дає подвійний стрибок. Кожні 1000 очок падає метеоритний дощ, а кожні 1500 змінюється світ: пустеля, сніг, вулкан, Місяць (там низька гравітація). Бонуси: 🛡 щит, ×2 стрибок, 🧲 магніт для монет, ⏳ сповільнення.</p>
+    <p class="hint">Воксельний динозаврик біжить уперед. <kbd>Пробіл</kbd>/<kbd>↑</kbd> стрибок, <kbd>↓</kbd> пригнутись, <kbd>P</kbd> пауза. На телефоні тапни екран. Збирай монети, щит береже від одного удару, ×2 дає подвійний стрибок. Кожні 1000 очок падає метеоритний дощ, кожні 2000 прилітає бос (стріляй клавішею F або кнопкою 🔥), а кожні 1500 змінюється світ: пустеля, сніг, вулкан, Місяць (там низька гравітація). Бонуси: 🛡 щит, ×2 стрибок, 🧲 магніт для монет, ⏳ сповільнення.</p>
   </header>
 
   <div class="screen" id="screen">
@@ -191,11 +208,13 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     <div class="msg" id="msg"><b id="msgA"></b><span id="msgB"></span></div>
     <div id="pops"></div>
     <ol class="net-board" id="netBoard" hidden></ol>
+    <div class="bossbar" id="bossbar" hidden><span class="bn"><b id="bossName"></b> <small>вогонь: F або 🔥</small></span><span class="bt"><i id="bossFill"></i></span></div>
   </div>
 
   <div class="touch">
     <button id="btnDuck" type="button" aria-label="Пригнутись">▼ Пригнутись</button>
     <button id="btnJump" type="button" aria-label="Стрибок">▲ Стрибок</button>
+    <button id="btnFire" type="button" aria-label="Вогонь" disabled>🔥 Вогонь</button>
   </div>
 
   <section class="online">
@@ -253,6 +272,12 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     <h2>Досягнення <span class="stats" id="achCount"></span></h2>
     <p class="sub">За кожне досягнення монети нараховуються самі.</p>
     <ul class="ach" id="ach"></ul>
+  </section>
+
+  <section>
+    <h2>Улюбленці</h2>
+    <p class="sub">Друг біжить поруч і допомагає. З собою можна взяти одного.</p>
+    <div class="pets" id="pets"></div>
   </section>
 
   <section>
@@ -683,6 +708,9 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     } else if (o.kind === "crater") {
       const d = new THREE.Mesh(craterGeo, craterMat); d.position.set(-.6, .03, 0); d.receiveShadow = true; g.add(d);
       for (let i = 0; i < 6; i++) { const f = new THREE.Mesh(flameGeo, flameMats[i % 2]); f.position.set(-.15 - i * .18, .25, (i % 3 - 1) * .18); g.add(f); }
+    } else if (o.kind === "bolt") {
+      g.add(new THREE.Mesh(boltGeo, glow(o.col)));
+      g.position.z = 0;
     } else if (o.kind === "coin") {
       const m = shadowy(new THREE.Mesh(coinGeo, coinMat)); m.rotation.x = Math.PI / 2; g.add(m);
     } else if (["shield", "dbl", "magnet", "slow"].includes(o.kind)) {
@@ -792,14 +820,7 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     if (dino.onGround && !dino.duck) { stats.jumps++; dino.vy = -820; dino.onGround = false; beep(620, .09, "square", .05, 1.6); }
     else if (!dino.onGround && dbl > 0 && dino.airJumps > 0) { dino.airJumps--; dino.vy = -720; beep(900, .09, "square", .05, 1.5); puff(); }
   }
-  const GAME_NAME = "Динозаврик 3D";
-  // tell ДіноКорд what's happening: it shows "playing" next to your name and puts records on the server's leaderboard
-  const toDinoCord = (kind, extra) => {
-    const msg = { dinocord: kind, game: GAME_NAME, at: Date.now(), ...extra };
-    try { localStorage.setItem("dinocord-game", JSON.stringify(msg)); } catch {}
-    try { if (parent !== window) parent.postMessage(msg, location.origin); } catch {}
-  };
-  function start(seed) { reset(); featReset(); eggReset(); applyPerks(); rng = seed ? mulberry(seed) : Math.random; state = "run"; games++; store.set("games", games); updateStats(); quest("game", 1); beep(440, .08); toDinoCord("play"); }
+  function start(seed) { reset(); featReset(); bossReset(); petReset(); eggReset(); applyPerks(); rng = seed ? mulberry(seed) : Math.random; state = "run"; games++; store.set("games", games); updateStats(); quest("game", 1); beep(440, .08); }
   addEventListener("keydown", e => {
     if (["Space", "ArrowUp", "KeyW"].includes(e.code)) { e.preventDefault(); if (!e.repeat) pressJump(); }
     else if (["ArrowDown", "KeyS"].includes(e.code)) { e.preventDefault(); duckHeld = true; }
@@ -862,6 +883,8 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     if (state !== "run") { if (state === "dead") deadT += dt; return; }
     speed = Math.min(980, speed + dt * 9);
     biomeTick(dt);
+    bossTick(dt);
+    petTick(dt);
     magnetT = Math.max(0, magnetT - dt);
     const prev = Math.floor(score / 100);
     score += speed * dt * .025;
@@ -921,7 +944,7 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     }
 
     // boss event: meteor shower every 1000 points
-    if (rain <= 0 && score >= rainAt) {
+    if (rain <= 0 && !boss && score >= rainAt) {
       rain = 8; rainAt += 1000; rainSpawn = .8;
       banner = { text: "☄ МЕТЕОРИТНИЙ ДОЩ!", life: 2.2, color: C.danger };
       beep(160, .6, "sawtooth", .07, .5);
@@ -949,7 +972,7 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
     obstacles = obstacles.filter(o => !o.broken && o.x < W + 40);
     nextGap -= speed * dt;
-    if (nextGap <= 0) { if (rain <= 0) spawn(); nextGap = speed * (.55 + rng() * .9) + 160; }
+    if (nextGap <= 0) { if (rain <= 0 && !boss) spawn(); nextGap = speed * (.55 + rng() * .9) + 160; }
 
     // trails
     const sk = skin();
@@ -977,6 +1000,7 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
           beep(180, .2, "square", .07, 3); popup("БАХ!", o.x, o.y - 10, "#3d8bff");
           continue;
         }
+        if (petSave(o)) continue;
         die(); break;
       } else if (!o.ref && hb.x - 16 < ox + ow && hb.x + hb.w + 16 > ox && hb.y - 16 < oy + oh && hb.y + hb.h + 16 > oy) o.near = true;
     }
@@ -986,7 +1010,6 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     beep(220, .35, "sawtooth", .07, .3);
     const s = Math.floor(score);
     if (s > best) { best = s; store.set("best", best); }
-    toDinoCord("score", { s, best });
     coins += runCoins; store.set("coins", coins);
     quest("score", s);
     runs.push({ s, skin: skinId, at: Date.now() }); runs.sort((a, b) => b.s - a.s); runs = runs.slice(0, 5); store.set("runs", runs);
@@ -1048,6 +1071,8 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
     // trail particles start at the tail
     syncObjects();
     syncParticles();
+    renderBoss();
+    renderPet(dt);
 
     // camera: three-quarter chase view; rolls over for the world-flip mode
     const narrow = camera.aspect < 1.5;
@@ -1783,6 +1808,236 @@ h1 .rev { cursor: default; user-select: none; -webkit-user-select: none; }
   const magnetIcon = () => { const m = new THREE.Mesh(new THREE.TorusGeometry(.12, .045, 6, 14, Math.PI), iconMat); m.rotation.z = Math.PI; m.position.z = .3; return m; };
   const slowIcon = () => { const m = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .04, 16), iconMat); m.rotation.x = Math.PI / 2; m.position.z = .3; return m; };
   renderAch();
+  // ---------- bosses: every 2000 points a boss blocks the road; shoot it down ----------
+  // Boss and its shots live in logic units like everything else; bolts are ordinary obstacles.
+  const BOSSES = [
+    { id: "mecha", name: "Мехптеродактиль", col: "#58d6ff" },
+    { id: "golem", name: "Вулканічний голем", col: "#ff7a1a" },
+    { id: "ufo", name: "НЛО", col: "#9dff5c" },
+  ];
+  const bossbarEl = document.getElementById("bossbar"), bossNameEl = document.getElementById("bossName"), bossFillEl = document.getElementById("bossFill");
+  const fireBtn = document.getElementById("btnFire");
+  let boss = null, bossAt = 2000, bossCount = 0, shots = [], fireCd = 0;
+  const BOSS_X = 250; // where the boss hovers, far ahead on the track
+  function bossReset() { removeBoss(); bossAt = 2000; bossCount = 0; shots = []; fireCd = 0; }
+
+  // meshes
+  const steel = new THREE.Color("#8e9aab"), red = new THREE.Color("#ff2a2a");
+  const mechaGeo = [BIRD_UP, BIRD_DN].map(g => buildVox(cellsOf(g, (ch, c) => ({ col: ch === "e" ? red : c % 3 ? steel : new THREE.Color("#5f6b7c") })), 4, true));
+  const glow = col => new THREE.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: .8 });
+  function makeBoss(type) {
+    const g = new THREE.Group();
+    if (type.id === "mecha") {
+      for (const geo of mechaGeo) { const m = shadowy(new THREE.Mesh(geo, vmat)); m.scale.setScalar(3.2); g.add(m); }
+      g.userData.flap = true;
+    } else if (type.id === "golem") {
+      const rock = new THREE.MeshLambertMaterial({ color: "#3b302c", flatShading: true }), lava = glow("#ff7a1a");
+      const box = (w, h, d, x, y, z, mat) => { const m = shadowy(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat)); m.position.set(x, y, z); g.add(m); return m; };
+      box(1.8, 2, 1.3, 0, 1.6, 0, rock); box(1.1, .9, 1, -.2, 3.05, 0, rock);
+      box(.2, .16, .1, -.6, 3.15, .3, lava); box(.2, .16, .1, -.6, 3.15, -.3, lava);
+      g.userData.arms = [box(.5, 1.6, .5, 0, 1.7, 1, rock), box(.5, 1.6, .5, 0, 1.7, -1, rock)];
+      box(.6, .9, .55, 0, .45, .4, rock); box(.6, .9, .55, 0, .45, -.4, rock);
+      box(1.82, .12, 1.32, 0, 1.4, 0, lava);
+    } else {
+      const disc = shadowy(new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.9, .45, 24), new THREE.MeshLambertMaterial({ color: "#9aa3ad" })));
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(.85, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: "#7fe0ff", transparent: true, opacity: .7 }));
+      dome.position.y = .2; g.add(disc, dome);
+      for (let i = 0; i < 8; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 6), glow(i % 2 ? "#9dff5c" : "#ffd84d")); const a = i / 8 * Math.PI * 2; l.position.set(Math.cos(a) * 1.75, -.05, Math.sin(a) * 1.75); g.add(l); }
+      g.userData.spin = disc;
+    }
+    scene.add(g);
+    return g;
+  }
+  function removeBoss() { if (boss) scene.remove(boss.mesh); boss = null; bossbarEl.hidden = true; fireBtn.disabled = true; }
+
+  function bossTick(dt) {
+    fireCd = Math.max(0, fireCd - dt);
+    if (!boss && rain <= 0 && score >= bossAt) {
+      const type = BOSSES[bossCount % BOSSES.length], hp = 10 + bossCount * 5;
+      boss = { type, hp, max: hp, x: -400, y: type.id === "golem" ? GROUND : GROUND - 170, t: 0, atk: 2.2, mesh: makeBoss(type) };
+      bossCount++; bossAt += 2000;
+      banner = { text: "⚠ БОС: " + type.name + "!", life: 2.6, color: "#ff6b6b" };
+      bossNameEl.textContent = type.name; bossbarEl.hidden = false; fireBtn.disabled = false;
+      beep(110, .7, "sawtooth", .08, .6);
+    }
+    // shots fly up the track toward the boss and can knock bolts out of the air
+    for (const s of shots) {
+      s.x -= 1300 * dt;
+      for (const o of obstacles) if (o.kind === "bolt" && !o.broken && Math.abs(s.x - (o.x + o.w / 2)) < 26 && Math.abs(s.y - (o.y + o.h / 2)) < 32) {
+        o.broken = true; s.dead = true;
+        for (let i = 0; i < 8; i++) particles.push({ x: s.x, y: s.y, vx: (Math.random() - .5) * 300, vy: (Math.random() - .5) * 300, life: .5, kind: "spark", hue: 0 });
+      }
+      if (boss && s.x <= boss.x + 70) {
+        s.dead = true; boss.hp--; boss.hit = .15;
+        for (let i = 0; i < 10; i++) particles.push({ x: boss.x + 40, y: s.y, vx: (Math.random() - .5) * 360, vy: (Math.random() - .5) * 360, life: .6, kind: "fire", hue: 0 });
+        beep(260, .08, "square", .06, .5);
+      }
+      if (s.x < -50) s.dead = true;
+    }
+    shots = shots.filter(s => !s.dead);
+    if (!boss) return;
+    boss.t += dt; boss.hit = Math.max(0, (boss.hit || 0) - dt);
+    boss.x += (BOSS_X - boss.x) * Math.min(1, dt * 1.5);
+    if (boss.type.id !== "golem") boss.y = GROUND - 170 + Math.sin(boss.t * 2) * 30;
+    bossFillEl.style.width = Math.max(0, boss.hp / boss.max * 100) + "%";
+    if (boss.hp <= 0) {
+      for (let i = 0; i < 50; i++) particles.push({ x: boss.x + 40, y: boss.y - 40, vx: (Math.random() - .5) * 700, vy: (Math.random() - .8) * 600, life: 1.2, kind: i % 2 ? "fire" : "rainbow", hue: Math.random() * 360 });
+      score += 300; runCoins += 100; stats.bosses = (stats.bosses || 0) + 1; saveStats();
+      banner = { text: "🏆 Бос переможений! +300 очок, +100 ●", life: 2.8, color: "#ffd84d" };
+      shake = .6; beep(523, .12); setTimeout(() => beep(659, .12), 120); setTimeout(() => beep(784, .12), 240); setTimeout(() => beep(1047, .3), 360);
+      removeBoss(); checkAch(); return;
+    }
+    if (boss.t > 40) { banner = { text: "Бос утік…", life: 2, color: "#ffffff" }; removeBoss(); return; }
+    // attacks: a bolt along the ground (jump it) or at head height (duck under it)
+    boss.atk -= dt;
+    if (boss.x > BOSS_X - 40 && boss.atk <= 0) {
+      boss.atk = Math.max(.75, 1.5 - (1 - boss.hp / boss.max) * .6) + rng() * .4;
+      const low = rng() < .5, h = 24, y = low ? GROUND - h - 2 : GROUND - 45 - h;
+      obstacles.push({ kind: "bolt", col: boss.type.col, x: boss.x, y, w: 30, h, extra: 260, passed: true });
+      beep(low ? 180 : 320, .1, "square", .04, .7);
+    }
+  }
+  function fire() {
+    if (!boss || state !== "run" || fireCd > 0) return;
+    fireCd = .3;
+    shots.push({ x: DX - 10, y: GROUND + dino.y - (dino.duck ? 18 : 38) });
+    beep(880, .05, "square", .04, .5);
+  }
+  addEventListener("keydown", e => { if ((e.code === "KeyF" || e.code === "KeyX") && !(e.target instanceof HTMLInputElement)) fire(); });
+  fireBtn.addEventListener("pointerdown", e => { e.preventDefault(); fire(); });
+
+  const shotMeshes = [];
+  const shotGeo = new THREE.SphereGeometry(.14, 10, 8), shotMat = glow("#ffd84d");
+  const boltGeo = new THREE.IcosahedronGeometry(.36, 0);
+  function renderBoss() {
+    while (shotMeshes.length < shots.length) { const m = new THREE.Mesh(shotGeo, shotMat); scene.add(m); shotMeshes.push(m); }
+    shotMeshes.forEach((m, i) => { const s = shots[i]; m.visible = !!s; if (s) m.position.set(toX(s.x), toY(s.y), 0); });
+    if (!boss) return;
+    const g = boss.mesh, ud = g.userData;
+    g.position.set(toX(boss.x) + 1, toY(boss.y), 0);
+    if (ud.flap) { const up = Math.floor(t * 5) % 2; g.children[0].visible = !!up; g.children[1].visible = !up; g.position.y -= 1.2; }
+    if (ud.arms) { ud.arms[0].rotation.z = Math.sin(t * 4) * .5; ud.arms[1].rotation.z = -Math.sin(t * 4) * .5; }
+    if (ud.spin) g.rotation.y = t * 2;
+    g.scale.setScalar(boss.hit ? 1.08 : 1);
+  }
+
+  // ---------- pets: a small friend runs behind the dino and helps ----------
+  const PETS = [
+    { id: "cat", emoji: "🐱", name: "Кошеня", price: 300, text: "Підбирає монети поблизу" },
+    { id: "owl", emoji: "🦉", name: "Сова", price: 400, text: "Попереджає про птахів і сповільнює їх" },
+    { id: "puppy", emoji: "🐶", name: "Цуценя", price: 500, text: "Час від часу відкопує монети" },
+    { id: "dragon", emoji: "🐲", name: "Дракончик", price: 800, text: "Раз за забіг рятує від програшу" },
+  ];
+  let ownedPets = store.get("pets", []), petId = store.get("pet", "");
+  let petSaved = false, puppyT = 0;
+  function petReset() { petSaved = false; puppyT = 6; }
+  function petTick(dt) {
+    if (petId === "cat") for (const it of items) if (it.kind === "coin") {
+      const tx = DX + 30 - it.x, ty = GROUND + dino.y - 30 - it.y, d = Math.hypot(tx, ty);
+      if (d < 150 && d > 1) { const v = Math.min(d, 700 * dt); it.x += tx / d * v; it.y += ty / d * v; }
+    }
+    if (petId === "owl") for (const o of obstacles) if (o.kind === "bird" && !o.owl && o.x > -40) {
+      o.owl = true; o.extra = -80; popup("🦉 Птах!", DX - 60, GROUND - 120, "#ffd84d"); beep(500, .12, "sine", .05, .8);
+    }
+    if (petId === "puppy" && (puppyT -= dt) <= 0) {
+      puppyT = 7 + Math.random() * 4;
+      const base = GROUND - 30 - Math.random() * 40;
+      for (let i = 0; i < 3; i++) items.push({ kind: "coin", x: -30 - i * 34, y: base, r: 9 });
+      popup("🐶 Гав! Монетки!", DX - 40, GROUND - 110, "#ffd84d");
+    }
+  }
+  // dragon pet: one rescue per run
+  function petSave(o) {
+    if (petId !== "dragon" || petSaved) return false;
+    petSaved = true; invuln = 1.5; o.broken = true; if (o.ref) o.ref.dead = true;
+    for (let i = 0; i < 24; i++) particles.push({ x: DX + 20, y: GROUND + dino.y - 30, vx: (Math.random() - .5) * 400, vy: (Math.random() - .7) * 300, life: .9, kind: "fire", hue: 0 });
+    banner = { text: "🐲 Дракончик тебе врятував!", life: 2.2, color: "#7dffa4" };
+    beep(300, .3, "sawtooth", .06, 2);
+    return true;
+  }
+
+  const petGroup = new THREE.Group(); scene.add(petGroup);
+  const lam = c => new THREE.MeshLambertMaterial({ color: c });
+  let petParts = {};
+  function buildPet() {
+    while (petGroup.children.length) petGroup.remove(petGroup.children[0]);
+    petParts = {};
+    if (!petId) return;
+    const box = (w, h, d, x, y, z, c) => { const m = shadowy(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof c === "string" ? lam(c) : c)); m.position.set(x, y, z); petGroup.add(m); return m; };
+    const eye = lam("#111111");
+    if (petId === "cat") {
+      box(.5, .26, .26, 0, .3, 0, "#f39c3d"); box(.28, .26, .26, .3, .48, 0, "#f39c3d");
+      box(.07, .09, .07, .36, .65, .08, "#f39c3d"); box(.07, .09, .07, .36, .65, -.08, "#f39c3d");
+      box(.04, .05, .02, .44, .52, .1, eye); box(.04, .05, .02, .44, .52, -.1, eye);
+      petParts.tail = box(.06, .32, .06, -.27, .48, 0, "#d9822b");
+      petParts.legs = [box(.07, .17, .07, .17, .09, .08, "#d9822b"), box(.07, .17, .07, -.17, .09, -.08, "#d9822b")];
+    } else if (petId === "owl") {
+      box(.32, .42, .3, 0, 0, 0, "#8b5e3c"); box(.06, .1, .06, .06, .26, .08, "#8b5e3c"); box(.06, .1, .06, .06, .26, -.08, "#8b5e3c");
+      box(.02, .1, .1, .17, .08, .07, lam("#ffffff")); box(.02, .1, .1, .17, .08, -.07, lam("#ffffff"));
+      box(.025, .05, .05, .18, .08, .07, eye); box(.025, .05, .05, .18, .08, -.07, eye);
+      box(.06, .05, .05, .18, .0, 0, "#f2b400");
+      petParts.wings = [box(.2, .05, .26, -.02, .04, .2, "#6e4a2f"), box(.2, .05, .26, -.02, .04, -.2, "#6e4a2f")];
+      petParts.fly = 1.6;
+    } else if (petId === "puppy") {
+      box(.5, .28, .28, 0, .32, 0, "#c48a54"); box(.3, .28, .28, .32, .5, 0, "#c48a54"); box(.12, .1, .14, .5, .44, 0, "#a06d3e");
+      box(.06, .16, .08, .28, .58, .17, "#7a4f2b"); box(.06, .16, .08, .28, .58, -.17, "#7a4f2b");
+      box(.04, .05, .02, .44, .56, .1, eye); box(.04, .05, .02, .44, .56, -.1, eye);
+      petParts.tail = box(.05, .2, .05, -.28, .52, 0, "#a06d3e");
+      petParts.legs = [box(.08, .18, .08, .17, .09, .09, "#a06d3e"), box(.08, .18, .08, -.17, .09, -.09, "#a06d3e")];
+    } else {
+      box(.5, .26, .26, 0, 0, 0, "#3fae4f"); box(.26, .24, .24, .34, .14, 0, "#3fae4f"); box(.3, .1, .2, 0, -.12, 0, "#ff6b4a");
+      box(.04, .05, .02, .45, .2, .1, lam("#ffd400")); box(.04, .05, .02, .45, .2, -.1, lam("#ffd400"));
+      box(.25, .06, .06, -.35, .06, 0, "#2f8c3e");
+      petParts.wings = [box(.26, .04, .34, -.02, .16, .26, "#2f8c3e"), box(.26, .04, .34, -.02, .16, -.26, "#2f8c3e")];
+      petParts.fly = 1.4;
+    }
+  }
+  let petY = 0;
+  function renderPet(dt) {
+    if (!petId) return;
+    const target = (petParts.fly || 0) + Math.max(0, -dino.y * K) * .7;
+    petY += (target - petY) * Math.min(1, dt * 6);
+    const run = state === "run";
+    petGroup.position.set(-3.4, petY + (petParts.fly ? Math.sin(t * 3) * .12 : run ? Math.abs(Math.sin(t * 12)) * .06 : 0), .95);
+    if (petParts.legs) { petParts.legs[0].rotation.z = run ? Math.sin(t * 14) * .6 : 0; petParts.legs[1].rotation.z = run ? -Math.sin(t * 14) * .6 : 0; }
+    if (petParts.tail) petParts.tail.rotation.z = Math.sin(t * 8) * .5;
+    if (petParts.wings) { const a = Math.sin(t * 14) * .6; petParts.wings[0].rotation.x = a; petParts.wings[1].rotation.x = -a; }
+  }
+
+  const petsEl = document.getElementById("pets");
+  function renderPets() {
+    petsEl.innerHTML = "";
+    for (const p of PETS) {
+      const own = ownedPets.includes(p.id), active = petId === p.id, can = !own && coins >= p.price;
+      const b = document.createElement("button");
+      b.type = "button"; b.id = "pet-" + p.id; b.className = "pet" + (active ? " on" : "") + (own ? "" : " locked") + (can ? " buy" : "");
+      b.setAttribute("aria-pressed", String(active));
+      const e = document.createElement("span"); e.className = "pe"; e.textContent = p.emoji;
+      const n = document.createElement("b"); n.textContent = p.name;
+      const d = document.createElement("span"); d.className = "pd"; d.textContent = p.text;
+      const r = document.createElement("span"); r.className = "req"; r.textContent = active ? "З тобою (натисни, щоб прибрати)" : own ? "Взяти з собою" : can ? "Купити ● " + p.price : "🔒 ● " + p.price;
+      b.append(e, n, d, r);
+      b.onclick = () => {
+        if (!own) {
+          if (!can) { beep(160, .12, "square", .05); return; }
+          coins -= p.price; ownedPets.push(p.id); store.set("coins", coins); store.set("pets", ownedPets); updateStats(); renderSkins();
+          beep(1200, .15, "square", .05, 1.5);
+        }
+        petId = active ? "" : p.id; store.set("pet", petId); buildPet(); renderPets(); checkAch();
+      };
+      petsEl.append(b);
+    }
+  }
+  ACH.push(
+    { id: "boss1", name: "Мисливець на босів", text: "Переможи боса", ok: () => (stats.bosses || 0) >= 1, r: 100 },
+    { id: "boss5", name: "Гроза босів", text: "Переможи 5 босів", ok: () => (stats.bosses || 0) >= 5, r: 300 },
+    { id: "pet", name: "Найкращий друг", text: "Заведи улюбленця", ok: () => ownedPets.length >= 1, r: 30 },
+    { id: "pets", name: "Зоопарк", text: "Заведи всіх улюбленців", ok: () => ownedPets.length >= PETS.length, r: 200 },
+  );
+  // prices depend on coins, which change in many places: refresh the list when they do
+  let petCoins = coins;
+  setInterval(() => { if (coins !== petCoins) { petCoins = coins; renderPets(); } }, 1000);
+  buildPet(); renderPets(); renderAch();
 })();
 </script>
 </body></html>
