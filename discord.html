@@ -255,6 +255,20 @@ input { font: inherit; color: var(--ink); }
 .banner-prev { flex: 1; height: 64px; border-radius: 10px; background: var(--input) center / cover; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
 .rules-text { text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 50vh; overflow-y: auto; background: var(--input); border-radius: 8px; padding: 12px; margin: 8px 0; line-height: 1.45; }
 .rules-edit { min-height: 110px; width: 100%; }
+.top-tabs.bore-tabs { display: grid; grid-template-columns: 1fr 1fr; }
+.top-tabs.bore-tabs .btn { width: 100%; min-width: 0; padding: 8px 6px; }
+.bore-area { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 8px 0; }
+.bore-big { font-size: 20px; font-weight: 700; color: var(--head); text-align: center; }
+.bore-say { min-height: 22px; text-align: center; color: var(--muted); font-style: italic; margin-bottom: 8px; }
+.paint-wall { --wet: 1; width: 100%; height: 120px; border-radius: 10px; background: linear-gradient(135deg, hsl(200 60% calc(48% + var(--wet) * 8%)), hsl(200 55% 40%)); position: relative; overflow: hidden; }
+.paint-wall::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, #fff8 45%, transparent 60%); opacity: var(--wet); }
+.bore-area .xpbar { width: 100%; }
+.sheep-field { position: relative; width: 100%; height: 90px; border-radius: 10px; background: linear-gradient(#bfe6ff 60%, #7cc96a 60%); overflow: hidden; }
+.sheep-field .fence { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font-size: 30px; }
+.sheep-field .sheep { position: absolute; left: -40px; bottom: 22px; font-size: 32px; animation: sheepJump 1.5s linear forwards; }
+@keyframes sheepJump { 0% { left: -40px; bottom: 22px; } 45% { bottom: 22px; } 50% { left: calc(50% - 16px); bottom: 58px; } 55% { bottom: 22px; } 100% { left: calc(100% + 10px); bottom: 22px; } }
+.nothing-btn { width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff7b7b, #c0392b); color: #fff; font-size: 17px; font-weight: 800; box-shadow: 0 8px 0 #7d2219, 0 12px 20px #0005; transition: transform .05s, box-shadow .05s; }
+.nothing-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #7d2219, 0 4px 10px #0005; }
 .acct-btns { display: flex; flex-direction: column; gap: 6px; }
 .qr-box { display: grid; place-items: center; background: #fff; border-radius: 10px; padding: 8px; margin: 4px auto 8px; width: fit-content; min-height: 60px; color: #333; }
 .qr-box svg { display: block; width: min(240px, 60vw); height: auto; }
@@ -497,6 +511,7 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
         <button class="live-btn" id="btnCam" hidden title="Транслювати камеру">📷<span class="lbl"> Транслювати камеру</span></button>
         <button class="live-btn" id="btnPins" hidden title="Закріплені повідомлення">📌<span class="lbl"> Закріплені повідомлення</span></button>
         <button class="live-btn" id="btnTop" hidden title="Рейтинг сервера">🏆<span class="lbl"> Рейтинг сервера</span></button>
+        <button class="live-btn" id="btnBore" title="Найнудніші заняття">😐<span class="lbl"> Нудьгатор</span></button>
         <button class="live-btn" id="btnClear" hidden title="Видалити всі повідомлення в цьому каналі">🧹<span class="lbl"> Очистити канал</span></button>
       </div>
     </div>
@@ -3702,6 +3717,103 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     if (gameOpen) { gameOpen = null; playing = null; pushMe(); }
   }
   $("btnPlay").onclick = chooseGame;
+
+  // ---------- Нудьгатор: on purpose, the most boring things to do ----------
+  const bore = (() => { const v = store.get("bore", {}); return v && typeof v === "object" ? v : {}; })();
+  const saveBore = () => store.set("bore", bore);
+  const BORE_KINDS = [["paint", "🎨 Фарба"], ["sheep", "🐑 Вівці"], ["wait", "⏳ Чекати"], ["nothing", "🔘 Кнопка"]];
+  const PAINT_SEC = 180;
+  const PAINT_SAYS = ["Здається, вона трошки висохла…", "Нічого не змінилося.", "Фарба все ще фарба.", "Ти чуєш, як вона сохне? Ні? Ми теж.", "Ще трошки. Мабуть.", "Колір той самий. Дуже стабільно."];
+  const NOTHING_SAYS = ["Нічого не сталося.", "Знову нічого.", "Абсолютно нічого.", "Нуль подій.", "Як і очікувалось: нічого.", "Кнопка старалася. Не вийшло нічого."];
+  let boreKind = "paint";
+  function boredom(kind) {
+    boreKind = kind || boreKind;
+    openAdmin("😐 Нудьгатор", "Найнудніші заняття в ДіноКорді. Обережно: дуже нудно.", body => {
+      const tabs = document.createElement("div"); tabs.className = "top-tabs bore-tabs";
+      for (const [k, t] of BORE_KINDS) {
+        const b = document.createElement("button"); b.className = "btn" + (k === boreKind ? "" : " sec"); b.textContent = t;
+        b.onclick = () => boredom(k); tabs.append(b);
+      }
+      const area = document.createElement("div"); area.className = "bore-area";
+      const say = document.createElement("div"); say.className = "bore-say";
+      body.append(tabs, area, say);
+      let brag = "";
+      const shareBtn = document.createElement("button"); shareBtn.className = "btn sec"; shareBtn.textContent = "📢 Похвалитися нудьгою в чаті"; shareBtn.hidden = true;
+      shareBtn.onclick = () => {
+        if (!net || !brag || $("text").disabled) return;
+        const m = { id: newId(), chan, from: myId, ...author(), text: "😐 " + (anonOn && anonAllowed() ? "Анонім" : me.nick) + " " + brag + " Дуже нудно.", t: Date.now(), pub: myPub };
+        addMsg(m); net.send({ t: "msg", m }); $("ovAdmin").hidden = true;
+      };
+      body.append(shareBtn);
+      const showBrag = text => { brag = text; shareBtn.hidden = !net; };
+      // one clock per open activity; it stops by itself when the window closes or another activity opens
+      const tick = fn => { const id = setInterval(() => { if (!area.isConnected || $("ovAdmin").hidden) { clearInterval(id); return; } fn(); }, 1000); };
+      if (boreKind === "paint") {
+        const wall = document.createElement("div"); wall.className = "paint-wall";
+        const bar = document.createElement("div"); bar.className = "xpbar"; const fill = document.createElement("i"); bar.append(fill);
+        const pct = document.createElement("div"); pct.className = "bore-big";
+        area.append(wall, bar, pct);
+        const start = Date.now(); let lastSay = 0;
+        const draw = () => {
+          const p = Math.min(1, (Date.now() - start) / 1000 / PAINT_SEC);
+          wall.style.setProperty("--wet", String(1 - p)); fill.style.width = Math.round(p * 100) + "%";
+          pct.textContent = p < 1 ? "Фарба висохла на " + Math.floor(p * 100) + "%" : "🎉 Фарба висохла!";
+          if (p >= 1 && !wall.dataset.done) {
+            wall.dataset.done = "1"; bore.paint = (bore.paint || 0) + 1; saveBore();
+            say.textContent = "Це було неймовірно нудно. Висушено стін: " + bore.paint + ".";
+            showBrag("дивився, як сохне фарба, цілих " + Math.round(PAINT_SEC / 60) + " хвилини.");
+          } else if (p < 1 && Date.now() - lastSay > 20000) { lastSay = Date.now(); say.textContent = PAINT_SAYS[rnd(PAINT_SAYS.length)]; }
+        };
+        draw(); tick(draw);
+      } else if (boreKind === "sheep") {
+        const field = document.createElement("div"); field.className = "sheep-field"; field.innerHTML = '<span class="fence">🚧</span>';
+        const cnt = document.createElement("div"); cnt.className = "bore-big";
+        const go = document.createElement("button"); go.className = "btn"; go.textContent = "🐑 Наступна вівця";
+        let n = 0;
+        cnt.textContent = "Овець: 0";
+        go.onclick = () => {
+          n++; bore.sheep = (bore.sheep || 0) + 1; saveBore();
+          const s = document.createElement("span"); s.className = "sheep"; s.textContent = "🐑"; field.append(s);
+          setTimeout(() => s.remove(), 1600);
+          cnt.textContent = "Овець: " + n;
+          say.textContent = n % 10 === 0 ? "Ти ще не заснув? 😴" : n % 7 === 0 ? "Ця вівця була трохи білішою. Ні, здалося." : "";
+          if (n >= 5) showBrag("порахував " + n + " овець.");
+        };
+        area.append(field, cnt, go);
+        say.textContent = "Усього порахував за весь час: " + (bore.sheep || 0) + ".";
+      } else if (boreKind === "wait") {
+        const clock = document.createElement("div"); clock.className = "bore-big";
+        const stop = document.createElement("button"); stop.className = "btn"; stop.textContent = "Перестати чекати";
+        const start = Date.now();
+        const draw = () => {
+          const s = Math.floor((Date.now() - start) / 1000);
+          clock.textContent = "Ти чекаєш уже " + fmtDur(s);
+          if (s >= 10) showBrag("просто чекав " + fmtDur(s) + ". Нічого не дочекався.");
+        };
+        stop.onclick = () => {
+          const s = Math.floor((Date.now() - start) / 1000);
+          if (s > (bore.wait || 0)) { bore.wait = s; saveBore(); }
+          say.textContent = "Ти чекав " + fmtDur(s) + ". Нічого не сталося. Рекорд очікування: " + fmtDur(bore.wait || 0) + ".";
+          stop.disabled = true; area.dataset.done = "1";
+        };
+        area.append(clock, stop); draw(); tick(() => { if (!area.dataset.done) draw(); });
+        say.textContent = "Чекати чого? Невідомо. Просто чекай.";
+      } else {
+        const big = document.createElement("button"); big.className = "nothing-btn"; big.textContent = "Нічого не робити";
+        const cnt = document.createElement("div"); cnt.className = "bore-big";
+        cnt.textContent = "Натиснуто: " + (bore.nothing || 0);
+        big.onclick = () => {
+          bore.nothing = (bore.nothing || 0) + 1; saveBore();
+          cnt.textContent = "Натиснуто: " + bore.nothing;
+          say.textContent = bore.nothing % 25 === 0 ? "Ти натиснув " + bore.nothing + " разів. Нічого не сталося " + bore.nothing + " разів. Вражає." : NOTHING_SAYS[rnd(NOTHING_SAYS.length)];
+          showBrag("натиснув кнопку, яка нічого не робить, " + bore.nothing + " разів.");
+        };
+        area.append(big, cnt);
+        say.textContent = "Ця кнопка нічого не робить. Зовсім.";
+      }
+    });
+  }
+  $("btnBore").onclick = () => boredom();
   const toggleTools = open => { $("toolsPop").hidden = !open; $("btnTools").setAttribute("aria-expanded", String(open)); };
   $("btnTools").onclick = ev => { ev.stopPropagation(); toggleTools($("toolsPop").hidden); };
   // picking an action, or tapping anywhere else, closes the list
