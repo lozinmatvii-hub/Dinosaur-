@@ -3697,6 +3697,9 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     setPlaying(game, Date.now() + 3 * 60e3);
     if (d.dinocord !== "score") return;
     const sc = Math.floor(Number(d.s));
+    // another ДіноКорд tab may have just announced this record: take the best it saved
+    const saved = store.get("dinoBest", null);
+    if (Number.isInteger(saved?.s) && saved.s > myDino.s) Object.assign(myDino, saved);
     if (!Number.isInteger(sc) || sc <= 0 || sc >= 1e7 || sc <= myDino.s) return;
     // a new personal record: tell the server
     const beat = myDino.s;
@@ -3709,7 +3712,14 @@ textarea.bio { width: 100%; min-height: 64px; resize: vertical; background: var(
     addMsg(m); net.send({ t: "msg", m });
   }
   window.addEventListener("message", e => { if (e.origin === location.origin) onGameEvent(e.data); });
-  window.addEventListener("storage", e => { if (e.key === "dinocord-game" && e.newValue) try { onGameEvent(JSON.parse(e.newValue)); } catch {} });
+  window.addEventListener("storage", e => {
+    if (e.key === "dinocord-game" && e.newValue) { try { onGameEvent(JSON.parse(e.newValue)); } catch {} return; }
+    // the games also keep their own count of runs and best score: watching those means any version of a game works
+    // with ДіноКорд, even one that doesn't know about it
+    const game = gameOpen?.n || "Динозаврик";
+    if (e.key === "dinorev:games" && e.newValue !== e.oldValue) onGameEvent({ dinocord: "play", game, at: Date.now() });
+    else if (e.key === "dinorev:best") { const sc = parseInt(e.newValue); if (sc > 0) onGameEvent({ dinocord: "score", game, at: Date.now(), s: sc }); }
+  });
   function chooseGame() {
     openAdmin("🎮 Ігри", "Грай прямо тут. Усі бачать, що ти граєш, а рекорди потрапляють у 🏆 рейтинг сервера.", body => {
       for (const g of GAMES) admBtn(body, g.ic + " " + g.n, "sec", () => openGame(g));
